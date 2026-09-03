@@ -1,0 +1,33 @@
+## .NET / Visual Studio 标准忽略
+
+# 构建输出
+bin/
+obj/
+out/
+publish/
+
+# Visual Studio / Rider / VS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# 测试与覆盖率
+TestResults/
+coverage*.json
+coverage*.xml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# 便携模式运行时数据（若直接在输出目录旁调试会生成，勿提交）
+config/
+cache/
+
+# 系统文件
+Thumbs.db
+Desktop.ini
