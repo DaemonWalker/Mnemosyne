@@ -12,6 +12,7 @@
     <Color x:Key="Color.ActivityBar.ActiveForeground">#FFFFFFFF</Color>
     <Color x:Key="Color.Hover.Background">#FF3E3E42</Color>
     <Color x:Key="Color.Sidebar.Background">#FF252526</Color>
+    <Color x:Key="Color.Sidebar.Selection">#FF37373D</Color>
     <Color x:Key="Color.TabBar.Background">#FF252526</Color>
     <Color x:Key="Color.StatusBar.Foreground">#FFFFFFFF</Color>
 
@@ -45,6 +46,7 @@
     <SolidColorBrush x:Key="Brush.ActivityBar.ActiveForeground" Color="{StaticResource Color.ActivityBar.ActiveForeground}" />
     <SolidColorBrush x:Key="Brush.Hover.Background" Color="{StaticResource Color.Hover.Background}" />
     <SolidColorBrush x:Key="Brush.Sidebar.Background" Color="{StaticResource Color.Sidebar.Background}" />
+    <SolidColorBrush x:Key="Brush.Sidebar.Selection" Color="{StaticResource Color.Sidebar.Selection}" />
     <SolidColorBrush x:Key="Brush.TabBar.Background" Color="{StaticResource Color.TabBar.Background}" />
     <SolidColorBrush x:Key="Brush.StatusBar.Background" Color="{StaticResource Color.Accent}" />
     <SolidColorBrush x:Key="Brush.StatusBar.Foreground" Color="{StaticResource Color.StatusBar.Foreground}" />

@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**Step 3 已完成**（下一个待执行：Step 4 — 文件树）
-- 当前 Step 内已完成的小目标：3.1～3.6 全部
-- 最后更新：2026-09-04 00:47
+- 当前 Step：**Step 4 已完成**（下一个待执行：Step 5 — 页内搜索与替换）
+- 当前 Step 内已完成的小目标：4.1～4.5 全部（构建 0 错误 0 警告；运行时冒烟验证在本提交后补做，结果见日志后续行）
+- 最后更新：2026-09-04 03:01
 
 ## 断点信息
 
@@ -34,3 +34,8 @@
 | 2026-09-04 00:47 | 3 | 3.4 | 保存 Ctrl+S（无路径走 SaveFilePicker 钩子）/另存为 Ctrl+Shift+S（新增 AppCommands.SaveAs + 菜单项）；脏标记为 Tab 标题圆点（SavePoint/TextChanged 驱动）；关闭脏 Tab 弹 保存/不保存/取消（ConfirmUnsavedClose 钩子，MessageBox YesNoCancel）；IO 异常统一 ReportError 本地化弹窗 | 0 警告 0 错误 | 实测：注入编辑 → 圆点出现；菜单保存 → 磁盘字节更新、BOM 保持、圆点消失；关闭脏 Tab → 弹出"文件"data.json"有未保存的修改"提示，选"不保存"后 Tab 关闭、磁盘不变。另存为对话框可正常弹出，应用侧逻辑与已验证的保存路径相同；本环境无法自动化完成系统保存对话框，人工点验留给后续走查 |
 | 2026-09-04 00:47 | 3 | 3.5 | `Models/LineEnding.cs`；FileService.DetectLineEnding 按 CRLF/LF/CR 计数取主导（空文件默认 CRLF）；状态栏显示，点击弹 CRLF/LF 菜单，ConvertLineEnding 调 Scintilla ConvertEols 实际改内容 | 0 警告 0 错误 | 实测：LF 文件显示 LF；LF→CRLF 转换后脏标记出现、保存落盘字节为 \r\n |
 | 2026-09-04 00:47 | 3 | 3.6 | `Models/LanguageRegistry.cs`：30 种语言定义（显示名/Lexer 名/扩展名/关键字表，cpp lexer 复用承载 C#/C/C++/Java/JS/TS）+ 扩展名索引 + CMakeLists.txt/Makefile/Dockerfile 文件名特例；`Views/LanguagePickerWindow`：Plain Text + 内置语言 + Lexilla 全部 Lexer（`ScintillaHost.GetAvailableLexerNames()`，首个控件创建前 Lexilla 静态委托未初始化需预热），搜索框过滤、Enter/双击/按钮确认；状态栏语言按钮打开弹窗 | 0 警告 0 错误 | 实测：.cs→C#、.c→C、.md→Markdown、.json→JSON 自动匹配正确（远超 10 种映射）；弹窗过滤 "py"→Python、选中后状态栏变更 |
+| 2026-09-04 03:01 | 4 | 4.1 | 打开文件夹三入口全部接通：菜单 Ctrl+Shift+O（WinForms FolderBrowserDialog 钩子 `OpenFolderPicker`）、拖拽（Window_Drop→OpenPathsAsync 按目录路由）、命令行/次实例转发（OpenPathsAsync 同路径）；`ViewModels/FileTreeNodeViewModel.cs` 懒加载（哨兵子节点 + `ChildrenRequested` 展开回调）；排序目录在前 + 名称 OrdinalIgnoreCase；`Views/FilePanelView` 重写为 TreeView（自绘 TreeViewItem 模板：箭头展开钮/hover/选中态，新增主题键 `Brush.Sidebar.Selection`）；打开文件夹自动显示文件侧边栏 | 0 警告 0 错误 | 运行时验证待补（本段因会话中断先落盘，见后续日志） |
+| 2026-09-04 03:01 | 4 | 4.2 | FileSystemWatcher（IncludeSubdirectories，FileName/DirectoryName/LastWrite）监听增删改/重命名；事件按父目录去重入 HashSet，`System.Threading.Timer` 300ms 防抖后经 `Dispatcher.BeginInvoke` 回 UI；`RefreshNode` 与磁盘合并（保留仍存在节点的展开态、新增缺失项、移除已删项与占位项）；根目录被删自动关闭文件夹；Watcher.Error（缓冲溢出）降级为根目录全量刷新；监听失败仅提示不致命 | 0 警告 0 错误 | 同上待运行时验证 |
+| 2026-09-04 03:01 | 4 | 4.3 | TreeView SelectedItemChanged → `ActivateNode` 单击文件打开到 Tab（复用 Step 3 `OpenDocumentAsync`，同路径聚焦既有 Tab）；目录展开/收起走 TreeView 默认交互（避免与双击双重切换）；根节点显示文件夹名（根路径无文件名时显示路径本身）；根节点右键与空白区右键均有"关闭文件夹"（释放 watcher） | 0 警告 0 错误 | 同上待运行时验证 |
+| 2026-09-04 03:01 | 4 | 4.4 | 右键菜单（`PopupMenuItemStyle` 主题化）：新建文件/新建文件夹/重命名/删除/在资源管理器中打开（explorer /select），文件节点的新建落在其父目录；新建与重命名为 TreeView 内嵌 TextBox 内联编辑（Enter 提交/Esc 取消/失焦提交，重命名预选主文件名不含扩展名）；新建先插占位节点、提交时才落盘（File.WriteAllBytes/CreateDirectory）；删除弹确认对话框后真实删除（目录递归）；名称校验（非法字符/重名，本地化提示）；修复：校验失败弹模态框引发 LostFocus 重入 CommitEdit 的递归弹窗，加 `_isCommittingEdit` 保护；全部 IO 异常本地化弹窗 | 0 警告 0 错误 | 同上待运行时验证 |
+| 2026-09-04 03:01 | 4 | 4.5 | `Services/RecentFilesService.cs`：便携模式 `config/recent.json`（损坏按空列表容错，落盘失败不致命），文件/文件夹两组各最多 20 条、去重置顶；`Models/RecentEntry.cs`（FullPath/DisplayName）；文件菜单新增"最近打开的文件/文件夹"两子菜单（SubmenuOpened 时动态重建，空时显示禁用占位项，表头用 TextBlock 防止下划线被当快捷键标记，ToolTip 全路径）；打开文件（OpenDocumentAsync 成功）与打开文件夹时记录 | 0 警告 0 错误 | 同上待运行时验证 |

@@ -18,7 +18,7 @@
 
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenFile}" Executed="OpenFileCommand_Executed" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.OpenFolder}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.OpenFolder}" Executed="OpenFolderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Save}" Executed="SaveCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SaveAs}" Executed="SaveAsCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Find}" Executed="PlaceholderCommand_Executed" />
@@ -34,6 +34,16 @@
             <MenuItem Header="{DynamicResource Loc.Menu.File}">
                 <MenuItem Header="{DynamicResource Loc.Menu.File.Open}" Command="{x:Static cmd:AppCommands.OpenFile}" />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.OpenFolder}" Command="{x:Static cmd:AppCommands.OpenFolder}" />
+                <MenuItem x:Name="RecentFilesMenu"
+                          Header="{DynamicResource Loc.Menu.File.RecentFiles}"
+                          SubmenuOpened="RecentFilesMenu_SubmenuOpened">
+                    <MenuItem Header="{DynamicResource Loc.Menu.File.RecentEmpty}" IsEnabled="False" />
+                </MenuItem>
+                <MenuItem x:Name="RecentFoldersMenu"
+                          Header="{DynamicResource Loc.Menu.File.RecentFolders}"
+                          SubmenuOpened="RecentFoldersMenu_SubmenuOpened">
+                    <MenuItem Header="{DynamicResource Loc.Menu.File.RecentEmpty}" IsEnabled="False" />
+                </MenuItem>
                 <Separator />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.Save}" Command="{x:Static cmd:AppCommands.Save}" />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.SaveAs}" Command="{x:Static cmd:AppCommands.SaveAs}" />
@@ -136,7 +146,8 @@
                     BorderBrush="{DynamicResource Brush.Control.Border}"
                     BorderThickness="0,0,1,0">
                 <Grid>
-                    <views:FilePanelView Visibility="{Binding IsFilePanelVisible, Converter={StaticResource BoolToVisibility}}" />
+                    <views:FilePanelView DataContext="{Binding FileTree}"
+                                         Visibility="{Binding IsFilePanelVisible, Converter={StaticResource BoolToVisibility}}" />
                     <views:SearchPanelView Visibility="{Binding IsSearchPanelVisible, Converter={StaticResource BoolToVisibility}}" />
                 </Grid>
             </Border>

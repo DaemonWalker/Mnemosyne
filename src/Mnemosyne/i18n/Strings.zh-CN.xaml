@@ -11,6 +11,9 @@
     <sys:String x:Key="Loc.Menu.File.SaveAs">另存为(_A)...</sys:String>
     <sys:String x:Key="Loc.Menu.File.CloseTab">关闭标签页(_W)</sys:String>
     <sys:String x:Key="Loc.Menu.File.Settings">设置(_T)</sys:String>
+    <sys:String x:Key="Loc.Menu.File.RecentFiles">最近打开的文件(_R)</sys:String>
+    <sys:String x:Key="Loc.Menu.File.RecentFolders">最近打开的文件夹(_F)</sys:String>
+    <sys:String x:Key="Loc.Menu.File.RecentEmpty">（空）</sys:String>
     <sys:String x:Key="Loc.Menu.Edit">编辑(_E)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.Find">查找(_F)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.Replace">替换(_R)</sys:String>
@@ -22,6 +25,12 @@
 
     <sys:String x:Key="Loc.SideBar.Files.Title">资源管理器</sys:String>
     <sys:String x:Key="Loc.SideBar.Files.Empty">尚未打开文件夹</sys:String>
+    <sys:String x:Key="Loc.SideBar.Files.CloseFolder">关闭文件夹</sys:String>
+    <sys:String x:Key="Loc.Tree.NewFile">新建文件</sys:String>
+    <sys:String x:Key="Loc.Tree.NewFolder">新建文件夹</sys:String>
+    <sys:String x:Key="Loc.Tree.Rename">重命名</sys:String>
+    <sys:String x:Key="Loc.Tree.Delete">删除</sys:String>
+    <sys:String x:Key="Loc.Tree.OpenInExplorer">在资源管理器中打开</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Title">搜索</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Empty">输入关键字以在文件夹中搜索</sys:String>
 
@@ -42,6 +51,20 @@
     <sys:String x:Key="Loc.Error.Title">错误</sys:String>
     <sys:String x:Key="Loc.Error.OpenFile.Message">无法打开文件“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.SaveFile.Message">无法保存文件“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.OpenFolder.Message">无法打开文件夹“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.OpenFolder.NotExist">文件夹不存在</sys:String>
+    <sys:String x:Key="Loc.Error.ReadFolder.Message">无法读取文件夹“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.WatchFolder.Message">无法监听文件夹“{0}”的变化。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.CreateEntry.Message">无法创建“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.RenameEntry.Message">无法重命名“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.DeleteEntry.Message">无法删除“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.Reveal.Message">无法在资源管理器中打开“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.InvalidName.Message">名称“{0}”无效。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.InvalidName.Detail">名称不能包含 \ / : * ? " &lt; &gt; | 等字符</sys:String>
+    <sys:String x:Key="Loc.Error.EntryExists.Message">无法使用名称“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.EntryExists.Detail">同名文件或文件夹已存在</sys:String>
+    <sys:String x:Key="Loc.Dialog.Delete.File.Message">确定要删除文件“{0}”吗？此操作不可撤销。</sys:String>
+    <sys:String x:Key="Loc.Dialog.Delete.Folder.Message">确定要删除文件夹“{0}”及其全部内容吗？此操作不可撤销。</sys:String>
 
     <sys:String x:Key="Loc.LanguagePicker.Title">选择语言模式</sys:String>
     <sys:String x:Key="Loc.LanguagePicker.Filter">输入以筛选语言…</sys:String>

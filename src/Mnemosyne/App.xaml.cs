@@ -13,6 +13,7 @@ public partial class App : Application
     public ThemeService ThemeService { get; private set; } = null!;
     public LocalizationService LocalizationService { get; private set; } = null!;
     public FileService FileService { get; private set; } = null!;
+    public RecentFilesService RecentFilesService { get; private set; } = null!;
 
     // 命令行/次实例转发来的待打开路径暂存于此，由 MainWindow 消费
     public List<string> PendingOpenPaths { get; } = [];
@@ -43,6 +44,7 @@ public partial class App : Application
         LocalizationService.SetLanguage(settings.Language);
 
         FileService = new FileService();
+        RecentFilesService = new RecentFilesService();
 
         AddPendingPaths(e.Args);
         _singleInstance.ArgsReceived += args => Dispatcher.Invoke(() =>
@@ -53,7 +55,7 @@ public partial class App : Application
         });
         _singleInstance.StartListening();
 
-        MainWindow window = new(ConfigService, ThemeService, LocalizationService, FileService);
+        MainWindow window = new(ConfigService, ThemeService, LocalizationService, FileService, RecentFilesService);
         MainWindow = window;
         window.Show();
     }

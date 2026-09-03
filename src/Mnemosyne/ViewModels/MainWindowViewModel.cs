@@ -18,11 +18,14 @@ public partial class MainWindowViewModel : ObservableObject
 
     private GridLength _lastSidebarWidth = new(260);
 
-    public MainWindowViewModel(FileService fileService, LocalizationService localization, AppSettings settings)
+    public MainWindowViewModel(FileService fileService, LocalizationService localization, AppSettings settings, RecentFilesService recentFiles)
     {
         _fileService = fileService;
         _localization = localization;
         _settings = settings;
+        RecentFiles = recentFiles;
+        FileTree = new FileTreeViewModel(localization);
+        FileTree.OpenFileRequested = path => _ = OpenDocumentAsync(path);
         _indentDisplay = settings.IndentUseTabs
             ? string.Format(localization.GetString("Loc.Status.TabSize"), settings.IndentWidth)
             : string.Format(localization.GetString("Loc.Status.Spaces"), settings.IndentWidth);
@@ -31,8 +34,14 @@ public partial class MainWindowViewModel : ObservableObject
 
     public ObservableCollection<DocumentViewModel> Documents { get; } = [];
 
+    public FileTreeViewModel FileTree { get; }
+
+    public RecentFilesService RecentFiles { get; }
+
     // 以下钩子由 View 注入，承载对话框等纯 UI 交互，业务流转保持在本类中
     public Func<IReadOnlyList<string>?>? OpenFilePicker { get; set; }
+
+    public Func<string?>? OpenFolderPicker { get; set; }
 
     public Func<string, string?>? SaveFilePicker { get; set; }
 
@@ -107,8 +116,45 @@ public partial class MainWindowViewModel : ObservableObject
     {
         foreach (string path in paths)
         {
-            await OpenDocumentAsync(path);
+            if (Directory.Exists(path))
+            {
+                OpenFolder(path);
+            }
+            else
+            {
+                await OpenDocumentAsync(path);
+            }
         }
+    }
+
+    [RelayCommand]
+    private void OpenFolder()
+    {
+        string? path = OpenFolderPicker?.Invoke();
+        if (path is not null) OpenFolder(path);
+    }
+
+    /// <summary>打开文件夹到侧边栏文件树并记录最近列表</summary>
+    public void OpenFolder(string path)
+    {
+        FileTree.OpenFolder(path);
+        if (FileTree.HasFolder)
+        {
+            RecentFiles.RecordFolder(Path.GetFullPath(path));
+            ActivePanel = Models.ActivityPanel.Files;
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenRecentFileAsync(string? path)
+    {
+        if (path is not null) await OpenDocumentAsync(path);
+    }
+
+    [RelayCommand]
+    private void OpenRecentFolder(string? path)
+    {
+        if (path is not null) OpenFolder(path);
     }
 
     /// <summary>打开文件到新 Tab；同路径已打开时聚焦既有 Tab。返回打开的文档，失败返回 null。</summary>
@@ -132,7 +178,7 @@ public partial class MainWindowViewModel : ObservableObject
             return existing;
         }
 
-        // 目录暂不处理（Step 4 文件树），直接忽略
+        // 目录由 OpenPathsAsync 路由到文件树，这里兜底忽略
         if (Directory.Exists(fullPath)) return null;
         if (!File.Exists(fullPath))
         {
@@ -153,6 +199,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         Documents.Add(document);
         ActiveDocument = document;
+        RecentFiles.RecordFile(fullPath);
         return document;
     }
 

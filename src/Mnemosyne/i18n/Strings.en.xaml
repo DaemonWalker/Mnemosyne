@@ -11,6 +11,9 @@
     <sys:String x:Key="Loc.Menu.File.SaveAs">Save _As...</sys:String>
     <sys:String x:Key="Loc.Menu.File.CloseTab">Close _Tab</sys:String>
     <sys:String x:Key="Loc.Menu.File.Settings">Se_ttings</sys:String>
+    <sys:String x:Key="Loc.Menu.File.RecentFiles">Recent _Files</sys:String>
+    <sys:String x:Key="Loc.Menu.File.RecentFolders">Recent F_olders</sys:String>
+    <sys:String x:Key="Loc.Menu.File.RecentEmpty">(Empty)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit">_Edit</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.Find">_Find</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.Replace">_Replace</sys:String>
@@ -22,6 +25,12 @@
 
     <sys:String x:Key="Loc.SideBar.Files.Title">EXPLORER</sys:String>
     <sys:String x:Key="Loc.SideBar.Files.Empty">No folder opened</sys:String>
+    <sys:String x:Key="Loc.SideBar.Files.CloseFolder">Close Folder</sys:String>
+    <sys:String x:Key="Loc.Tree.NewFile">New File</sys:String>
+    <sys:String x:Key="Loc.Tree.NewFolder">New Folder</sys:String>
+    <sys:String x:Key="Loc.Tree.Rename">Rename</sys:String>
+    <sys:String x:Key="Loc.Tree.Delete">Delete</sys:String>
+    <sys:String x:Key="Loc.Tree.OpenInExplorer">Reveal in File Explorer</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Title">SEARCH</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Empty">Type a keyword to search in the folder</sys:String>
 
@@ -42,6 +51,20 @@
     <sys:String x:Key="Loc.Error.Title">Error</sys:String>
     <sys:String x:Key="Loc.Error.OpenFile.Message">Cannot open file "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.SaveFile.Message">Cannot save file "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.OpenFolder.Message">Cannot open folder "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.OpenFolder.NotExist">The folder does not exist</sys:String>
+    <sys:String x:Key="Loc.Error.ReadFolder.Message">Cannot read folder "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.WatchFolder.Message">Cannot watch folder "{0}" for changes. {1}</sys:String>
+    <sys:String x:Key="Loc.Error.CreateEntry.Message">Cannot create "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.RenameEntry.Message">Cannot rename "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.DeleteEntry.Message">Cannot delete "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.Reveal.Message">Cannot reveal "{0}" in File Explorer. {1}</sys:String>
+    <sys:String x:Key="Loc.Error.InvalidName.Message">The name "{0}" is invalid. {1}</sys:String>
+    <sys:String x:Key="Loc.Error.InvalidName.Detail">Names cannot contain characters such as \ / : * ? " &lt; &gt; |</sys:String>
+    <sys:String x:Key="Loc.Error.EntryExists.Message">Cannot use the name "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.EntryExists.Detail">A file or folder with the same name already exists</sys:String>
+    <sys:String x:Key="Loc.Dialog.Delete.File.Message">Delete the file "{0}"? This cannot be undone.</sys:String>
+    <sys:String x:Key="Loc.Dialog.Delete.Folder.Message">Delete the folder "{0}" and all its contents? This cannot be undone.</sys:String>
 
     <sys:String x:Key="Loc.LanguagePicker.Title">Select Language Mode</sys:String>
     <sys:String x:Key="Loc.LanguagePicker.Filter">Type to filter languages...</sys:String>

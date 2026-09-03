@@ -1,6 +1,143 @@
 <UserControl x:Class="Mnemosyne.Views.FilePanelView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Mnemosyne.ViewModels">
+    <UserControl.Resources>
+        <HierarchicalDataTemplate x:Key="FileTreeNodeTemplate"
+                                  DataType="{x:Type vm:FileTreeNodeViewModel}"
+                                  ItemsSource="{Binding Children}">
+            <StackPanel Orientation="Horizontal" Height="22">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDummy}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <Path Width="12" Height="12"
+                      Margin="0,0,5,0"
+                      VerticalAlignment="Center"
+                      Stretch="Uniform"
+                      Fill="{DynamicResource Brush.Secondary.Foreground}">
+                    <Path.Style>
+                        <Style TargetType="Path">
+                            <Setter Property="Data" Value="M2,1 H8 L10,3 H14 V13 H2 Z M2,3 H8 L6,1 H2" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDirectory}" Value="False">
+                                    <Setter Property="Data" Value="M3,0 H9 L13,4 V14 H3 Z M9,0 V4 H13" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Path.Style>
+                </Path>
+                <TextBlock Text="{Binding Name}"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource Brush.Window.Foreground}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBox x:Name="EditBox"
+                         MinWidth="80"
+                         FontSize="13"
+                         Padding="2,0"
+                         VerticalAlignment="Center"
+                         Text="{Binding EditText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Loaded="EditBox_Loaded"
+                         KeyDown="EditBox_KeyDown"
+                         LostFocus="EditBox_LostFocus"
+                         Visibility="Collapsed">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+            </StackPanel>
+        </HierarchicalDataTemplate>
+
+        <Style x:Key="FileTreeItemStyle" TargetType="TreeViewItem">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            <Setter Property="Padding" Value="0" />
+            <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeItem_PreviewMouseRightButtonDown" />
+            <EventSetter Event="ContextMenuOpening" Handler="TreeItem_ContextMenuOpening" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <StackPanel>
+                            <Border x:Name="RowBorder" Background="Transparent">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ToggleButton x:Name="Expander"
+                                                  ClickMode="Press"
+                                                  IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="Transparent" Width="16" Height="22">
+                                                    <Path x:Name="Arrow"
+                                                          Width="8" Height="8"
+                                                          Stretch="Uniform"
+                                                          Data="M1,0 L7,4 L1,8 Z"
+                                                          Fill="{DynamicResource Brush.Secondary.Foreground}"
+                                                          RenderTransformOrigin="0.5,0.5" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="Arrow" Property="RenderTransform">
+                                                            <Setter.Value>
+                                                                <RotateTransform Angle="90" />
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                    <ContentPresenter Grid.Column="1"
+                                                      ContentSource="Header"
+                                                      VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                            <ItemsPresenter x:Name="ItemsHost"
+                                            Margin="16,0,0,0"
+                                            Visibility="Collapsed" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.Hover.Background}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.Sidebar.Selection}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -8,12 +145,32 @@
         </Grid.RowDefinitions>
         <TextBlock Text="{DynamicResource Loc.SideBar.Files.Title}"
                    Style="{StaticResource SidebarTitleStyle}" />
-        <TextBlock Grid.Row="1"
-                   Text="{DynamicResource Loc.SideBar.Files.Empty}"
-                   Foreground="{DynamicResource Brush.Secondary.Foreground}"
-                   TextWrapping="Wrap"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   Margin="16" />
+        <Grid Grid.Row="1">
+            <TextBlock Text="{DynamicResource Loc.SideBar.Files.Empty}"
+                       Foreground="{DynamicResource Brush.Secondary.Foreground}"
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="16">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasFolder}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TreeView x:Name="FileTree"
+                      ItemsSource="{Binding RootNodes}"
+                      ItemTemplate="{StaticResource FileTreeNodeTemplate}"
+                      ItemContainerStyle="{StaticResource FileTreeItemStyle}"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      SelectedItemChanged="FileTree_SelectedItemChanged"
+                      ContextMenuOpening="FileTree_ContextMenuOpening" />
+        </Grid>
     </Grid>
 </UserControl>

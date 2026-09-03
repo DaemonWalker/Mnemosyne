@@ -19,11 +19,11 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel _viewModel;
     private readonly IReadOnlyList<RoutedUICommand> _appCommands;
 
-    public MainWindow(ConfigService configService, ThemeService themeService, LocalizationService localization, FileService fileService)
+    public MainWindow(ConfigService configService, ThemeService themeService, LocalizationService localization, FileService fileService, RecentFilesService recentFiles)
     {
         InitializeComponent();
         _localization = localization;
-        _viewModel = new MainWindowViewModel(fileService, localization, configService.Settings);
+        _viewModel = new MainWindowViewModel(fileService, localization, configService.Settings, recentFiles);
         DataContext = _viewModel;
 
         _appCommands = typeof(AppCommands)
@@ -70,6 +70,23 @@ public partial class MainWindow : Window
             _localization.GetString("Loc.Dialog.Confirm.Title"),
             MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
         _viewModel.ShowError = (message, title) =>
+            MessageBox.Show(this, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+
+        _viewModel.OpenFolderPicker = () =>
+        {
+            // WPF 无自带文件夹选择框，复用已启用的 WinForms
+            using var dialog = new WinForms.FolderBrowserDialog();
+            return dialog.ShowDialog() == WinForms.DialogResult.OK ? dialog.SelectedPath : null;
+        };
+        _viewModel.FileTree.ConfirmDelete = node =>
+        {
+            string key = node.IsDirectory ? "Loc.Dialog.Delete.Folder.Message" : "Loc.Dialog.Delete.File.Message";
+            return MessageBox.Show(this,
+                string.Format(_localization.GetString(key), node.FullPath),
+                _localization.GetString("Loc.Dialog.Confirm.Title"),
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+        };
+        _viewModel.FileTree.ShowError = (message, title) =>
             MessageBox.Show(this, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
 
         _viewModel.Documents.CollectionChanged += (_, e) =>
@@ -216,6 +233,49 @@ public partial class MainWindow : Window
     private void OpenFileCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         _viewModel.OpenFileCommand.Execute(null);
+    }
+
+    private void OpenFolderCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        _viewModel.OpenFolderCommand.Execute(null);
+    }
+
+    // 最近打开子菜单每次展开时重建，保证内容与顺序最新；表头用 TextBlock 避免文件名中的下划线被当作快捷键标记
+    private void RecentFilesMenu_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        RebuildRecentMenu(RecentFilesMenu, _viewModel.RecentFiles.RecentFiles,
+            path => _viewModel.OpenRecentFileCommand.Execute(path));
+    }
+
+    private void RecentFoldersMenu_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        RebuildRecentMenu(RecentFoldersMenu, _viewModel.RecentFiles.RecentFolders,
+            path => _viewModel.OpenRecentFolderCommand.Execute(path));
+    }
+
+    private void RebuildRecentMenu(MenuItem parent, IReadOnlyList<RecentEntry> entries, Action<string> open)
+    {
+        parent.Items.Clear();
+        if (entries.Count == 0)
+        {
+            parent.Items.Add(new MenuItem
+            {
+                Header = _localization.GetString("Loc.Menu.File.RecentEmpty"),
+                IsEnabled = false,
+            });
+            return;
+        }
+        foreach (RecentEntry entry in entries)
+        {
+            var item = new MenuItem
+            {
+                Header = new TextBlock { Text = entry.DisplayName },
+                ToolTip = entry.FullPath,
+            };
+            string path = entry.FullPath;
+            item.Click += (_, _) => open(path);
+            parent.Items.Add(item);
+        }
     }
 
     private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
