@@ -26,6 +26,7 @@ public partial class MainWindowViewModel : ObservableObject
         RecentFiles = recentFiles;
         FileTree = new FileTreeViewModel(localization);
         FileTree.OpenFileRequested = path => _ = OpenDocumentAsync(path);
+        FindBar = new FindBarViewModel(localization);
         _indentDisplay = settings.IndentUseTabs
             ? string.Format(localization.GetString("Loc.Status.TabSize"), settings.IndentWidth)
             : string.Format(localization.GetString("Loc.Status.Spaces"), settings.IndentWidth);
@@ -37,6 +38,9 @@ public partial class MainWindowViewModel : ObservableObject
     public FileTreeViewModel FileTree { get; }
 
     public RecentFilesService RecentFiles { get; }
+
+    /// <summary>页内搜索/替换浮层（窗口级，跟随活动文档）</summary>
+    public FindBarViewModel FindBar { get; }
 
     // 以下钩子由 View 注入，承载对话框等纯 UI 交互，业务流转保持在本类中
     public Func<IReadOnlyList<string>?>? OpenFilePicker { get; set; }
@@ -86,6 +90,11 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnActivePanelChanged(ActivityPanel? value)
     {
         SidebarWidth = value is null ? new GridLength(0) : _lastSidebarWidth;
+    }
+
+    partial void OnActiveDocumentChanged(DocumentViewModel? value)
+    {
+        FindBar.AttachDocument(value);
     }
 
     partial void OnSidebarWidthChanged(GridLength value)

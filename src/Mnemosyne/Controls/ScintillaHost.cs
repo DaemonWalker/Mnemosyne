@@ -16,6 +16,10 @@ public class ScintillaHost : WindowsFormsHost
 {
     private const int LineNumberMargin = 0;
 
+    // 0-7 留给 Lexer 语法错误等用途，搜索高亮用 8/9（当前匹配叠加在全部匹配之上）
+    private const int MatchIndicator = 8;
+    private const int CurrentMatchIndicator = 9;
+
     private static readonly List<WeakReference<ScintillaHost>> _instances = [];
 
     private readonly Scintilla _scintilla;
@@ -92,6 +96,24 @@ public class ScintillaHost : WindowsFormsHost
         set => _scintilla.ReadOnly = value;
     }
 
+    public string SelectedText => _scintilla.SelectedText;
+
+    // Scintilla5.NET 的 position 单位是 .NET 字符索引而非 UTF-8 字节偏移（实测 TargetText/TextLength 验证），
+    // 因此搜索匹配的字符索引可直接用于选中/高亮/替换，无需编码换算
+    /// <summary>当前光标位置（字符索引）</summary>
+    public int CaretPosition => _scintilla.CurrentPosition;
+
+    /// <summary>当前主选择的字符区间（无选择时 Length 为 0）</summary>
+    public TextRange SelectionRange
+    {
+        get
+        {
+            int anchor = _scintilla.AnchorPosition;
+            int caret = _scintilla.CurrentPosition;
+            return new TextRange(Math.Min(anchor, caret), Math.Abs(caret - anchor));
+        }
+    }
+
     public LanguageDefinition CurrentLanguage => _language;
 
     public int CurrentLineNumber => _scintilla.CurrentLine + 1;
@@ -108,6 +130,49 @@ public class ScintillaHost : WindowsFormsHost
     public void FocusEditor() => _scintilla.Focus();
 
     public void MarkSaved() => _scintilla.SetSavePoint();
+
+    /// <summary>设置全部匹配（indicator 8）与当前匹配（indicator 9，叠加上色）的高亮区间；ranges 为字符索引</summary>
+    public void SetSearchHighlights(IReadOnlyList<TextRange> ranges, int currentIndex)
+    {
+        ClearSearchHighlights();
+        _scintilla.IndicatorCurrent = MatchIndicator;
+        foreach (TextRange range in ranges)
+        {
+            _scintilla.IndicatorFillRange(range.Start, range.Length);
+        }
+        if (currentIndex >= 0 && currentIndex < ranges.Count)
+        {
+            TextRange current = ranges[currentIndex];
+            _scintilla.IndicatorCurrent = CurrentMatchIndicator;
+            _scintilla.IndicatorFillRange(current.Start, current.Length);
+        }
+    }
+
+    public void ClearSearchHighlights()
+    {
+        _scintilla.IndicatorCurrent = MatchIndicator;
+        _scintilla.IndicatorClearRange(0, _scintilla.TextLength);
+        _scintilla.IndicatorCurrent = CurrentMatchIndicator;
+        _scintilla.IndicatorClearRange(0, _scintilla.TextLength);
+    }
+
+    /// <summary>选中字符区间并滚动到可见（caret 落在匹配末尾，供下一次"下一个"导航定位）</summary>
+    public void SelectRange(int start, int length)
+    {
+        _scintilla.SetSelection(start + length, start);
+        _scintilla.ScrollCaret();
+    }
+
+    /// <summary>按字符区间替换文本（经 ReplaceTarget，保留撤销栈）</summary>
+    public void ReplaceRange(int start, int length, string replacement)
+    {
+        _scintilla.SetTargetRange(start, start + length);
+        _scintilla.ReplaceTarget(replacement);
+    }
+
+    public void BeginUndoAction() => _scintilla.BeginUndoAction();
+
+    public void EndUndoAction() => _scintilla.EndUndoAction();
 
     /// <summary>设置文档行尾模式并按需转换全文行尾符</summary>
     public void SetLineEnding(LineEnding ending, bool convert)
@@ -193,6 +258,17 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.Styles[SciStyle.BraceLight].BackColor = background;
         _scintilla.Styles[SciStyle.BraceLight].Bold = true;
         _scintilla.Styles[SciStyle.BraceBad].ForeColor = EditorColor("Error");
+
+        // 搜索匹配高亮：StraightBox 填充 + Alpha 混合；当前匹配更不透明并带描边
+        _scintilla.Indicators[MatchIndicator].Style = IndicatorStyle.StraightBox;
+        _scintilla.Indicators[MatchIndicator].ForeColor = EditorColor("FindMatch");
+        _scintilla.Indicators[MatchIndicator].Alpha = 90;
+        _scintilla.Indicators[MatchIndicator].Under = true;
+        _scintilla.Indicators[CurrentMatchIndicator].Style = IndicatorStyle.StraightBox;
+        _scintilla.Indicators[CurrentMatchIndicator].ForeColor = EditorColor("FindMatchCurrent");
+        _scintilla.Indicators[CurrentMatchIndicator].Alpha = 160;
+        _scintilla.Indicators[CurrentMatchIndicator].OutlineAlpha = 255;
+        _scintilla.Indicators[CurrentMatchIndicator].Under = true;
 
         ApplyLexerStyles();
         UpdateLineNumberMarginWidth();

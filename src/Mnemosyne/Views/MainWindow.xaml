@@ -21,8 +21,8 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenFolder}" Executed="OpenFolderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Save}" Executed="SaveCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SaveAs}" Executed="SaveAsCommand_Executed" CanExecute="SaveCommand_CanExecute" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.Find}" Executed="PlaceholderCommand_Executed" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.Replace}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.Find}" Executed="FindCommand_Executed" CanExecute="SaveCommand_CanExecute" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.Replace}" Executed="ReplaceCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SearchInFolder}" Executed="SearchInFolderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.CloseTab}" Executed="CloseTabCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="PlaceholderCommand_Executed" />
@@ -191,6 +191,15 @@
                 <Grid x:Name="EditorHostGrid"
                       Grid.Row="1"
                       Background="{DynamicResource Brush.Window.Background}" />
+
+                <views:FindBarView x:Name="FindBar"
+                                   Grid.Row="1"
+                                   DataContext="{Binding FindBar}"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Top"
+                                   Margin="0,4,24,0"
+                                   Panel.ZIndex="1"
+                                   Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" />
 
                 <TextBlock Grid.Row="1"
                            Text="{DynamicResource Loc.Editor.Empty}"

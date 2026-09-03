@@ -34,6 +34,8 @@
     <Color x:Key="Color.Editor.Tag">#FF800000</Color>
     <Color x:Key="Color.Editor.Attribute">#FFFF0000</Color>
     <Color x:Key="Color.Editor.Error">#FFCD3131</Color>
+    <Color x:Key="Color.Editor.FindMatch">#FFE07B00</Color>
+    <Color x:Key="Color.Editor.FindMatchCurrent">#FFE07B00</Color>
 
     <SolidColorBrush x:Key="Brush.Window.Background" Color="{StaticResource Color.Window.Background}" />
     <SolidColorBrush x:Key="Brush.Window.Foreground" Color="{StaticResource Color.Window.Foreground}" />
@@ -50,5 +52,6 @@
     <SolidColorBrush x:Key="Brush.TabBar.Background" Color="{StaticResource Color.TabBar.Background}" />
     <SolidColorBrush x:Key="Brush.StatusBar.Background" Color="{StaticResource Color.Accent}" />
     <SolidColorBrush x:Key="Brush.StatusBar.Foreground" Color="{StaticResource Color.StatusBar.Foreground}" />
+    <SolidColorBrush x:Key="Brush.Find.CountError" Color="{StaticResource Color.Editor.Error}" />
 
 </ResourceDictionary>

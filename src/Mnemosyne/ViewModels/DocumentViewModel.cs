@@ -50,7 +50,11 @@ public partial class DocumentViewModel : ObservableObject
 
         Editor = new ScintillaHost();
         Editor.ApplyFont(settings.FontFamily, settings.FontSize);
-        Editor.DirtyChanged += (_, _) => IsDirty = Editor.IsDirty;
+        Editor.DirtyChanged += (_, _) =>
+        {
+            IsDirty = Editor.IsDirty;
+            ContentChanged?.Invoke(this, EventArgs.Empty);
+        };
         Editor.CaretPositionChanged += (_, _) =>
         {
             Line = Editor.CurrentLineNumber;
@@ -61,6 +65,9 @@ public partial class DocumentViewModel : ObservableObject
     }
 
     public ScintillaHost Editor { get; }
+
+    /// <summary>文档内容变化（搜索条借此刷新匹配；保存点变化也会触发，重搜一次无害）</summary>
+    public event EventHandler? ContentChanged;
 
     public Encoding CurrentEncoding { get; private set; } = EncodingCatalog.Utf8NoBom;
 

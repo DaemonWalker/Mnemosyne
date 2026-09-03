@@ -88,6 +88,7 @@ public partial class MainWindow : Window
         };
         _viewModel.FileTree.ShowError = (message, title) =>
             MessageBox.Show(this, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+        _viewModel.FindBar.FocusEditorRequested = () => _viewModel.ActiveDocument?.Editor.FocusEditor();
 
         _viewModel.Documents.CollectionChanged += (_, e) =>
         {
@@ -301,6 +302,23 @@ public partial class MainWindow : Window
     private void SearchInFolderCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         _viewModel.ShowSearchPanelCommand.Execute(null);
+    }
+
+    private void FindCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        OpenFindBar(replace: false);
+    }
+
+    private void ReplaceCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        OpenFindBar(replace: true);
+    }
+
+    private void OpenFindBar(bool replace)
+    {
+        _viewModel.FindBar.Open(replace);
+        // 浮层刚从 Collapsed 变 Visible 时尚未布局完成，焦点延后到输入优先级再设置
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () => FindBar.FocusSearchBox());
     }
 
     // 仅注册快捷键与菜单入口，具体功能由后续 Step 实现

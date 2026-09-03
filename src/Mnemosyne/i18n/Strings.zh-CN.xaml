@@ -69,6 +69,18 @@
     <sys:String x:Key="Loc.LanguagePicker.Title">选择语言模式</sys:String>
     <sys:String x:Key="Loc.LanguagePicker.Filter">输入以筛选语言…</sys:String>
 
+    <sys:String x:Key="Loc.Find.MatchCase">区分大小写</sys:String>
+    <sys:String x:Key="Loc.Find.WholeWord">全字匹配</sys:String>
+    <sys:String x:Key="Loc.Find.UseRegex">使用正则表达式</sys:String>
+    <sys:String x:Key="Loc.Find.ToggleReplace">展开/收起替换</sys:String>
+    <sys:String x:Key="Loc.Find.Previous">上一个匹配 (Shift+Enter)</sys:String>
+    <sys:String x:Key="Loc.Find.Next">下一个匹配 (Enter)</sys:String>
+    <sys:String x:Key="Loc.Find.Close">关闭 (Esc)</sys:String>
+    <sys:String x:Key="Loc.Find.ReplaceOne">替换</sys:String>
+    <sys:String x:Key="Loc.Find.ReplaceAll">全部替换</sys:String>
+    <sys:String x:Key="Loc.Find.NoResults">无结果</sys:String>
+    <sys:String x:Key="Loc.Find.InvalidRegex">无效的正则表达式</sys:String>
+
     <sys:String x:Key="Loc.Common.Ok">确定</sys:String>
     <sys:String x:Key="Loc.Common.Cancel">取消</sys:String>
 

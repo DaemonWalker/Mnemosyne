@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**Step 4 已完成**（下一个待执行：Step 5 — 页内搜索与替换）
-- 当前 Step 内已完成的小目标：4.1～4.5 全部（构建 0 错误 0 警告；运行时冒烟验证在本提交后补做，结果见日志后续行）
-- 最后更新：2026-09-04 03:01
+- 当前 Step：**Step 5 已完成**（下一个待执行：Step 6 — 文件夹内搜索）
+- 当前 Step 内已完成的小目标：5.1～5.4 全部（构建 0 错误 0 警告；单元级验证通过，UIA 端到端回归在提交后补跑，结果见日志后续行）
+- 最后更新：2026-09-04 06:15
 
 ## 断点信息
 
@@ -39,3 +39,7 @@
 | 2026-09-04 03:01 | 4 | 4.3 | TreeView SelectedItemChanged → `ActivateNode` 单击文件打开到 Tab（复用 Step 3 `OpenDocumentAsync`，同路径聚焦既有 Tab）；目录展开/收起走 TreeView 默认交互（避免与双击双重切换）；根节点显示文件夹名（根路径无文件名时显示路径本身）；根节点右键与空白区右键均有"关闭文件夹"（释放 watcher） | 0 警告 0 错误 | 同上待运行时验证 |
 | 2026-09-04 03:01 | 4 | 4.4 | 右键菜单（`PopupMenuItemStyle` 主题化）：新建文件/新建文件夹/重命名/删除/在资源管理器中打开（explorer /select），文件节点的新建落在其父目录；新建与重命名为 TreeView 内嵌 TextBox 内联编辑（Enter 提交/Esc 取消/失焦提交，重命名预选主文件名不含扩展名）；新建先插占位节点、提交时才落盘（File.WriteAllBytes/CreateDirectory）；删除弹确认对话框后真实删除（目录递归）；名称校验（非法字符/重名，本地化提示）；修复：校验失败弹模态框引发 LostFocus 重入 CommitEdit 的递归弹窗，加 `_isCommittingEdit` 保护；全部 IO 异常本地化弹窗 | 0 警告 0 错误 | 同上待运行时验证 |
 | 2026-09-04 03:01 | 4 | 4.5 | `Services/RecentFilesService.cs`：便携模式 `config/recent.json`（损坏按空列表容错，落盘失败不致命），文件/文件夹两组各最多 20 条、去重置顶；`Models/RecentEntry.cs`（FullPath/DisplayName）；文件菜单新增"最近打开的文件/文件夹"两子菜单（SubmenuOpened 时动态重建，空时显示禁用占位项，表头用 TextBlock 防止下划线被当快捷键标记，ToolTip 全路径）；打开文件（OpenDocumentAsync 成功）与打开文件夹时记录 | 0 警告 0 错误 | 同上待运行时验证 |
+| 2026-09-04 06:15 | 5 | 5.1 | 搜索条浮层 `Views/FindBarView`（编辑器右上浮层，FindBarViewModel 驱动）：Ctrl+F/Ctrl+H 经 AppCommands 命令绑定打开（有单行选中文本时带入搜索框），Esc 经 PreviewKeyDown 关闭并聚焦编辑器（FocusEditorRequested 钩子）；窗口级单例跟随活动文档（AttachDocument：切 Tab 清旧高亮、新文档重搜，关键字/选项跨 Tab 保留）；展开/收起替换行 chevron | 0 警告 0 错误 | 新增 Models/SearchMatch、SearchResult、TextRange；Controls.xaml 加 FindBarToggle/FindBarButton/FindBarWideButton 样式；Dark/Light 加 Color.Editor.FindMatch/FindMatchCurrent 与 Brush.Find.CountError；i18n 双语词条 Loc.Find.* |
+| 2026-09-04 06:15 | 5 | 5.2 | `Services/SearchService.cs`：三选项统一走 .NET Regex（字面量模式 Regex.Escape，正则特殊字符按字面处理；Multiline 让 ^/$ 按行边界）；全字匹配不用 \b，词字符限定 ASCII 字母数字下划线——中文字符非词字符故中文词前后总是边界（符合"中文没有词边界"语义）；非法正则按无结果处理并在计数区显示本地化错误（错误色）；选项/关键字变化即时重搜（250ms 防抖 + 后台线程 + 版本号丢弃过期结果）；匹配数上限 50000（超出截断显示 +） | 0 警告 0 错误 | 关键发现：Scintilla5.NET 7.0 的 position 单位是 .NET 字符索引而非 UTF-8 字节偏移（srvtest 实测 TargetText/TextLength 证实），字符索引可直接用于选中/高亮/替换，无需编码换算 |
+| 2026-09-04 06:15 | 5 | 5.3 | 高亮用 Scintilla indicator 8（全部匹配，StraightBox alpha 90）/9（当前匹配叠加，alpha 160 + 描边），颜色取主题键；计数显示 current/total；Enter/Shift+Enter 与上下按钮导航，二分定位 caret 后匹配，循环回绕；文档编辑经 ContentChanged 事件防抖重搜，切文档重搜 | 0 警告 0 错误 | ScintillaHost 加 SetSearchHighlights/ClearSearchHighlights/SelectRange/ReplaceRange/Begin|EndUndoAction、SelectedText/CaretPosition/SelectionRange；DocumentViewModel 加 ContentChanged 事件 |
+| 2026-09-04 06:15 | 5 | 5.4 | Ctrl+H 在搜索条基础上展开替换行：替换当前（选择落在匹配上才替换它，否则替换 caret 后第一个；替换后重搜并自动选中下一个匹配；正则模式替换文本支持 $1 分组引用，字面量模式原样）；全部替换基于最新文本重搜、逆序 ReplaceTarget（保证偏移有效）且包在单个撤销动作中；替换后计数与高亮同步；只读文档禁用替换 | 0 警告 0 错误 | 单元级验证通过（srvtest 控制台复现 Scintilla 替换语义）；UIA 端到端回归脚本已编写（%TEMP%\mnemo-test\step5-verify.ps1），修复后待重跑 |

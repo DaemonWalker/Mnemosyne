@@ -69,6 +69,18 @@
     <sys:String x:Key="Loc.LanguagePicker.Title">Select Language Mode</sys:String>
     <sys:String x:Key="Loc.LanguagePicker.Filter">Type to filter languages...</sys:String>
 
+    <sys:String x:Key="Loc.Find.MatchCase">Match Case</sys:String>
+    <sys:String x:Key="Loc.Find.WholeWord">Match Whole Word</sys:String>
+    <sys:String x:Key="Loc.Find.UseRegex">Use Regular Expression</sys:String>
+    <sys:String x:Key="Loc.Find.ToggleReplace">Toggle Replace</sys:String>
+    <sys:String x:Key="Loc.Find.Previous">Previous Match (Shift+Enter)</sys:String>
+    <sys:String x:Key="Loc.Find.Next">Next Match (Enter)</sys:String>
+    <sys:String x:Key="Loc.Find.Close">Close (Esc)</sys:String>
+    <sys:String x:Key="Loc.Find.ReplaceOne">Replace</sys:String>
+    <sys:String x:Key="Loc.Find.ReplaceAll">Replace All</sys:String>
+    <sys:String x:Key="Loc.Find.NoResults">No results</sys:String>
+    <sys:String x:Key="Loc.Find.InvalidRegex">Invalid regular expression</sys:String>
+
     <sys:String x:Key="Loc.Common.Ok">OK</sys:String>
     <sys:String x:Key="Loc.Common.Cancel">Cancel</sys:String>
 
