@@ -12,6 +12,11 @@
 4. 小目标完成标准：`dotnet build` 全解决方案 0 错误 0 警告 + 该小目标验收条目实际通过
 5. 若 token 将尽或遇阻塞无法继续：把当前小目标的**进行状态、已完成的部分、下一步该做什么**写进 `docs/progress.md` 的"断点信息"节，然后停止
 6. 整个 Step 完成后：更新 `docs/progress.md` 的"当前状态"，并输出验收清单核对结果
+7. **整个 Step 完成后必须 `git commit` 并 `git push`**：
+   - 提交信息格式：`step{N}: {Step 标题}（{简要说明}）`，如 `step3: 编辑器内核（打开/保存/编码/高亮）`
+   - 提交内容包含本 Step 的全部代码变更 + steps.md 复选框 + progress.md 日志
+   - commit 前确认 `dotnet build` 0 错误 0 警告；构建不通过禁止提交
+   - push 失败（网络问题等）不阻塞，但必须在 progress.md 日志中记录"commit 成功 / push 失败"
 
 ---
 
