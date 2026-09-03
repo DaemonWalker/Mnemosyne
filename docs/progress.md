@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**Step 1 已完成**（下一个待执行：Step 2 — 主窗口布局）
-- 当前 Step 内已完成的小目标：1.1～1.5 全部
-- 最后更新：2026-09-03 21:07
+- 当前 Step：**Step 2 已完成**（下一个待执行：Step 3 — 编辑器内核）
+- 当前 Step 内已完成的小目标：2.1～2.5 全部
+- 最后更新：2026-09-03 22:00
 
 ## 断点信息
 
@@ -23,3 +23,8 @@
 | 2026-09-03 21:07 | 1 | 1.3 | `ConfigService`（便携模式 exe 同目录 `config/settings.json`，System.Text.Json，损坏回退默认并覆写）+ `AppSettings`（主题/语言/字体/字号/缩进 Tab 与宽度/大文件阈值/自动换行/空白显示） | 0 警告 0 错误 | 实测：首启生成默认 settings.json；改 Theme/Language 后重启原样加载未被覆盖 |
 | 2026-09-03 21:07 | 1 | 1.4 | `LocalizationService`（zh-CN/en，XAML 字符串资源字典 `i18n/Strings.*.xaml`，运行时换字典 + `LanguageChanged` 事件，XAML 经 DynamicResource 自动刷新，`GetString` 供代码取词） | 0 警告 0 错误 | 主窗口演示组合框切换语言即时生效并落盘 |
 | 2026-09-03 21:07 | 1 | 1.5 | `Theming/Dark.xaml`/`Light.xaml`（颜色+画刷资源键）+ `ThemeService`（默认深色，换字典 + `ThemeChanged` 事件） | 0 警告 0 错误 | 主窗口演示组合框切换主题即时生效并落盘 |
+| 2026-09-03 22:00 | 2 | 2.1 | 左侧活动栏：文件/搜索两个自绘 Path 图标 ToggleButton（`ActivityBarButtonStyle`，选中态高亮 + 左侧 accent 指示条），点击切换面板、再点收起（`MainWindowViewModel.ToggleActivityCommand`，`ActivityPanel` 枚举可空表示收起） | 0 警告 0 错误 | 新增 `Models/ActivityPanel.cs`、`ViewModels/MainWindowViewModel.cs` |
+| 2026-09-03 22:00 | 2 | 2.2 | 侧边栏容器：`Views/FilePanelView`/`Views/SearchPanelView` 占位 UserControl（标题 + 空状态提示，均走 i18n）；列宽与 VM `SidebarWidth` 双向绑定，GridSplitter 可拖拽，收起时列宽置 0、展开恢复上次宽度 | 0 警告 0 错误 | — |
+| 2026-09-03 22:00 | 2 | 2.3 | 中间 Tab 区：`Theming/Controls.xaml` 隐式 TabControl/TabItem 样式（标签栏底色、选中 Tab 顶部 accent 条、hover 态，画笔全 DynamicResource）；无文档时显示空状态提示（`ShowEmptyState`） | 0 警告 0 错误 | — |
+| 2026-09-03 22:00 | 2 | 2.4 | 底部状态栏骨架：Ln/Col、UTF-8、CRLF、Plain Text、Spaces: 4 占位 + 右侧进度条预留位（Collapsed）；背景用 `Brush.StatusBar.Background`(=Accent) | 0 警告 0 错误 | — |
+| 2026-09-03 22:00 | 2 | 2.5 | `Commands/AppCommands.cs`：需求 4.11 全部 9 个快捷键注册为 RoutedUICommand（KeyGesture 直接挂命令上，菜单自动显示快捷键文本）；主菜单（文件/编辑）+ Window CommandBindings；除 Ctrl+Shift+F 联动打开搜索侧边栏外均空实现 | 0 警告 0 错误 | 移除 Step 1 演示控件与 `Loc.Demo.*` 词条；实测 Dark/zh-CN 与 Light/en 两种配置窗口均正常启动；注意验证脚本须用 taskkill 清理进程，否则单实例会让后续启动直接退出 |

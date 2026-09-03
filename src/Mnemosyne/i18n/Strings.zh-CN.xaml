@@ -3,14 +3,27 @@
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
     <sys:String x:Key="Loc.App.Title">Mnemosyne</sys:String>
-    <sys:String x:Key="Loc.Demo.Welcome">欢迎使用 Mnemosyne</sys:String>
-    <sys:String x:Key="Loc.Demo.Theme">主题：</sys:String>
-    <sys:String x:Key="Loc.Demo.Theme.Dark">深色</sys:String>
-    <sys:String x:Key="Loc.Demo.Theme.Light">浅色</sys:String>
-    <sys:String x:Key="Loc.Demo.Language">语言：</sys:String>
-    <sys:String x:Key="Loc.Demo.Language.zhCN">简体中文</sys:String>
-    <sys:String x:Key="Loc.Demo.Language.en">English</sys:String>
-    <sys:String x:Key="Loc.Demo.PendingPaths">待打开路径（Step 1 仅暂存）：</sys:String>
-    <sys:String x:Key="Loc.Demo.NoPendingPaths">（无）</sys:String>
+
+    <sys:String x:Key="Loc.Menu.File">文件(_F)</sys:String>
+    <sys:String x:Key="Loc.Menu.File.Open">打开文件(_O)...</sys:String>
+    <sys:String x:Key="Loc.Menu.File.OpenFolder">打开文件夹(_D)...</sys:String>
+    <sys:String x:Key="Loc.Menu.File.Save">保存(_S)</sys:String>
+    <sys:String x:Key="Loc.Menu.File.CloseTab">关闭标签页(_W)</sys:String>
+    <sys:String x:Key="Loc.Menu.File.Settings">设置(_T)</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit">编辑(_E)</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.Find">查找(_F)</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.Replace">替换(_R)</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.SearchInFolder">在文件夹中查找(_I)</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.SelectNextOccurrence">选中下一个匹配项(_D)</sys:String>
+
+    <sys:String x:Key="Loc.Activity.Files.Tooltip">资源管理器</sys:String>
+    <sys:String x:Key="Loc.Activity.Search.Tooltip">搜索</sys:String>
+
+    <sys:String x:Key="Loc.SideBar.Files.Title">资源管理器</sys:String>
+    <sys:String x:Key="Loc.SideBar.Files.Empty">尚未打开文件夹</sys:String>
+    <sys:String x:Key="Loc.SideBar.Search.Title">搜索</sys:String>
+    <sys:String x:Key="Loc.SideBar.Search.Empty">输入关键字以在文件夹中搜索</sys:String>
+
+    <sys:String x:Key="Loc.Editor.Empty">拖放文件到此处，或按 Ctrl+O 打开文件</sys:String>
 
 </ResourceDictionary>

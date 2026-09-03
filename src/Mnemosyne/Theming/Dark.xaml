@@ -7,6 +7,13 @@
     <Color x:Key="Color.Control.Border">#FF3F3F46</Color>
     <Color x:Key="Color.Accent">#FF007ACC</Color>
     <Color x:Key="Color.Secondary.Foreground">#FF808080</Color>
+    <Color x:Key="Color.ActivityBar.Background">#FF333333</Color>
+    <Color x:Key="Color.ActivityBar.Foreground">#FF858585</Color>
+    <Color x:Key="Color.ActivityBar.ActiveForeground">#FFFFFFFF</Color>
+    <Color x:Key="Color.Hover.Background">#FF3E3E42</Color>
+    <Color x:Key="Color.Sidebar.Background">#FF252526</Color>
+    <Color x:Key="Color.TabBar.Background">#FF252526</Color>
+    <Color x:Key="Color.StatusBar.Foreground">#FFFFFFFF</Color>
 
     <SolidColorBrush x:Key="Brush.Window.Background" Color="{StaticResource Color.Window.Background}" />
     <SolidColorBrush x:Key="Brush.Window.Foreground" Color="{StaticResource Color.Window.Foreground}" />
@@ -14,5 +21,13 @@
     <SolidColorBrush x:Key="Brush.Control.Border" Color="{StaticResource Color.Control.Border}" />
     <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Color.Accent}" />
     <SolidColorBrush x:Key="Brush.Secondary.Foreground" Color="{StaticResource Color.Secondary.Foreground}" />
+    <SolidColorBrush x:Key="Brush.ActivityBar.Background" Color="{StaticResource Color.ActivityBar.Background}" />
+    <SolidColorBrush x:Key="Brush.ActivityBar.Foreground" Color="{StaticResource Color.ActivityBar.Foreground}" />
+    <SolidColorBrush x:Key="Brush.ActivityBar.ActiveForeground" Color="{StaticResource Color.ActivityBar.ActiveForeground}" />
+    <SolidColorBrush x:Key="Brush.Hover.Background" Color="{StaticResource Color.Hover.Background}" />
+    <SolidColorBrush x:Key="Brush.Sidebar.Background" Color="{StaticResource Color.Sidebar.Background}" />
+    <SolidColorBrush x:Key="Brush.TabBar.Background" Color="{StaticResource Color.TabBar.Background}" />
+    <SolidColorBrush x:Key="Brush.StatusBar.Background" Color="{StaticResource Color.Accent}" />
+    <SolidColorBrush x:Key="Brush.StatusBar.Foreground" Color="{StaticResource Color.StatusBar.Foreground}" />
 
 </ResourceDictionary>

@@ -1,33 +1,159 @@
 <Window x:Class="Mnemosyne.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:cmd="clr-namespace:Mnemosyne.Commands"
+        xmlns:models="clr-namespace:Mnemosyne.Models"
+        xmlns:views="clr-namespace:Mnemosyne.Views"
         Title="{DynamicResource Loc.App.Title}"
-        Width="900" Height="600"
+        Width="1000" Height="640"
+        MinWidth="480" MinHeight="320"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Brush.Window.Background}">
-    <!-- Step 1 临时演示控件：验证主题/语言切换与设置落盘，Step 2 替换为正式布局 -->
-    <StackPanel Margin="24">
-        <TextBlock Text="{DynamicResource Loc.Demo.Welcome}"
-                   FontSize="22"
-                   Foreground="{DynamicResource Brush.Window.Foreground}"
-                   Margin="0,0,0,20" />
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="{DynamicResource Loc.Demo.Theme}"
-                       Foreground="{DynamicResource Brush.Window.Foreground}"
-                       VerticalAlignment="Center" Width="90" />
-            <ComboBox x:Name="ThemeComboBox" Width="180" SelectionChanged="ThemeComboBox_SelectionChanged" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="{DynamicResource Loc.Demo.Language}"
-                       Foreground="{DynamicResource Brush.Window.Foreground}"
-                       VerticalAlignment="Center" Width="90" />
-            <ComboBox x:Name="LanguageComboBox" Width="180" SelectionChanged="LanguageComboBox_SelectionChanged" />
-        </StackPanel>
-        <TextBlock Text="{DynamicResource Loc.Demo.PendingPaths}"
-                   Foreground="{DynamicResource Brush.Secondary.Foreground}"
-                   Margin="0,20,0,4" />
-        <TextBlock x:Name="PendingPathsText"
-                   TextWrapping="Wrap"
-                   Foreground="{DynamicResource Brush.Secondary.Foreground}" />
-    </StackPanel>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
+
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static cmd:AppCommands.OpenFile}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.OpenFolder}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.Save}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.Find}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.Replace}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.SearchInFolder}" Executed="SearchInFolderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.CloseTab}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="PlaceholderCommand_Executed" />
+    </Window.CommandBindings>
+
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="{DynamicResource Loc.Menu.File}">
+                <MenuItem Header="{DynamicResource Loc.Menu.File.Open}" Command="{x:Static cmd:AppCommands.OpenFile}" />
+                <MenuItem Header="{DynamicResource Loc.Menu.File.OpenFolder}" Command="{x:Static cmd:AppCommands.OpenFolder}" />
+                <Separator />
+                <MenuItem Header="{DynamicResource Loc.Menu.File.Save}" Command="{x:Static cmd:AppCommands.Save}" />
+                <MenuItem Header="{DynamicResource Loc.Menu.File.CloseTab}" Command="{x:Static cmd:AppCommands.CloseTab}" />
+                <Separator />
+                <MenuItem Header="{DynamicResource Loc.Menu.File.Settings}" Command="{x:Static cmd:AppCommands.OpenSettings}" />
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Loc.Menu.Edit}">
+                <MenuItem Header="{DynamicResource Loc.Menu.Edit.Find}" Command="{x:Static cmd:AppCommands.Find}" />
+                <MenuItem Header="{DynamicResource Loc.Menu.Edit.Replace}" Command="{x:Static cmd:AppCommands.Replace}" />
+                <MenuItem Header="{DynamicResource Loc.Menu.Edit.SearchInFolder}" Command="{x:Static cmd:AppCommands.SearchInFolder}" />
+                <Separator />
+                <MenuItem Header="{DynamicResource Loc.Menu.Edit.SelectNextOccurrence}" Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" />
+            </MenuItem>
+        </Menu>
+
+        <Border DockPanel.Dock="Bottom"
+                Height="24"
+                Background="{DynamicResource Brush.StatusBar.Background}">
+            <Grid Margin="8,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Ln 1, Col 1"
+                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
+                               FontSize="12"
+                               VerticalAlignment="Center"
+                               Margin="8,0" />
+                    <TextBlock Text="UTF-8"
+                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
+                               FontSize="12"
+                               VerticalAlignment="Center"
+                               Margin="8,0" />
+                    <TextBlock Text="CRLF"
+                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
+                               FontSize="12"
+                               VerticalAlignment="Center"
+                               Margin="8,0" />
+                    <TextBlock Text="Plain Text"
+                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
+                               FontSize="12"
+                               VerticalAlignment="Center"
+                               Margin="8,0" />
+                    <TextBlock Text="Spaces: 4"
+                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
+                               FontSize="12"
+                               VerticalAlignment="Center"
+                               Margin="8,0" />
+                </StackPanel>
+                <ProgressBar HorizontalAlignment="Right"
+                             Width="120"
+                             Height="10"
+                             Margin="8,0"
+                             Visibility="Collapsed" />
+            </Grid>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="48" />
+                <ColumnDefinition Width="{Binding SidebarWidth, Mode=TwoWay}" MinWidth="0" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{DynamicResource Brush.ActivityBar.Background}">
+                <StackPanel>
+                    <ToggleButton Style="{StaticResource ActivityBarButtonStyle}"
+                                  ToolTip="{DynamicResource Loc.Activity.Files.Tooltip}"
+                                  IsChecked="{Binding IsFilePanelVisible, Mode=OneWay}"
+                                  Command="{Binding ToggleActivityCommand}"
+                                  CommandParameter="{x:Static models:ActivityPanel.Files}">
+                        <Path Width="22" Height="22" Stretch="Uniform"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}">
+                            <Path.Data>
+                                <GeometryGroup FillRule="EvenOdd">
+                                    <PathGeometry Figures="M6,2 H14 L20,8 V22 H6 Z M14,2 V8 H20" />
+                                </GeometryGroup>
+                            </Path.Data>
+                        </Path>
+                    </ToggleButton>
+                    <ToggleButton Style="{StaticResource ActivityBarButtonStyle}"
+                                  ToolTip="{DynamicResource Loc.Activity.Search.Tooltip}"
+                                  IsChecked="{Binding IsSearchPanelVisible, Mode=OneWay}"
+                                  Command="{Binding ToggleActivityCommand}"
+                                  CommandParameter="{x:Static models:ActivityPanel.Search}">
+                        <Path Width="22" Height="22" Stretch="Uniform"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}">
+                            <Path.Data>
+                                <GeometryGroup FillRule="EvenOdd">
+                                    <EllipseGeometry Center="10,10" RadiusX="7" RadiusY="7" />
+                                    <EllipseGeometry Center="10,10" RadiusX="4.5" RadiusY="4.5" />
+                                    <RectangleGeometry Rect="14.2,14.2,3.6,8">
+                                        <RectangleGeometry.Transform>
+                                            <RotateTransform Angle="45" CenterX="16" CenterY="14.2" />
+                                        </RectangleGeometry.Transform>
+                                    </RectangleGeometry>
+                                </GeometryGroup>
+                            </Path.Data>
+                        </Path>
+                    </ToggleButton>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Background="{DynamicResource Brush.Sidebar.Background}"
+                    BorderBrush="{DynamicResource Brush.Control.Border}"
+                    BorderThickness="0,0,1,0">
+                <Grid>
+                    <views:FilePanelView Visibility="{Binding IsFilePanelVisible, Converter={StaticResource BoolToVisibility}}" />
+                    <views:SearchPanelView Visibility="{Binding IsSearchPanelVisible, Converter={StaticResource BoolToVisibility}}" />
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="2"
+                          Visibility="{Binding IsSidebarVisible, Converter={StaticResource BoolToVisibility}}" />
+
+            <Grid Grid.Column="3">
+                <TabControl />
+                <TextBlock Text="{DynamicResource Loc.Editor.Empty}"
+                           Foreground="{DynamicResource Brush.Secondary.Foreground}"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           IsHitTestVisible="False"
+                           Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
+        </Grid>
+    </DockPanel>
 </Window>

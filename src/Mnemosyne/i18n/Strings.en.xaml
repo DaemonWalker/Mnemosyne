@@ -3,14 +3,27 @@
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
     <sys:String x:Key="Loc.App.Title">Mnemosyne</sys:String>
-    <sys:String x:Key="Loc.Demo.Welcome">Welcome to Mnemosyne</sys:String>
-    <sys:String x:Key="Loc.Demo.Theme">Theme:</sys:String>
-    <sys:String x:Key="Loc.Demo.Theme.Dark">Dark</sys:String>
-    <sys:String x:Key="Loc.Demo.Theme.Light">Light</sys:String>
-    <sys:String x:Key="Loc.Demo.Language">Language:</sys:String>
-    <sys:String x:Key="Loc.Demo.Language.zhCN">简体中文</sys:String>
-    <sys:String x:Key="Loc.Demo.Language.en">English</sys:String>
-    <sys:String x:Key="Loc.Demo.PendingPaths">Pending paths (Step 1 only stashes them):</sys:String>
-    <sys:String x:Key="Loc.Demo.NoPendingPaths">(none)</sys:String>
+
+    <sys:String x:Key="Loc.Menu.File">_File</sys:String>
+    <sys:String x:Key="Loc.Menu.File.Open">_Open File...</sys:String>
+    <sys:String x:Key="Loc.Menu.File.OpenFolder">Open Fol_der...</sys:String>
+    <sys:String x:Key="Loc.Menu.File.Save">_Save</sys:String>
+    <sys:String x:Key="Loc.Menu.File.CloseTab">Close _Tab</sys:String>
+    <sys:String x:Key="Loc.Menu.File.Settings">Se_ttings</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit">_Edit</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.Find">_Find</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.Replace">_Replace</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.SearchInFolder">Find in F_older</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.SelectNextOccurrence">Select _Next Occurrence</sys:String>
+
+    <sys:String x:Key="Loc.Activity.Files.Tooltip">Explorer</sys:String>
+    <sys:String x:Key="Loc.Activity.Search.Tooltip">Search</sys:String>
+
+    <sys:String x:Key="Loc.SideBar.Files.Title">EXPLORER</sys:String>
+    <sys:String x:Key="Loc.SideBar.Files.Empty">No folder opened</sys:String>
+    <sys:String x:Key="Loc.SideBar.Search.Title">SEARCH</sys:String>
+    <sys:String x:Key="Loc.SideBar.Search.Empty">Type a keyword to search in the folder</sys:String>
+
+    <sys:String x:Key="Loc.Editor.Empty">Drop files here, or press Ctrl+O to open a file</sys:String>
 
 </ResourceDictionary>
