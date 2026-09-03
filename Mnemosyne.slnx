@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/plugins/">
+    <Project Path="plugins/Mnemosyne.Formatters.Html/Mnemosyne.Formatters.Html.csproj" />
+    <Project Path="plugins/Mnemosyne.Formatters.Json/Mnemosyne.Formatters.Json.csproj" />
+    <Project Path="plugins/Mnemosyne.Formatters.Xml/Mnemosyne.Formatters.Xml.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Mnemosyne.Plugin.Abstractions/Mnemosyne.Plugin.Abstractions.csproj" />
+    <Project Path="src/Mnemosyne/Mnemosyne.csproj" />
+  </Folder>
+</Solution>

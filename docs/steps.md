@@ -24,11 +24,11 @@
 
 **目标**：解决方案可构建、可启动空窗口，配置/主题/语言基础设施就绪。
 
-- [ ] 1.1 创建 `Mnemosyne.sln` 与项目结构（`src/Mnemosyne`、`src/Mnemosyne.Plugin.Abstractions`、`plugins/` 下三个格式化器项目），按 architecture.md 配置 TFM、Nullable、ImplicitUsings，引入全部 NuGet 包
-- [ ] 1.2 启动骨架：`App.xaml` 启动流程 + 空白主窗口；单实例（Mutex + 命名管道转发命令行参数）；命令行传文件路径可解析（暂存，Step 3 才用）
-- [ ] 1.3 `ConfigService`：便携模式 `config/settings.json` 读写（System.Text.Json，`AppSettings` 模型含主题/语言/字体/字号/缩进/大文件阈值等全部设置项）
-- [ ] 1.4 i18n 基础设施：`LocalizationService` + zh-CN/en 资源，支持运行时切换并通知 UI 刷新
-- [ ] 1.5 主题基础设施：`Theming/Dark.xaml`、`Theming/Light.xaml` 资源字典 + `ThemeService` 切换
+- [x] 1.1 创建 `Mnemosyne.sln` 与项目结构（`src/Mnemosyne`、`src/Mnemosyne.Plugin.Abstractions`、`plugins/` 下三个格式化器项目），按 architecture.md 配置 TFM、Nullable、ImplicitUsings，引入全部 NuGet 包
+- [x] 1.2 启动骨架：`App.xaml` 启动流程 + 空白主窗口；单实例（Mutex + 命名管道转发命令行参数）；命令行传文件路径可解析（暂存，Step 3 才用）
+- [x] 1.3 `ConfigService`：便携模式 `config/settings.json` 读写（System.Text.Json，`AppSettings` 模型含主题/语言/字体/字号/缩进/大文件阈值等全部设置项）
+- [x] 1.4 i18n 基础设施：`LocalizationService` + zh-CN/en 资源，支持运行时切换并通知 UI 刷新
+- [x] 1.5 主题基础设施：`Theming/Dark.xaml`、`Theming/Light.xaml` 资源字典 + `ThemeService` 切换
 
 **验收**：窗口能启动；设置修改后落盘、重启生效；主题与语言切换立即生效；构建 0 警告。
 

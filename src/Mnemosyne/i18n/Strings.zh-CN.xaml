@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <sys:String x:Key="Loc.App.Title">Mnemosyne</sys:String>
+    <sys:String x:Key="Loc.Demo.Welcome">欢迎使用 Mnemosyne</sys:String>
+    <sys:String x:Key="Loc.Demo.Theme">主题：</sys:String>
+    <sys:String x:Key="Loc.Demo.Theme.Dark">深色</sys:String>
+    <sys:String x:Key="Loc.Demo.Theme.Light">浅色</sys:String>
+    <sys:String x:Key="Loc.Demo.Language">语言：</sys:String>
+    <sys:String x:Key="Loc.Demo.Language.zhCN">简体中文</sys:String>
+    <sys:String x:Key="Loc.Demo.Language.en">English</sys:String>
+    <sys:String x:Key="Loc.Demo.PendingPaths">待打开路径（Step 1 仅暂存）：</sys:String>
+    <sys:String x:Key="Loc.Demo.NoPendingPaths">（无）</sys:String>
+
+</ResourceDictionary>

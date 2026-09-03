@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <sys:String x:Key="Loc.App.Title">Mnemosyne</sys:String>
+    <sys:String x:Key="Loc.Demo.Welcome">Welcome to Mnemosyne</sys:String>
+    <sys:String x:Key="Loc.Demo.Theme">Theme:</sys:String>
+    <sys:String x:Key="Loc.Demo.Theme.Dark">Dark</sys:String>
+    <sys:String x:Key="Loc.Demo.Theme.Light">Light</sys:String>
+    <sys:String x:Key="Loc.Demo.Language">Language:</sys:String>
+    <sys:String x:Key="Loc.Demo.Language.zhCN">简体中文</sys:String>
+    <sys:String x:Key="Loc.Demo.Language.en">English</sys:String>
+    <sys:String x:Key="Loc.Demo.PendingPaths">Pending paths (Step 1 only stashes them):</sys:String>
+    <sys:String x:Key="Loc.Demo.NoPendingPaths">(none)</sys:String>
+
+</ResourceDictionary>
