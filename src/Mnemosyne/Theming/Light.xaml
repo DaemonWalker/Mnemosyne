@@ -15,6 +15,25 @@
     <Color x:Key="Color.TabBar.Background">#FFECECEC</Color>
     <Color x:Key="Color.StatusBar.Foreground">#FFFFFFFF</Color>
 
+    <Color x:Key="Color.Editor.Background">#FFFFFFFF</Color>
+    <Color x:Key="Color.Editor.Foreground">#FF000000</Color>
+    <Color x:Key="Color.Editor.LineNumber">#FF237893</Color>
+    <Color x:Key="Color.Editor.CaretLine">#FFF3F3F3</Color>
+    <Color x:Key="Color.Editor.Selection">#FFADD6FF</Color>
+    <Color x:Key="Color.Editor.IndentGuide">#FFD3D3D3</Color>
+    <Color x:Key="Color.Editor.Caret">#FF000000</Color>
+    <Color x:Key="Color.Editor.Whitespace">#FFBFBFBF</Color>
+    <Color x:Key="Color.Editor.Keyword">#FF0000FF</Color>
+    <Color x:Key="Color.Editor.Comment">#FF008000</Color>
+    <Color x:Key="Color.Editor.String">#FFA31515</Color>
+    <Color x:Key="Color.Editor.Number">#FF098658</Color>
+    <Color x:Key="Color.Editor.Preprocessor">#FFAF00DB</Color>
+    <Color x:Key="Color.Editor.Type">#FF267F99</Color>
+    <Color x:Key="Color.Editor.Function">#FF795E26</Color>
+    <Color x:Key="Color.Editor.Tag">#FF800000</Color>
+    <Color x:Key="Color.Editor.Attribute">#FFFF0000</Color>
+    <Color x:Key="Color.Editor.Error">#FFCD3131</Color>
+
     <SolidColorBrush x:Key="Brush.Window.Background" Color="{StaticResource Color.Window.Background}" />
     <SolidColorBrush x:Key="Brush.Window.Foreground" Color="{StaticResource Color.Window.Foreground}" />
     <SolidColorBrush x:Key="Brush.Control.Background" Color="{StaticResource Color.Control.Background}" />

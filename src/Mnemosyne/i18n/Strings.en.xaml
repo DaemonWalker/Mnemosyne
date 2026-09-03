@@ -8,6 +8,7 @@
     <sys:String x:Key="Loc.Menu.File.Open">_Open File...</sys:String>
     <sys:String x:Key="Loc.Menu.File.OpenFolder">Open Fol_der...</sys:String>
     <sys:String x:Key="Loc.Menu.File.Save">_Save</sys:String>
+    <sys:String x:Key="Loc.Menu.File.SaveAs">Save _As...</sys:String>
     <sys:String x:Key="Loc.Menu.File.CloseTab">Close _Tab</sys:String>
     <sys:String x:Key="Loc.Menu.File.Settings">Se_ttings</sys:String>
     <sys:String x:Key="Loc.Menu.Edit">_Edit</sys:String>
@@ -25,5 +26,27 @@
     <sys:String x:Key="Loc.SideBar.Search.Empty">Type a keyword to search in the folder</sys:String>
 
     <sys:String x:Key="Loc.Editor.Empty">Drop files here, or press Ctrl+O to open a file</sys:String>
+
+    <sys:String x:Key="Loc.Tab.Untitled">Untitled</sys:String>
+
+    <sys:String x:Key="Loc.Status.LineCol">Ln {0}, Col {1}</sys:String>
+    <sys:String x:Key="Loc.Status.Spaces">Spaces: {0}</sys:String>
+    <sys:String x:Key="Loc.Status.TabSize">Tab Size: {0}</sys:String>
+
+    <sys:String x:Key="Loc.Dialog.OpenFile.Filter">All Files (*.*)|*.*</sys:String>
+    <sys:String x:Key="Loc.Dialog.SaveChanges.Title">Save Changes</sys:String>
+    <sys:String x:Key="Loc.Dialog.SaveChanges.Message">File "{0}" has unsaved changes. Do you want to save them?</sys:String>
+    <sys:String x:Key="Loc.Dialog.Confirm.Title">Confirm</sys:String>
+    <sys:String x:Key="Loc.Encoding.Reload.Message">Switching encoding reloads the file from disk and discards unsaved changes. Continue?</sys:String>
+
+    <sys:String x:Key="Loc.Error.Title">Error</sys:String>
+    <sys:String x:Key="Loc.Error.OpenFile.Message">Cannot open file "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.SaveFile.Message">Cannot save file "{0}". {1}</sys:String>
+
+    <sys:String x:Key="Loc.LanguagePicker.Title">Select Language Mode</sys:String>
+    <sys:String x:Key="Loc.LanguagePicker.Filter">Type to filter languages...</sys:String>
+
+    <sys:String x:Key="Loc.Common.Ok">OK</sys:String>
+    <sys:String x:Key="Loc.Common.Cancel">Cancel</sys:String>
 
 </ResourceDictionary>

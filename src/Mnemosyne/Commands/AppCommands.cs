@@ -10,6 +10,8 @@ public static class AppCommands
 
     public static RoutedUICommand Save { get; } = Create(nameof(Save), Key.S);
 
+    public static RoutedUICommand SaveAs { get; } = Create(nameof(SaveAs), Key.S, ModifierKeys.Shift);
+
     public static RoutedUICommand Find { get; } = Create(nameof(Find), Key.F);
 
     public static RoutedUICommand Replace { get; } = Create(nameof(Replace), Key.H);

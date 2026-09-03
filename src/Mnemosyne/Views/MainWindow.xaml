@@ -8,19 +8,23 @@
         Width="1000" Height="640"
         MinWidth="480" MinHeight="320"
         WindowStartupLocation="CenterScreen"
+        AllowDrop="True"
+        DragOver="Window_DragOver"
+        Drop="Window_Drop"
         Background="{DynamicResource Brush.Window.Background}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
 
     <Window.CommandBindings>
-        <CommandBinding Command="{x:Static cmd:AppCommands.OpenFile}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.OpenFile}" Executed="OpenFileCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenFolder}" Executed="PlaceholderCommand_Executed" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.Save}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.Save}" Executed="SaveCommand_Executed" CanExecute="SaveCommand_CanExecute" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.SaveAs}" Executed="SaveAsCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Find}" Executed="PlaceholderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Replace}" Executed="PlaceholderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SearchInFolder}" Executed="SearchInFolderCommand_Executed" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.CloseTab}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.CloseTab}" Executed="CloseTabCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="PlaceholderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="PlaceholderCommand_Executed" />
     </Window.CommandBindings>
@@ -32,6 +36,7 @@
                 <MenuItem Header="{DynamicResource Loc.Menu.File.OpenFolder}" Command="{x:Static cmd:AppCommands.OpenFolder}" />
                 <Separator />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.Save}" Command="{x:Static cmd:AppCommands.Save}" />
+                <MenuItem Header="{DynamicResource Loc.Menu.File.SaveAs}" Command="{x:Static cmd:AppCommands.SaveAs}" />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.CloseTab}" Command="{x:Static cmd:AppCommands.CloseTab}" />
                 <Separator />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.Settings}" Command="{x:Static cmd:AppCommands.OpenSettings}" />
@@ -49,28 +54,23 @@
                 Height="24"
                 Background="{DynamicResource Brush.StatusBar.Background}">
             <Grid Margin="8,0">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Ln 1, Col 1"
+                <StackPanel Orientation="Horizontal"
+                            Visibility="{Binding HasOpenDocuments, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding ActiveDocument.PositionDisplay}"
                                Foreground="{DynamicResource Brush.StatusBar.Foreground}"
                                FontSize="12"
                                VerticalAlignment="Center"
                                Margin="8,0" />
-                    <TextBlock Text="UTF-8"
-                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
-                               FontSize="12"
-                               VerticalAlignment="Center"
-                               Margin="8,0" />
-                    <TextBlock Text="CRLF"
-                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
-                               FontSize="12"
-                               VerticalAlignment="Center"
-                               Margin="8,0" />
-                    <TextBlock Text="Plain Text"
-                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
-                               FontSize="12"
-                               VerticalAlignment="Center"
-                               Margin="8,0" />
-                    <TextBlock Text="Spaces: 4"
+                    <Button Style="{StaticResource StatusBarButtonStyle}"
+                            Content="{Binding ActiveDocument.EncodingName}"
+                            Click="EncodingButton_Click" />
+                    <Button Style="{StaticResource StatusBarButtonStyle}"
+                            Content="{Binding ActiveDocument.LineEndingName}"
+                            Click="LineEndingButton_Click" />
+                    <Button Style="{StaticResource StatusBarButtonStyle}"
+                            Content="{Binding ActiveDocument.LanguageName}"
+                            Click="LanguageButton_Click" />
+                    <TextBlock Text="{Binding IndentDisplay}"
                                Foreground="{DynamicResource Brush.StatusBar.Foreground}"
                                FontSize="12"
                                VerticalAlignment="Center"
@@ -145,8 +145,44 @@
                           Visibility="{Binding IsSidebarVisible, Converter={StaticResource BoolToVisibility}}" />
 
             <Grid Grid.Column="3">
-                <TabControl />
-                <TextBlock Text="{DynamicResource Loc.Editor.Empty}"
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <TabControl ItemsSource="{Binding Documents}"
+                            SelectedItem="{Binding ActiveDocument, Mode=TwoWay}"
+                            Visibility="{Binding HasOpenDocuments, Converter={StaticResource BoolToVisibility}}">
+                    <TabControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#x25CF;"
+                                           FontSize="9"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource Brush.Window.Foreground}"
+                                           Visibility="{Binding IsDirty, Converter={StaticResource BoolToVisibility}}" />
+                                <TextBlock Text="{Binding Title}"
+                                           Margin="4,0,0,0"
+                                           VerticalAlignment="Center" />
+                                <Button Style="{StaticResource TabCloseButtonStyle}"
+                                        Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </TabControl.ItemTemplate>
+                    <TabControl.ContentTemplate>
+                        <DataTemplate />
+                    </TabControl.ContentTemplate>
+                </TabControl>
+
+                <!-- ScintillaHost（WindowsFormsHost）从可视树移除会销毁原生句柄并丢失文档内容，
+                     因此所有实例常驻此 Grid，仅切换 Visibility，不经 TabControl ContentPresenter 换页 -->
+                <Grid x:Name="EditorHostGrid"
+                      Grid.Row="1"
+                      Background="{DynamicResource Brush.Window.Background}" />
+
+                <TextBlock Grid.Row="1"
+                           Text="{DynamicResource Loc.Editor.Empty}"
                            Foreground="{DynamicResource Brush.Secondary.Foreground}"
                            FontSize="14"
                            HorizontalAlignment="Center"

@@ -8,6 +8,7 @@
     <sys:String x:Key="Loc.Menu.File.Open">打开文件(_O)...</sys:String>
     <sys:String x:Key="Loc.Menu.File.OpenFolder">打开文件夹(_D)...</sys:String>
     <sys:String x:Key="Loc.Menu.File.Save">保存(_S)</sys:String>
+    <sys:String x:Key="Loc.Menu.File.SaveAs">另存为(_A)...</sys:String>
     <sys:String x:Key="Loc.Menu.File.CloseTab">关闭标签页(_W)</sys:String>
     <sys:String x:Key="Loc.Menu.File.Settings">设置(_T)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit">编辑(_E)</sys:String>
@@ -25,5 +26,27 @@
     <sys:String x:Key="Loc.SideBar.Search.Empty">输入关键字以在文件夹中搜索</sys:String>
 
     <sys:String x:Key="Loc.Editor.Empty">拖放文件到此处，或按 Ctrl+O 打开文件</sys:String>
+
+    <sys:String x:Key="Loc.Tab.Untitled">未命名</sys:String>
+
+    <sys:String x:Key="Loc.Status.LineCol">Ln {0}, Col {1}</sys:String>
+    <sys:String x:Key="Loc.Status.Spaces">空格: {0}</sys:String>
+    <sys:String x:Key="Loc.Status.TabSize">制表符: {0}</sys:String>
+
+    <sys:String x:Key="Loc.Dialog.OpenFile.Filter">所有文件 (*.*)|*.*</sys:String>
+    <sys:String x:Key="Loc.Dialog.SaveChanges.Title">保存修改</sys:String>
+    <sys:String x:Key="Loc.Dialog.SaveChanges.Message">文件“{0}”有未保存的修改。是否保存？</sys:String>
+    <sys:String x:Key="Loc.Dialog.Confirm.Title">确认</sys:String>
+    <sys:String x:Key="Loc.Encoding.Reload.Message">切换编码将按新编码重新从磁盘加载文件，当前未保存的修改会丢失。是否继续？</sys:String>
+
+    <sys:String x:Key="Loc.Error.Title">错误</sys:String>
+    <sys:String x:Key="Loc.Error.OpenFile.Message">无法打开文件“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.SaveFile.Message">无法保存文件“{0}”。{1}</sys:String>
+
+    <sys:String x:Key="Loc.LanguagePicker.Title">选择语言模式</sys:String>
+    <sys:String x:Key="Loc.LanguagePicker.Filter">输入以筛选语言…</sys:String>
+
+    <sys:String x:Key="Loc.Common.Ok">确定</sys:String>
+    <sys:String x:Key="Loc.Common.Cancel">取消</sys:String>
 
 </ResourceDictionary>
