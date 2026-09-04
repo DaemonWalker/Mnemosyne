@@ -163,6 +163,14 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.ScrollCaret();
     }
 
+    /// <summary>选中指定行（1 起始）内的字符区间并滚动到可见（文件夹搜索结果跳转用）</summary>
+    public void SelectRangeInLine(int line, int startInLine, int length)
+    {
+        if (line < 1 || line > _scintilla.Lines.Count) return;
+        int lineStart = _scintilla.Lines[line - 1].Position;
+        SelectRange(lineStart + startInLine, length);
+    }
+
     /// <summary>按字符区间替换文本（经 ReplaceTarget，保留撤销栈）</summary>
     public void ReplaceRange(int start, int length, string replacement)
     {

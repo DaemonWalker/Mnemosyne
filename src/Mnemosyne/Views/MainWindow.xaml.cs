@@ -302,6 +302,8 @@ public partial class MainWindow : Window
     private void SearchInFolderCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         _viewModel.ShowSearchPanelCommand.Execute(null);
+        // 面板刚从 Collapsed 变 Visible 时尚未布局完成，焦点延后到输入优先级再设置
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () => SearchPanel.FocusSearchBox());
     }
 
     private void FindCommand_Executed(object sender, ExecutedRoutedEventArgs e)

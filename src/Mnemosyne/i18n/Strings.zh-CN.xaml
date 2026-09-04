@@ -33,6 +33,16 @@
     <sys:String x:Key="Loc.Tree.OpenInExplorer">在资源管理器中打开</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Title">搜索</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Empty">输入关键字以在文件夹中搜索</sys:String>
+    <sys:String x:Key="Loc.Search.NoFolder">打开文件夹后可在其中搜索</sys:String>
+    <sys:String x:Key="Loc.Search.Include.Label">包含的文件</sys:String>
+    <sys:String x:Key="Loc.Search.Include.Placeholder">*.cs, src/**</sys:String>
+    <sys:String x:Key="Loc.Search.Exclude.Label">排除的文件</sys:String>
+    <sys:String x:Key="Loc.Search.Exclude.Placeholder">**/bin/**</sys:String>
+    <sys:String x:Key="Loc.Search.Status.Searching">正在搜索…</sys:String>
+    <sys:String x:Key="Loc.Search.Status.Stats">{0} 个结果，{1} 个文件</sys:String>
+    <sys:String x:Key="Loc.Search.Status.CancelledSuffix">（已取消）</sys:String>
+    <sys:String x:Key="Loc.Search.Status.SkippedSuffix">，{0} 个项不可访问已跳过</sys:String>
+    <sys:String x:Key="Loc.Error.SearchFolder.Message">搜索文件夹“{0}”时出错。{1}</sys:String>
 
     <sys:String x:Key="Loc.Editor.Empty">拖放文件到此处，或按 Ctrl+O 打开文件</sys:String>
 

@@ -27,6 +27,13 @@ public partial class MainWindowViewModel : ObservableObject
         FileTree = new FileTreeViewModel(localization);
         FileTree.OpenFileRequested = path => _ = OpenDocumentAsync(path);
         FindBar = new FindBarViewModel(localization);
+        SearchPanel = new SearchPanelViewModel(fileService, localization, () => FileTree.RootNode?.FullPath);
+        SearchPanel.OpenMatchRequested = location => _ = OpenSearchMatchAsync(location);
+        SearchPanel.ShowError = (message, title) => ShowError?.Invoke(message, title);
+        FileTree.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FileTreeViewModel.RootNode)) SearchPanel.RefreshFolderState();
+        };
         _indentDisplay = settings.IndentUseTabs
             ? string.Format(localization.GetString("Loc.Status.TabSize"), settings.IndentWidth)
             : string.Format(localization.GetString("Loc.Status.Spaces"), settings.IndentWidth);
@@ -41,6 +48,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>页内搜索/替换浮层（窗口级，跟随活动文档）</summary>
     public FindBarViewModel FindBar { get; }
+
+    /// <summary>侧边栏文件夹搜索面板</summary>
+    public SearchPanelViewModel SearchPanel { get; }
 
     // 以下钩子由 View 注入，承载对话框等纯 UI 交互，业务流转保持在本类中
     public Func<IReadOnlyList<string>?>? OpenFilePicker { get; set; }
@@ -301,6 +311,15 @@ public partial class MainWindowViewModel : ObservableObject
         {
             ReportError("Loc.Error.OpenFile.Message", document.FilePath, ex.Message);
         }
+    }
+
+    /// <summary>双击搜索结果：打开文件 Tab（已在编辑的聚焦既有 Tab）、跳行并选中匹配文本</summary>
+    private async Task OpenSearchMatchAsync(SearchResultLocation location)
+    {
+        DocumentViewModel? document = await OpenDocumentAsync(location.FullPath);
+        if (document is null) return;
+        document.GoToMatch(location.Line, location.StartInLine, location.Length);
+        document.Editor.FocusEditor();
     }
 
     private void ReportError(string messageKey, string path, string detail)

@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**Step 5 已完成**（下一个待执行：Step 6 — 文件夹内搜索）
-- 当前 Step 内已完成的小目标：5.1～5.4 全部（构建 0 错误 0 警告；单元级验证通过，UIA 端到端回归在提交后补跑，结果见日志后续行）
-- 最后更新：2026-09-04 06:15
+- 当前 Step：**Step 6 已完成**（下一个待执行：Step 7 — 编辑体验增强）
+- 当前 Step 内已完成的小目标：6.1～6.5 全部（构建 0 错误 0 警告；UIA 端到端验证 12 项全部通过）
+- 最后更新：2026-09-04 19:30
 
 ## 断点信息
 
@@ -44,3 +44,9 @@
 | 2026-09-04 06:15 | 5 | 5.3 | 高亮用 Scintilla indicator 8（全部匹配，StraightBox alpha 90）/9（当前匹配叠加，alpha 160 + 描边），颜色取主题键；计数显示 current/total；Enter/Shift+Enter 与上下按钮导航，二分定位 caret 后匹配，循环回绕；文档编辑经 ContentChanged 事件防抖重搜，切文档重搜 | 0 警告 0 错误 | ScintillaHost 加 SetSearchHighlights/ClearSearchHighlights/SelectRange/ReplaceRange/Begin|EndUndoAction、SelectedText/CaretPosition/SelectionRange；DocumentViewModel 加 ContentChanged 事件 |
 | 2026-09-04 06:15 | 5 | 5.4 | Ctrl+H 在搜索条基础上展开替换行：替换当前（选择落在匹配上才替换它，否则替换 caret 后第一个；替换后重搜并自动选中下一个匹配；正则模式替换文本支持 $1 分组引用，字面量模式原样）；全部替换基于最新文本重搜、逆序 ReplaceTarget（保证偏移有效）且包在单个撤销动作中；替换后计数与高亮同步；只读文档禁用替换 | 0 警告 0 错误 | 单元级验证通过（srvtest 控制台复现 Scintilla 替换语义）；UIA 端到端回归脚本已编写（%TEMP%\mnemo-test\step5-verify.ps1），修复后待重跑 |
 | 2026-09-04 06:30 | 5 | 验证修复 | UIA 端到端回归 16 项全部通过：打开/字面量 6/全字 5（中文边界正确）/大小写 3→1/字面 a.b=1 vs 正则 a.b=3/非法正则本地化提示/Enter 与 Shift+Enter 导航/循环回绕/Ctrl+H 替换行/替换当前自动跳下一个（1/5）/全部替换→无结果/保存后磁盘字节正确（中文+ASCII 混合）/Esc 关闭；大文件 8MB/12 万行搜索 50000+ 截断正常，首搜约 890ms、UIA 响应 12ms 不卡，PrintWindow 截图确认高亮与当前匹配区别配色生效。发现并修复：**WPF/WinForms 空域限制，WPF 浮层无法覆盖 WindowsFormsHost**（浮层被 Scintilla 遮挡不可见），搜索条改为编辑器区顶部内嵌一整行（右对齐、收起时高度 0），观感接近 VSCode | 0 警告 0 错误 | 偏差记录：steps.md 5.1 要求"浮层"，因空域硬约束实为顶部内嵌条；如需真浮层需 Popup 顶层窗口方案（后续 Step 可再评估） |
+| 2026-09-04 19:30 | 6 | 6.1 | 搜索面板重写 `Views/SearchPanelView`：关键字框 + 三选项 toggle（复用 FindBarToggleStyle 与 Loc.Find.* 词条）+ 包含/排除 glob 输入框（标签 + 占位提示 `*.cs, src/**`、`**/bin/**`，占位用叠层 TextBlock + DataTrigger 实现）；输入防抖 400ms 自动搜索、Enter 立即搜索、搜索中显示取消按钮；新增 `SearchPanelViewModel` 与 i18n 词条 Loc.Search.* | 0 警告 0 错误 | 修复两个面板显隐绑定 bug：FilePanelView/SearchPanelView 的 Visibility 绑定在自己的 DataContext 上找不到属性（绑定失败默认 Visible 导致两面板叠显），改为 RelativeSource AncestorType=Window 的 DataContext.IsXxxPanelVisible |
+| 2026-09-04 19:30 | 6 | 6.2 | 扫描引擎：`Services/GlobMatcher.cs`（VSCode 风格：逗号分隔；`*`/`?` 段内匹配、`**` 跨层级；无 / 的模式按任意层级文件名匹配；`/**` 结尾模式额外生成目录裁剪规则；不区分大小写）；`SearchService.SearchFolderAsync`（栈式递归遍历，默认排除 .git/bin/obj/node_modules，跳过 ReparsePoint 防目录循环；二进制嗅探 = 头部 NUL 字节（带 BOM 的 UTF-16/32 豁免）；文件解码复用 `FileService.Decode`（GBK 中文文件可搜）；逐行 `Regex.EnumerateMatches` span 扫描零分配，命中才物化行字符串；单文件上限 100 条、总上限 10000 条截断；结果按 20 文件/100ms 批量经 IProgress 增量推送；新搜索取消旧搜索（CancellationTokenSource + 版本号丢弃过期批次） | 0 警告 0 错误 | 实测：38MB/610 文件目录全扫约 900ms；默认排除与二进制跳过正确（TODO 关键字画面上 bin/obj/node_modules/.git/blob.bin 均未出现） |
+| 2026-09-04 19:30 | 6 | 6.3 | 结果树 UI：`SearchResultFileViewModel`（文件名 + 相对目录 + 计数，截断显示 N+）/ `SearchResultMatchViewModel`（行号 + 三段 Run 高亮匹配部分（Bold + Brush.Accent），行首空白裁剪、超长行 300 字符截断）；TreeView 开启 VirtualizingStackPanel 虚拟化 + Recycling + CanContentScroll；修复两处 XAML 坑：HierarchicalDataTemplate 必须显式 `ItemTemplate` 指定子项模板（否则子项误用父模板渲染空白）；`Run.Text` 默认 TwoWay 绑定只读属性会抛 XamlParseException 崩溃，须 `Mode=OneWay` | 0 警告 0 错误 | 实测 10000 条结果时 UIA 查询 32ms 不卡；匹配行高亮截图确认 |
+| 2026-09-04 19:30 | 6 | 6.4 | 双击跳转：匹配行 MouseDoubleClick → `SearchResultLocation`（路径/行号/行内字符区间）→ `MainWindowViewModel.OpenSearchMatchAsync`（OpenDocumentAsync 复用既有 Tab）→ `DocumentViewModel.GoToMatch` → `ScintillaHost.SelectRangeInLine`（Lines[行-1].Position + 行内偏移，字符索引单位实测正确）；跳转后聚焦编辑器；程序化 SetSelection 不触发状态栏刷新，GoToMatch 内手动同步 Line/Column | 0 警告 0 错误 | 实测：双击"目标"匹配行 → 打开中文utf8.txt、选中"目标"、状态栏 Ln 1, Col 11（caret 在匹配末尾）正确 |
+| 2026-09-04 19:30 | 6 | 6.5 | 状态与提示态：状态行显示"x 个结果，y 个文件"（搜索中前缀"正在搜索…"、取消后缀"（已取消）"、截断显示 10000+、不可访问项后缀计数）；空结果显示"无结果"；未打开文件夹显示"打开文件夹后可在其中搜索"（文件夹关闭时取消搜索并清空结果，FileTree.RootNode 变化联动 RefreshFolderState）；非法正则状态行提示；扫描整体 IO 异常经 ShowError 本地化弹窗 | 0 警告 0 错误 | UIA 端到端 12 项全部通过（%TEMP%\mnemo-test\step6-verify.ps1）：打开/默认排除+二进制/包含 glob/排除 glob/中文 UTF-8+GBK/全字/双击跳转/非法正则/大目录截断 10000+/万条结果 UI 响应/取消即时生效（360 个结果（已取消））/未开文件夹提示 |
+| 2026-09-04 19:30 | 6 | 验证 | 测试目录 %TEMP%\mnemo-step6（110+500 文件：GBK 中文、UTF-8 中文、bin/obj/node_modules/.git 内埋关键词、含 NUL 二进制、100 文件×1000 行 needle 截断测试、500 文件×2000 行 rare 取消测试）；全部验收条目实测通过 | 0 警告 0 错误 | 遗留：编辑器持有焦点时，结果树首次单击可能被 WindowsFormsHost 焦点切换消耗（双击跳转第一次总生效，未深入）；文件夹搜索按行匹配，不支持跨行正则（与结果展示模型一致，需求未要求） |

@@ -33,6 +33,16 @@
     <sys:String x:Key="Loc.Tree.OpenInExplorer">Reveal in File Explorer</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Title">SEARCH</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Empty">Type a keyword to search in the folder</sys:String>
+    <sys:String x:Key="Loc.Search.NoFolder">Open a folder to search in it</sys:String>
+    <sys:String x:Key="Loc.Search.Include.Label">Files to include</sys:String>
+    <sys:String x:Key="Loc.Search.Include.Placeholder">*.cs, src/**</sys:String>
+    <sys:String x:Key="Loc.Search.Exclude.Label">Files to exclude</sys:String>
+    <sys:String x:Key="Loc.Search.Exclude.Placeholder">**/bin/**</sys:String>
+    <sys:String x:Key="Loc.Search.Status.Searching">Searching...</sys:String>
+    <sys:String x:Key="Loc.Search.Status.Stats">{0} results in {1} files</sys:String>
+    <sys:String x:Key="Loc.Search.Status.CancelledSuffix"> (cancelled)</sys:String>
+    <sys:String x:Key="Loc.Search.Status.SkippedSuffix">, {0} inaccessible items skipped</sys:String>
+    <sys:String x:Key="Loc.Error.SearchFolder.Message">Error searching folder "{0}". {1}</sys:String>
 
     <sys:String x:Key="Loc.Editor.Empty">Drop files here, or press Ctrl+O to open a file</sys:String>
 

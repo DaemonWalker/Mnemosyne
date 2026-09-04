@@ -147,8 +147,10 @@
                     BorderThickness="0,0,1,0">
                 <Grid>
                     <views:FilePanelView DataContext="{Binding FileTree}"
-                                         Visibility="{Binding IsFilePanelVisible, Converter={StaticResource BoolToVisibility}}" />
-                    <views:SearchPanelView Visibility="{Binding IsSearchPanelVisible, Converter={StaticResource BoolToVisibility}}" />
+                                         Visibility="{Binding DataContext.IsFilePanelVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
+                    <views:SearchPanelView x:Name="SearchPanel"
+                                           DataContext="{Binding SearchPanel}"
+                                           Visibility="{Binding DataContext.IsSearchPanelVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
                 </Grid>
             </Border>
 

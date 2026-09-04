@@ -113,6 +113,15 @@ public partial class DocumentViewModel : ObservableObject
         IsDirty = Editor.IsDirty;
     }
 
+    /// <summary>跳转到指定行并选中行内字符区间（文件夹搜索结果跳转用）</summary>
+    public void GoToMatch(int line, int startInLine, int length)
+    {
+        Editor.SelectRangeInLine(line, startInLine, length);
+        // 程序化 SetSelection 不一定触发 UpdateUI 事件，状态栏行列号手动同步
+        Line = Editor.CurrentLineNumber;
+        Column = Editor.CurrentColumn;
+    }
+
     private void ApplyReadResult(string path, FileReadResult result)
     {
         FilePath = path;
