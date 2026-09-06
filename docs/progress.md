@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**Step 7 已完成**（下一个待执行：Step 8 — 大文件加载）
-- 当前 Step 内已完成的小目标：7.1～7.4 全部（构建 0 错误 0 警告；7.1 验证 13 项、7.2 验证 12 项、7.3 验证 8 项、7.4 验证 11 项全部通过；脏 Tab 关闭确认框用户人工确认通过）
-- 最后更新：2026-09-06 15:31
+- 当前 Step：**Step 8 已完成**（下一个待执行：Step 9 — 插件系统与格式化器）
+- 当前 Step 内已完成的小目标：8.1～8.4 全部（构建 0 错误 0 警告；8.1/8.2/8.4 运行时实测通过，8.3 取消链路端到端实测通过，两处模态对话框交互留待人工点验）
+- 最后更新：2026-09-06 16:25
 
 ## 断点信息
 
@@ -56,4 +56,5 @@
 | 2026-09-06 15:31 | 7 | 7.4 | Tab 交互：`MainWindowViewModel` 新增 `MoveDocument`（Documents.Move 排序）、`CloseOthersAsync`/`CloseToRightAsync`（复用 CloseDocumentAsync 走脏确认，用户取消即中止）；TabControl 命名 DocumentTabs + AllowDrop，View 层挂 PreviewMouseDown（中键→CloseDocumentCommand；右键→选中该 Tab 并弹 ContextMenu：关闭/关闭其他/关闭右侧/分隔/在资源管理器中打开（explorer.exe /select，无路径禁用，异常报 Loc.Error.Reveal.Message）/复制路径（Clipboard.SetText，无路径禁用））/PreviewMouseLeftButtonDown+MouseMove（超系统拖拽阈值后 DoDragDrop，点在关闭按钮上不启动拖拽）/DragOver/Drop（落到目标 TabItem 索引）；i18n 新增 Loc.Tab.Close/CloseOthers/CloseToRight/CopyPath，Explorer 项复用 Loc.Tree.OpenInExplorer | 0 警告 0 错误 | UIA 端到端 11 项全部通过（%TEMP%\mnemo-test\step7-4-verify.ps1）：3 Tab 初始/左键点选/中键关闭/复制路径（剪贴板=完整路径）/关闭右侧/关闭其他/拖拽排序 [b,a,c]→[a,c,b]/资源管理器中打开（新 explorer 进程）。脏 Tab 关闭确认框由用户人工确认通过。环境要点：会话有锁屏 Backstop 窗口，SendMessage 注入 WPF 元素无效，真实输入（SetCursorPos+mouse_event）可用但启动早期会被吞，所有交互需重试 + 关闭类断言用轮询（菜单动作走 async）；TabItem 的 UIA Name 是 Header 对象 ToString()，标题要取后代 Text 元素 |
 | 2026-09-06 16:12 | 8 | 8.1+8.2 | 8.1：`OpenDocumentAsync` 按 `AppSettings.LargeFileThresholdMB`（默认 50MB）判断，超阈值立即建 Tab 转入 `LoadLargeDocumentAsync`（fire-and-forget + SemaphoreSlim 串行化并发大文件），小文件路径不变；编码切换重载大文件同样走分块路径。8.2：`FileService.ReadChunksAsync`（1MB/块 FileStream useAsync + `Decoder` 跨块保状态，不完整多字节序列顺延下一块——UTF-8/GBK/UTF-16 统一处理；BOM 不跳过、解码为 U+FEFF 与小文件 Decode 行为一致）；`DetectEncodingAsync` 读头 64KB 样本探测（严格 UTF-8 先按 TrimToUtf8Boundary 对齐样本尾避免截断误判）；`ScintillaHost.BeginChunkedLoad/AppendChunk/EndChunkedLoad`（AppendChunk 临时解除 ReadOnly——实测 SCI_APPENDTEXT 受只读阻断；关撤销经 DirectMessage SCI_SETUNDOCOLLECTION(2012)，Scintilla5.NET 7.0 无 UndoCollection 封装且无 Colourise 只有 Colorize） | 0 警告 0 错误 | 单元验证（%TEMP%\chunktest）：UTF-8 BOM/GBK/UTF-16 各 ~1MB 分块结果与 ReadAsync 逐字符一致（含跨块 emoji 边界）；运行时：136MB/140 万行 .cs 约 2 秒加载完成，textlen=文件字节数、行数精确、modify=0（不脏）；63MB 文件正确进入大文件模式，小文件原路径不受影响 |
 | 2026-09-06 16:12 | 8 | 8.4 | 加载期间 `ReadOnly=true` + `LexerName="null"`（无高亮）+ 撤销记录关闭、行号边栏宽度刷新延后；完成（含取消保留部分）后 `EndChunkedLoad`：恢复撤销、SetSavePoint、解除只读、重设目标 Lexer 并 `Colorize(0,-1)` 一次性着色 | 0 警告 0 错误 | 运行时探针（仅无指针 SendMessage）实测：加载中 readonly=1/lexer=1(null)，完成后 lexer=3(cpp)/readonly=0/modify=0。注意：跨进程探测绝不能给 SCI_GETTEXTRANGE 类消息传本进程缓冲区（实测写坏应用内存致崩溃）；Scintilla 原生窗口类名是 WindowsForms10.Scintilla.* 而非 "Scintilla" |
-| 2026-09-06 16:12 | 8 | 8.3 进行中 | 已实现：状态栏进度条+百分比文本+取消按钮（绑定 MainWindowViewModel.LoadProgressVisible/Percent/Text + CancelLoadCommand）；取消后 ConfirmCancelledLoad 询问关闭 Tab（是）/保留已加载部分（否），保留则 KeepPartialLoad 标记 IsPartialLoad；部分加载文档保存时 ConfirmPartialSave 强制另存为（禁止静默覆盖原文件）；加载中关 Tab 直接取消不询问。运行时已验证进度条与取消按钮出现；取消→对话框选择流程因本机加载过快（136MB 约 2s）未捕到取消窗口，待补验证 | 0 警告 0 错误 | 另修复：取消询问/错误提示改为 finally（隐藏进度+释放门闸）之后再弹模态框；测试假象记录：PowerShell StreamWriter 打开中的文件连 FileShare.Read 读取也被拒，"边写边读"慢速文件方案不可用 |
+| 2026-09-06 16:25 | 8 | 8.3 | 状态栏进度条+百分比文本+取消按钮（绑定 MainWindowViewModel.LoadProgressVisible/Percent/Text + CancelLoadCommand）；取消后 ConfirmCancelledLoad 询问关闭 Tab（是）/保留已加载部分（否），保留则 KeepPartialLoad 标记 IsPartialLoad；部分加载文档保存时 ConfirmPartialSave 强制另存为（禁止静默覆盖原文件）；加载中关 Tab 直接取消不询问；取消询问/错误提示在 finally（隐藏进度+释放门闸）之后再弹模态框 | 0 警告 0 错误 | 已验证：FileService 分块读取取消单元测试（读 3 块后取消正确抛 OperationCanceledException）；762MB 文件加载到 49% 时经 UIA 点 Tab 关闭按钮 → 取消链路端到端生效（Tab 移除、无对话框、进度条消失、进程正常）；762MB 加载中进度条/百分比可见；小文件回归（3 行 38 字节：无进度条、textlen 精确、不脏）。待人工点验（模态框自动化被禁止）：取消按钮→"关闭/保留"选择对话框、部分加载文档保存时的"另存为"保护对话框 |
+| 2026-09-06 16:27 | 8 | 提交 | step8 已 commit（3a08f12，含 [wip] 09a5a07）并 push 成功（github.com 本次可达） | 0 警告 0 错误 | 验证脚本位于 %TEMP%\mnemo-test\step8-*.ps1、%TEMP%\chunktest、%TEMP%\sciprobe |
