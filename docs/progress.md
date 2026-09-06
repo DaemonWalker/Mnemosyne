@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**Step 11 已完成**（下一个待执行：Step 12 — 性能打磨与发布）
-- 当前 Step 内已完成的小目标：11.1～11.4 全部（构建 0 错误 0 警告；热退出/会话恢复 UIA 端到端 20 项全部通过；设置窗口由用户人工确认弹出，设置即时应用的 UI 交互与外部修改提示弹窗留待人工点验）
-- 最后更新：2026-09-06 22:07
+- 当前 Step：**全部 12 个 Step 已完成**（Step 12 — 性能打磨与发布 已收官）
+- 当前 Step 内已完成的小目标：12.1～12.4 全部（构建 0 错误 0 警告；发布包冒烟 27/27 通过；发布包冷启动实测无会话 avg=482ms、有会话 avg=521ms，均 <1 秒达标）
+- 最后更新：2026-09-06 22:45
 
 ## 断点信息
 
@@ -78,3 +78,4 @@
 | 2026-09-06 22:10 | 12 | 12.1 | 启动优化审计：`App.OnStartup` 窗口显示前仅做 单实例检查→CodePages 注册→加载配置→主题/语言初始化→廉价 Service 构造→Show()，插件扫描（`PluginService.ScanAsync`=Task.Run）与会话恢复（`RestoreSessionAsync`）均在 Show() 后异步触发，MainWindow 构造仅 InitializeComponent+VM 创建，无其他可延后的工作；新增测量脚本 `scripts/measure-coldstart.ps1`（进程启动→UIA 主窗口可见时间差，按 PID+ControlType.Window 匹配）。实测（Debug 构建、本机 NVMe SSD）：无会话 5 次 avg=469ms（min 433/max 512），有会话（2 Tab 恢复）5 次 avg=512ms（min 430/max 582），均远低于 1 秒 | 0 警告 0 错误 | 脚本注意：PS 5.1 下 `Start-Process -ArgumentList @()` 空数组报参数校验错，需条件传参 |
 | 2026-09-06 22:18 | 12 | 12.2 | 发布脚本 `scripts/publish.ps1`（ASCII 无 BOM，PS 5.1 兼容）：Release 全解构建（触发插件 csproj 的拷贝 Target）→ `dotnet publish -c Release -r win-x64 --self-contained false -p:PublishReadyToRun=true` 输出 `artifacts/publish/`（.gitignore 的 publish/ 模式已覆盖该目录）→ 从主程序 bin 拷贝三个 Formatters.dll 到发布包 plugins/（剔除 Abstractions 避免重复）→ 建 config/、cache/ 初始空目录。R2R 已验证生效（Mnemosyne.dll 内含 RTR\0 签名，332KB→712KB）。实际发布并验证：发布包可启动，首跑自动生成 config/settings.json 与 cache/ 便携结构；冷启动实测 无会话 avg=502ms（min 419/max 743，首跑含磁盘缓存预热）、有会话 avg=502ms（min 420/max 566） | 0 警告 0 错误 | 踩坑：`dotnet publish --no-build -r win-x64` 报 NETSDK1047（还原时未带 RID），去掉 --no-build 由 publish 自带还原解决 |
 | 2026-09-06 22:35 | 12 | 12.3 | 全功能回归走查：按 requirements.md 第 4 节逐条核对，结果写入 `docs/regression-checklist.md`。新增 `scripts/regression-smoke.ps1` 对**发布包**做 UIA 冒烟（9 组 27 项：启动/开文件开文件夹/状态栏语言与编码/JSON·XML·HTML 菜单格式化+保存磁盘核对/单实例转发开 Tab/Markdown 预览/页内查找计数/文件夹搜索结果统计/GBK 探测/杀进程后会话恢复），**27/27 全部通过**。模态交互（另存为对话框、格式化错误弹窗、外部修改提示、大文件取消选择、设置即时应用等 7 类）按约定标"待人工点验"。走查未发现功能性问题（唯一失败项是冒烟脚本自身断言错误：预览 Tab 按 11.3 设计不进会话，期望 7 应为 6，修正脚本后通过） | 0 警告 0 错误 | 冒烟脚本含中文字面量须 UTF-8 BOM（Edit 工具重写会丢 BOM，需用 printf 重补） |
+| 2026-09-06 22:45 | 12 | 12.4 | 走查未发现需修复的问题（12.3 冒烟 27/27 + 各 Step 既有验证记录全绿），无代码改动。最终验收：`dotnet build` 全解决方案 0 错误 0 警告；发布包（Release + R2R，`artifacts/publish/`）冷启动最终实测——测量方法：`scripts/measure-coldstart.ps1`，进程启动 → UIA 主窗口可见时间差，环境：本机 E:\ 位于 NVMe SSD（ZHITAI TiPlus 系列），PS 5.1，每轮前 taskkill 清场。**无会话 5 次 avg=482ms（min 463/max 554）；有会话（2 Tab 恢复）5 次 avg=521ms（min 466/max 615）**，均满足"普通 SSD 冷启动 1 秒内"指标 | 0 警告 0 错误 | 全部 12 个 Step 完成 |
