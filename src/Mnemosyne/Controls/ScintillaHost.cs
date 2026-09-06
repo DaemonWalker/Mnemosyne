@@ -61,7 +61,8 @@ public class ScintillaHost : WindowsFormsHost
 
         _scintilla.TextChanged += (_, _) =>
         {
-            UpdateLineNumberMarginWidth();
+            // 分块加载期间每块都会触发，行号边栏宽度等加载结束统一刷新
+            if (!_chunkedLoading) UpdateLineNumberMarginWidth();
             DirtyChanged?.Invoke(this, EventArgs.Empty);
         };
         _scintilla.SavePointReached += (_, _) => DirtyChanged?.Invoke(this, EventArgs.Empty);
@@ -202,6 +203,42 @@ public class ScintillaHost : WindowsFormsHost
     public void BeginUndoAction() => _scintilla.BeginUndoAction();
 
     public void EndUndoAction() => _scintilla.EndUndoAction();
+
+    private bool _chunkedLoading;
+
+    /// <summary>
+    /// 进入大文件分块加载：Lexer 关闭（加载完成前不高亮）、只读（阻止用户输入，AppendChunk 内部临时解除）、
+    /// 关闭撤销记录。Scintilla5.NET 未封装 UndoCollection，经 DirectMessage 调 SCI_SETUNDOCOLLECTION(2012)。
+    /// </summary>
+    public void BeginChunkedLoad()
+    {
+        _chunkedLoading = true;
+        _scintilla.LexerName = "null";
+        _scintilla.ReadOnly = true;
+        _scintilla.DirectMessage(2012, IntPtr.Zero);
+    }
+
+    /// <summary>追加一块文本到文档末尾（仅限 UI 线程调用）。SCI_APPENDTEXT 受 ReadOnly 阻断，追加瞬间临时解除</summary>
+    public void AppendChunk(string text)
+    {
+        _scintilla.ReadOnly = false;
+        _scintilla.AppendText(text);
+        if (_chunkedLoading) _scintilla.ReadOnly = true;
+    }
+
+    /// <summary>结束分块加载：恢复 Lexer 并一次性 Colorize、解除只读、重建撤销缓冲并标为已保存点</summary>
+    public void EndChunkedLoad()
+    {
+        _scintilla.DirectMessage(2012, (IntPtr)1);
+        _scintilla.EmptyUndoBuffer();
+        _scintilla.SetSavePoint();
+        _scintilla.ReadOnly = false;
+        _chunkedLoading = false;
+        // SetLanguage 会重设 Lexer 与配色；显式 Colorize 确保全文着色一次完成
+        SetLanguage(_language);
+        _scintilla.Colorize(0, -1);
+        UpdateLineNumberMarginWidth();
+    }
 
     /// <summary>设置缩进方式（Tab/空格）与宽度，两者同时应用到 TabWidth/IndentWidth</summary>
     public void SetIndentation(bool useTabs, int width)

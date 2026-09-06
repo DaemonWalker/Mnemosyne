@@ -50,6 +50,15 @@ public partial class DocumentViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IndentDisplay))]
     private int _indentWidth;
 
+    [ObservableProperty]
+    private bool _isLoading;
+
+    /// <summary>截断文档（大文件加载被取消后保留的部分内容），保存时禁止静默覆盖原文件</summary>
+    [ObservableProperty]
+    private bool _isPartialLoad;
+
+    private CancellationTokenSource? _loadCts;
+
     public DocumentViewModel(FileService fileService, LocalizationService localization, AppSettings settings)
     {
         _fileService = fileService;
@@ -100,6 +109,81 @@ public partial class DocumentViewModel : ObservableObject
     {
         FileReadResult result = await _fileService.ReadAsync(path, cancellationToken: cancellationToken);
         ApplyReadResult(path, result);
+    }
+
+    /// <summary>
+    /// 大文件模式加载：编码探测（头部样本）→ 后台异步分块读 + UI 线程逐块 AppendText（本方法在 UI 线程启动，
+    /// await 续体回到 UI 同步上下文，Scintilla 操作线程安全）→ 完成后一次性启用高亮。
+    /// 取消时抛出 OperationCanceledException，编辑器中保留已加载部分（由调用方决定去留）。
+    /// </summary>
+    public async Task LoadLargeFileAsync(
+        string path, long fileSize, Encoding? forcedEncoding, IProgress<int> progress, CancellationToken cancellationToken = default)
+    {
+        _loadCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        IsLoading = true;
+        try
+        {
+            // 先记录目标语言（编辑器内部暂存），BeginChunkedLoad 再把 Lexer 关闭
+            SetLanguage(LanguageRegistry.GetForFile(path));
+            Encoding encoding = await _fileService.DetectEncodingAsync(path, forcedEncoding, cancellationToken);
+
+            Editor.BeginChunkedLoad();
+            bool firstChunk = true;
+            try
+            {
+                await foreach (ReadChunk chunk in _fileService.ReadChunksAsync(path, encoding, _loadCts.Token))
+                {
+                    Editor.AppendChunk(chunk.Text);
+                    if (firstChunk)
+                    {
+                        firstChunk = false;
+                        ApplyContentHints(chunk.Text);
+                    }
+                    progress.Report((int)Math.Min(100, chunk.BytesRead * 100 / Math.Max(1, fileSize)));
+                }
+            }
+            finally
+            {
+                Editor.EndChunkedLoad();
+                IsDirty = false;
+            }
+            progress.Report(100);
+            FilePath = path;
+            Title = Path.GetFileName(path);
+            CurrentEncoding = encoding;
+            EncodingName = EncodingCatalog.DisplayName(encoding);
+            Line = 1;
+            Column = 1;
+            IsPartialLoad = false;
+        }
+        finally
+        {
+            IsLoading = false;
+            _loadCts?.Dispose();
+            _loadCts = null;
+        }
+    }
+
+    /// <summary>取消进行中的大文件加载（无加载时为空操作）</summary>
+    public void CancelLoad() => _loadCts?.Cancel();
+
+    /// <summary>取消后保留已加载部分：标记为截断文档，保存时禁止直接覆盖原文件（由上层拦截）</summary>
+    public void KeepPartialLoad()
+    {
+        IsPartialLoad = true;
+        IsDirty = false;
+    }
+
+    /// <summary>按首块内容检测行尾符与缩进风格（样本不足时保留设置项默认）</summary>
+    private void ApplyContentHints(string sample)
+    {
+        LineEnding ending = FileService.DetectLineEnding(sample);
+        Editor.SetLineEnding(ending, convert: false);
+        LineEndingName = ToDisplayName(ending);
+        if (IndentDetector.Detect(sample, IndentWidth) is { } detected)
+        {
+            SetIndentation(detected.UseTabs, detected.Width);
+        }
     }
 
     public async Task SaveAsync(string path, CancellationToken cancellationToken = default)

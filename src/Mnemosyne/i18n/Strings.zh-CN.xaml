@@ -62,11 +62,16 @@
     <sys:String x:Key="Loc.Status.LineCol">Ln {0}, Col {1}</sys:String>
     <sys:String x:Key="Loc.Status.Spaces">空格: {0}</sys:String>
     <sys:String x:Key="Loc.Status.TabSize">制表符: {0}</sys:String>
+    <sys:String x:Key="Loc.Status.LoadingFile">正在加载 {0}…</sys:String>
+    <sys:String x:Key="Loc.Status.LoadingFileProgress">正在加载 {0}… {1}%</sys:String>
+    <sys:String x:Key="Loc.Status.CancelLoad">取消</sys:String>
 
     <sys:String x:Key="Loc.Dialog.OpenFile.Filter">所有文件 (*.*)|*.*</sys:String>
     <sys:String x:Key="Loc.Dialog.SaveChanges.Title">保存修改</sys:String>
     <sys:String x:Key="Loc.Dialog.SaveChanges.Message">文件“{0}”有未保存的修改。是否保存？</sys:String>
     <sys:String x:Key="Loc.Dialog.Confirm.Title">确认</sys:String>
+    <sys:String x:Key="Loc.Dialog.LoadCancelled.Message">已取消加载“{0}”，当前只加载了部分内容。&#xA;&#xA;是：关闭该标签页&#xA;否：保留已加载部分</sys:String>
+    <sys:String x:Key="Loc.Dialog.PartialSave.Message">“{0}”只加载了部分内容，直接保存会用不完整的内容覆盖原文件。是否另存为新文件？</sys:String>
     <sys:String x:Key="Loc.Encoding.Reload.Message">切换编码将按新编码重新从磁盘加载文件，当前未保存的修改会丢失。是否继续？</sys:String>
 
     <sys:String x:Key="Loc.Error.Title">错误</sys:String>

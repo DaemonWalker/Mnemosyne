@@ -64,6 +64,12 @@ public partial class MainWindowViewModel : ObservableObject
 
     public Func<bool>? ConfirmEncodingReload { get; set; }
 
+    /// <summary>大文件加载被取消后询问：返回 true 关闭该 Tab，false 保留已加载部分</summary>
+    public Func<DocumentViewModel, bool>? ConfirmCancelledLoad { get; set; }
+
+    /// <summary>截断文档（部分加载）保存到原路径前询问：返回 true 走另存为，false 取消保存</summary>
+    public Func<DocumentViewModel, bool>? ConfirmPartialSave { get; set; }
+
     public Action<string, string>? ShowError { get; set; }
 
     [ObservableProperty]
@@ -82,6 +88,19 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _showWhitespace;
+
+    // 大文件加载进度（状态栏右侧区域）；同一时刻只允许一个大文件在加载（门闸串行化）
+    [ObservableProperty]
+    private bool _loadProgressVisible;
+
+    [ObservableProperty]
+    private int _loadProgressPercent;
+
+    [ObservableProperty]
+    private string _loadProgressText = string.Empty;
+
+    private DocumentViewModel? _loadingDocument;
+    private readonly SemaphoreSlim _largeLoadGate = new(1, 1);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasActiveDocument))]
@@ -239,6 +258,18 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         var document = new DocumentViewModel(_fileService, _localization, _settings);
+
+        // 8.1 阈值判断：超过设置阈值进入大文件模式（边读边显示 + 进度条 + 可取消）
+        long fileSize = new FileInfo(fullPath).Length;
+        if (fileSize > (long)_settings.LargeFileThresholdMB * 1024 * 1024)
+        {
+            Documents.Add(document);
+            ActiveDocument = document;
+            RecentFiles.RecordFile(fullPath);
+            _ = LoadLargeDocumentAsync(document, fullPath, forcedEncoding: null);
+            return document;
+        }
+
         try
         {
             await document.LoadFromFileAsync(fullPath);
@@ -253,6 +284,86 @@ public partial class MainWindowViewModel : ObservableObject
         ActiveDocument = document;
         RecentFiles.RecordFile(fullPath);
         return document;
+    }
+
+    /// <summary>大文件加载驱动：进度上报状态栏；取消后询问关闭 Tab 或保留已加载部分；并发大文件经门闸串行</summary>
+    private async Task LoadLargeDocumentAsync(DocumentViewModel document, string path, Encoding? forcedEncoding)
+    {
+        long fileSize = new FileInfo(path).Length;
+        await _largeLoadGate.WaitAsync();
+        // 对话框（取消询问/错误提示）是模态的，必须先结束进度显示并释放门闸再弹，故延迟到 finally 之后处理
+        bool cancelled = false;
+        string? ioError = null;
+        try
+        {
+            // 等待门闸期间 Tab 可能已被关闭
+            if (!Documents.Contains(document)) return;
+            _loadingDocument = document;
+            LoadProgressPercent = 0;
+            LoadProgressText = string.Format(_localization.GetString("Loc.Status.LoadingFile"), Path.GetFileName(path));
+            LoadProgressVisible = true;
+
+            var progress = new Progress<int>(p =>
+            {
+                LoadProgressPercent = p;
+                LoadProgressText = string.Format(
+                    _localization.GetString("Loc.Status.LoadingFileProgress"), Path.GetFileName(path), p);
+            });
+            await document.LoadLargeFileAsync(path, fileSize, forcedEncoding, progress);
+        }
+        catch (OperationCanceledException)
+        {
+            cancelled = true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            ioError = ex.Message;
+        }
+        finally
+        {
+            _loadingDocument = null;
+            LoadProgressVisible = false;
+            _largeLoadGate.Release();
+        }
+
+        if (cancelled)
+        {
+            // Tab 已在加载期间被关闭时不再询问
+            if (Documents.Contains(document))
+            {
+                if (ConfirmCancelledLoad?.Invoke(document) ?? true)
+                {
+                    RemoveDocument(document);
+                }
+                else
+                {
+                    document.KeepPartialLoad();
+                }
+            }
+        }
+        if (ioError is not null)
+        {
+            if (Documents.Contains(document)) RemoveDocument(document);
+            ReportError("Loc.Error.OpenFile.Message", path, ioError);
+        }
+    }
+
+    [RelayCommand]
+    private void CancelLoad()
+    {
+        _loadingDocument?.CancelLoad();
+    }
+
+    /// <summary>从 Tab 集合移除文档（不触发脏确认；调用方负责先行确认）</summary>
+    private void RemoveDocument(DocumentViewModel document)
+    {
+        int index = Documents.IndexOf(document);
+        if (index < 0) return;
+        Documents.Remove(document);
+        if (ReferenceEquals(ActiveDocument, document) && Documents.Count > 0)
+        {
+            ActiveDocument = Documents[Math.Min(index, Documents.Count - 1)];
+        }
     }
 
     [RelayCommand(CanExecute = nameof(HasActiveDocument))]
@@ -271,6 +382,15 @@ public partial class MainWindowViewModel : ObservableObject
     public async Task<bool> SaveDocumentAsync(DocumentViewModel document, bool forcePicker)
     {
         string? path = forcePicker ? null : document.FilePath;
+
+        // 截断文档（大文件加载被取消后只保留了部分内容）直接保存会用不完整内容覆盖原文件，
+        // 必须先询问：另存为新文件或取消
+        if (document.IsPartialLoad && !forcePicker && path is not null)
+        {
+            if (ConfirmPartialSave?.Invoke(document) != true) return false;
+            path = null;
+        }
+
         if (path is null)
         {
             path = SaveFilePicker?.Invoke(document.Title);
@@ -280,6 +400,7 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             await document.SaveAsync(path);
+            document.IsPartialLoad = false;
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
@@ -305,6 +426,14 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>关闭文档 Tab；脏文档先询问保存。返回是否已关闭（用户取消返回 false）。</summary>
     public async Task<bool> CloseDocumentAsync(DocumentViewModel document)
     {
+        // 加载中的大文件直接取消并关闭（用户已明确要求关闭，不再询问保留部分）
+        if (document.IsLoading)
+        {
+            document.CancelLoad();
+            RemoveDocument(document);
+            return true;
+        }
+
         if (document.IsDirty && ConfirmUnsavedClose is not null)
         {
             switch (ConfirmUnsavedClose(document))
@@ -319,12 +448,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
         }
 
-        int index = Documents.IndexOf(document);
-        Documents.Remove(document);
-        if (ReferenceEquals(ActiveDocument, document) && Documents.Count > 0)
-        {
-            ActiveDocument = Documents[Math.Min(index, Documents.Count - 1)];
-        }
+        RemoveDocument(document);
         return true;
     }
 
@@ -362,7 +486,15 @@ public partial class MainWindowViewModel : ObservableObject
         DocumentViewModel? document = ActiveDocument;
         if (document is null || document.FilePath is null) return;
         if (EncodingCatalog.SameAs(document.CurrentEncoding, encoding)) return;
+        if (document.IsLoading) return;
         if (document.IsDirty && ConfirmEncodingReload?.Invoke() != true) return;
+
+        // 大文件按新编码重载同样走分块加载，避免一次性读入卡 UI
+        if (new FileInfo(document.FilePath).Length > (long)_settings.LargeFileThresholdMB * 1024 * 1024)
+        {
+            _ = LoadLargeDocumentAsync(document, document.FilePath, encoding);
+            return;
+        }
 
         try
         {

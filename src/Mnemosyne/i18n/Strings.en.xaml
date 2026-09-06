@@ -62,11 +62,16 @@
     <sys:String x:Key="Loc.Status.LineCol">Ln {0}, Col {1}</sys:String>
     <sys:String x:Key="Loc.Status.Spaces">Spaces: {0}</sys:String>
     <sys:String x:Key="Loc.Status.TabSize">Tab Size: {0}</sys:String>
+    <sys:String x:Key="Loc.Status.LoadingFile">Loading {0}…</sys:String>
+    <sys:String x:Key="Loc.Status.LoadingFileProgress">Loading {0}… {1}%</sys:String>
+    <sys:String x:Key="Loc.Status.CancelLoad">Cancel</sys:String>
 
     <sys:String x:Key="Loc.Dialog.OpenFile.Filter">All Files (*.*)|*.*</sys:String>
     <sys:String x:Key="Loc.Dialog.SaveChanges.Title">Save Changes</sys:String>
     <sys:String x:Key="Loc.Dialog.SaveChanges.Message">File "{0}" has unsaved changes. Do you want to save them?</sys:String>
     <sys:String x:Key="Loc.Dialog.Confirm.Title">Confirm</sys:String>
+    <sys:String x:Key="Loc.Dialog.LoadCancelled.Message">Loading of "{0}" was cancelled; only part of the file is currently loaded.&#xA;&#xA;Yes: close this tab&#xA;No: keep the loaded part</sys:String>
+    <sys:String x:Key="Loc.Dialog.PartialSave.Message">"{0}" was only partially loaded. Saving directly would overwrite the original file with incomplete content. Save as a new file instead?</sys:String>
     <sys:String x:Key="Loc.Encoding.Reload.Message">Switching encoding reloads the file from disk and discards unsaved changes. Continue?</sys:String>
 
     <sys:String x:Key="Loc.Error.Title">Error</sys:String>

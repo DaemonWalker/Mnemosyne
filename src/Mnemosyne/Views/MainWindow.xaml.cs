@@ -70,6 +70,14 @@ public partial class MainWindow : Window
             _localization.GetString("Loc.Encoding.Reload.Message"),
             _localization.GetString("Loc.Dialog.Confirm.Title"),
             MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+        _viewModel.ConfirmCancelledLoad = document => MessageBox.Show(this,
+            string.Format(_localization.GetString("Loc.Dialog.LoadCancelled.Message"), document.Title),
+            _localization.GetString("Loc.Dialog.Confirm.Title"),
+            MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+        _viewModel.ConfirmPartialSave = document => MessageBox.Show(this,
+            string.Format(_localization.GetString("Loc.Dialog.PartialSave.Message"), document.Title),
+            _localization.GetString("Loc.Dialog.Confirm.Title"),
+            MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
         _viewModel.ShowError = (message, title) =>
             MessageBox.Show(this, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
 
