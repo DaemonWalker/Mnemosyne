@@ -113,4 +113,10 @@
     <sys:String x:Key="Loc.Common.Ok">确定</sys:String>
     <sys:String x:Key="Loc.Common.Cancel">取消</sys:String>
 
+    <sys:String x:Key="Loc.Markdown.Preview">预览</sys:String>
+    <sys:String x:Key="Loc.Markdown.Preview.Tooltip">打开 Markdown 预览 (Ctrl+Shift+V)</sys:String>
+    <sys:String x:Key="Loc.Markdown.Preview.Title">预览：{0}</sys:String>
+    <sys:String x:Key="Loc.Markdown.ImageFailed">图片加载失败：{0}</sys:String>
+    <sys:String x:Key="Loc.Error.OpenLink.Message">无法打开链接“{0}”。{1}</sys:String>
+
 </ResourceDictionary>

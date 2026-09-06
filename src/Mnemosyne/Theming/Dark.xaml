@@ -36,6 +36,12 @@
     <Color x:Key="Color.Editor.Error">#FFF44747</Color>
     <Color x:Key="Color.Editor.FindMatch">#FFEA5C00</Color>
     <Color x:Key="Color.Editor.FindMatchCurrent">#FFEA5C00</Color>
+    <Color x:Key="Color.Editor.Markdown.Header">#FF569CD6</Color>
+    <Color x:Key="Color.Editor.Markdown.Code">#FFCE9178</Color>
+    <Color x:Key="Color.Editor.Markdown.Quote">#FF6A9955</Color>
+    <Color x:Key="Color.Editor.Markdown.Link">#FF3794FF</Color>
+    <Color x:Key="Color.Editor.Markdown.List">#FFB5CEA8</Color>
+    <Color x:Key="Color.Editor.Markdown.Meta">#FFC586C0</Color>
 
     <SolidColorBrush x:Key="Brush.Window.Background" Color="{StaticResource Color.Window.Background}" />
     <SolidColorBrush x:Key="Brush.Window.Foreground" Color="{StaticResource Color.Window.Foreground}" />
@@ -53,5 +59,7 @@
     <SolidColorBrush x:Key="Brush.StatusBar.Background" Color="{StaticResource Color.Accent}" />
     <SolidColorBrush x:Key="Brush.StatusBar.Foreground" Color="{StaticResource Color.StatusBar.Foreground}" />
     <SolidColorBrush x:Key="Brush.Find.CountError" Color="{StaticResource Color.Editor.Error}" />
+    <SolidColorBrush x:Key="Brush.Markdown.Link" Color="{StaticResource Color.Editor.Markdown.Link}" />
+    <SolidColorBrush x:Key="Brush.Markdown.Quote" Color="{StaticResource Color.Editor.Markdown.Quote}" />
 
 </ResourceDictionary>

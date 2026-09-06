@@ -113,4 +113,10 @@
     <sys:String x:Key="Loc.Common.Ok">OK</sys:String>
     <sys:String x:Key="Loc.Common.Cancel">Cancel</sys:String>
 
+    <sys:String x:Key="Loc.Markdown.Preview">Preview</sys:String>
+    <sys:String x:Key="Loc.Markdown.Preview.Tooltip">Open Markdown preview (Ctrl+Shift+V)</sys:String>
+    <sys:String x:Key="Loc.Markdown.Preview.Title">Preview: {0}</sys:String>
+    <sys:String x:Key="Loc.Markdown.ImageFailed">Failed to load image: {0}</sys:String>
+    <sys:String x:Key="Loc.Error.OpenLink.Message">Cannot open link "{0}". {1}</sys:String>
+
 </ResourceDictionary>

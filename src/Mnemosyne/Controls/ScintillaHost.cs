@@ -557,29 +557,35 @@ public class ScintillaHost : WindowsFormsHost
                 break;
 
             case "markdown":
-                Set(SciStyle.Markdown.Header1, keyword, bold: true);
-                Set(SciStyle.Markdown.Header2, keyword, bold: true);
-                Set(SciStyle.Markdown.Header3, keyword, bold: true);
-                Set(SciStyle.Markdown.Header4, keyword, bold: true);
-                Set(SciStyle.Markdown.Header5, keyword, bold: true);
-                Set(SciStyle.Markdown.Header6, keyword, bold: true);
+                Color mdHeader = EditorColor("Markdown.Header");
+                Color mdCode = EditorColor("Markdown.Code");
+                Color mdQuote = EditorColor("Markdown.Quote");
+                Color mdLink = EditorColor("Markdown.Link");
+                Color mdList = EditorColor("Markdown.List");
+                Color mdMeta = EditorColor("Markdown.Meta");
+                Set(SciStyle.Markdown.Header1, mdHeader, bold: true);
+                Set(SciStyle.Markdown.Header2, mdHeader, bold: true);
+                Set(SciStyle.Markdown.Header3, mdHeader, bold: true);
+                Set(SciStyle.Markdown.Header4, mdHeader, bold: true);
+                Set(SciStyle.Markdown.Header5, mdHeader, bold: true);
+                Set(SciStyle.Markdown.Header6, mdHeader, bold: true);
                 Set(SciStyle.Markdown.Strong1, fg, bold: true);
                 Set(SciStyle.Markdown.Strong2, fg, bold: true);
                 Set(SciStyle.Markdown.Em1, type);
                 Set(SciStyle.Markdown.Em2, type);
                 _scintilla.Styles[SciStyle.Markdown.Em1].Italic = true;
                 _scintilla.Styles[SciStyle.Markdown.Em2].Italic = true;
-                Set(SciStyle.Markdown.UListItem, number);
-                Set(SciStyle.Markdown.OListItem, number);
-                Set(SciStyle.Markdown.BlockQuote, comment);
-                Set(SciStyle.Markdown.Strikeout, comment);
-                Set(SciStyle.Markdown.HRule, preprocessor);
-                Set(SciStyle.Markdown.Link, function);
+                Set(SciStyle.Markdown.UListItem, mdList);
+                Set(SciStyle.Markdown.OListItem, mdList);
+                Set(SciStyle.Markdown.BlockQuote, mdQuote);
+                Set(SciStyle.Markdown.Strikeout, mdQuote);
+                Set(SciStyle.Markdown.HRule, mdMeta);
+                Set(SciStyle.Markdown.Link, mdLink);
                 _scintilla.Styles[SciStyle.Markdown.Link].Underline = true;
-                Set(SciStyle.Markdown.Code, str);
-                Set(SciStyle.Markdown.Code2, str);
-                Set(SciStyle.Markdown.CodeBk, str);
-                Set(SciStyle.Markdown.PreChar, preprocessor);
+                Set(SciStyle.Markdown.Code, mdCode);
+                Set(SciStyle.Markdown.Code2, mdCode);
+                Set(SciStyle.Markdown.CodeBk, mdCode);
+                Set(SciStyle.Markdown.PreChar, mdMeta);
                 break;
 
             case "sql":
