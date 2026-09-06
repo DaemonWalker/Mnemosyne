@@ -170,8 +170,15 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <TabControl ItemsSource="{Binding Documents}"
+                <TabControl x:Name="DocumentTabs"
+                            ItemsSource="{Binding Documents}"
                             SelectedItem="{Binding ActiveDocument, Mode=TwoWay}"
+                            AllowDrop="True"
+                            PreviewMouseDown="DocumentTabs_PreviewMouseDown"
+                            PreviewMouseLeftButtonDown="DocumentTabs_PreviewMouseLeftButtonDown"
+                            MouseMove="DocumentTabs_MouseMove"
+                            DragOver="DocumentTabs_DragOver"
+                            Drop="DocumentTabs_Drop"
                             Visibility="{Binding HasOpenDocuments, Converter={StaticResource BoolToVisibility}}">
                     <TabControl.ItemTemplate>
                         <DataTemplate>

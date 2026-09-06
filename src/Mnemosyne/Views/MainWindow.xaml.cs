@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -264,6 +265,129 @@ public partial class MainWindow : Window
         {
             document.SetLanguage(language);
         }
+    }
+
+    // ===== Tab 交互：中键关闭 / 右键菜单 / 拖拽排序 =====
+    private System.Windows.Point _tabDragStart;
+    private DocumentViewModel? _tabDragCandidate;
+
+    private static T? FindAncestor<T>(DependencyObject? source) where T : DependencyObject
+    {
+        while (source is not null and not T)
+            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+        return source as T;
+    }
+
+    private static DocumentViewModel? TabItemDocument(TabItem? tab) =>
+        tab?.Content as DocumentViewModel ?? tab?.DataContext as DocumentViewModel;
+
+    private void DocumentTabs_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        DocumentViewModel? doc = TabItemDocument(FindAncestor<TabItem>(e.OriginalSource as DependencyObject));
+        if (doc is null) return;
+
+        if (e.ChangedButton == MouseButton.Middle)
+        {
+            _viewModel.CloseDocumentCommand.Execute(doc);
+            e.Handled = true;
+        }
+        else if (e.ChangedButton == MouseButton.Right)
+        {
+            _viewModel.ActiveDocument = doc;
+            ShowTabContextMenu(doc);
+            e.Handled = true;
+        }
+    }
+
+    private void ShowTabContextMenu(DocumentViewModel document)
+    {
+        var menu = new ContextMenu { Style = (Style)FindResource("PopupContextMenuStyle") };
+
+        void AddItem(string key, bool enabled, Action action)
+        {
+            var item = new MenuItem
+            {
+                Style = (Style)FindResource("PopupMenuItemStyle"),
+                Header = _localization.GetString(key),
+                IsEnabled = enabled,
+            };
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+        }
+
+        AddItem("Loc.Tab.Close", true, () => _viewModel.CloseDocumentCommand.Execute(document));
+        AddItem("Loc.Tab.CloseOthers", _viewModel.Documents.Count > 1,
+            () => _ = _viewModel.CloseOthersAsync(document));
+        AddItem("Loc.Tab.CloseToRight", _viewModel.Documents.IndexOf(document) < _viewModel.Documents.Count - 1,
+            () => _ = _viewModel.CloseToRightAsync(document));
+        menu.Items.Add(new Separator());
+        AddItem("Loc.Tree.OpenInExplorer", document.FilePath is not null,
+            () => RevealInExplorer(document.FilePath!));
+        AddItem("Loc.Tab.CopyPath", document.FilePath is not null,
+            () => CopyPath(document.FilePath!));
+
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+        menu.IsOpen = true;
+    }
+
+    private void RevealInExplorer(string path)
+    {
+        try
+        {
+            Process.Start("explorer.exe", $"/select,\"{path}\"");
+        }
+        catch (Exception ex)
+        {
+            _viewModel.ShowError?.Invoke(
+                string.Format(_localization.GetString("Loc.Error.Reveal.Message"), path, ex.Message),
+                _localization.GetString("Loc.Error.Title"));
+        }
+    }
+
+    private void CopyPath(string path)
+    {
+        try
+        {
+            Clipboard.SetText(path);
+        }
+        catch (Exception ex)
+        {
+            _viewModel.ShowError?.Invoke(ex.Message, _localization.GetString("Loc.Error.Title"));
+        }
+    }
+
+    private void DocumentTabs_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // 点在 Tab 头部关闭按钮上时不启动拖拽
+        if (FindAncestor<Button>(e.OriginalSource as DependencyObject) is not null) return;
+        _tabDragCandidate = TabItemDocument(FindAncestor<TabItem>(e.OriginalSource as DependencyObject));
+        _tabDragStart = e.GetPosition(null);
+    }
+
+    private void DocumentTabs_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _tabDragCandidate is null) return;
+        System.Windows.Point pos = e.GetPosition(null);
+        if (Math.Abs(pos.X - _tabDragStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(pos.Y - _tabDragStart.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+        DocumentViewModel doc = _tabDragCandidate;
+        _tabDragCandidate = null;
+        DragDrop.DoDragDrop(DocumentTabs, doc, DragDropEffects.Move);
+    }
+
+    private void DocumentTabs_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(typeof(DocumentViewModel)) ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void DocumentTabs_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(typeof(DocumentViewModel)) is not DocumentViewModel doc) return;
+        DocumentViewModel? targetDoc = TabItemDocument(FindAncestor<TabItem>(e.OriginalSource as DependencyObject));
+        if (targetDoc is null || ReferenceEquals(doc, targetDoc)) return;
+        _viewModel.MoveDocument(doc, _viewModel.Documents.IndexOf(targetDoc));
+        e.Handled = true;
     }
 
     private void OpenFileCommand_Executed(object sender, ExecutedRoutedEventArgs e)

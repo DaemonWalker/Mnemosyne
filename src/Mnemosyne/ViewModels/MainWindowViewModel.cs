@@ -328,6 +328,34 @@ public partial class MainWindowViewModel : ObservableObject
         return true;
     }
 
+    /// <summary>Tab 拖拽排序：把文档移动到目标索引</summary>
+    public void MoveDocument(DocumentViewModel document, int newIndex)
+    {
+        int oldIndex = Documents.IndexOf(document);
+        if (oldIndex < 0 || newIndex < 0 || newIndex >= Documents.Count || oldIndex == newIndex) return;
+        Documents.Move(oldIndex, newIndex);
+    }
+
+    /// <summary>关闭除指定文档外的所有 Tab；脏文档确认被取消时中止</summary>
+    public async Task CloseOthersAsync(DocumentViewModel document)
+    {
+        foreach (DocumentViewModel doc in Documents.Where(d => !ReferenceEquals(d, document)).ToList())
+        {
+            if (!await CloseDocumentAsync(doc)) break;
+        }
+    }
+
+    /// <summary>关闭指定文档右侧的所有 Tab；脏文档确认被取消时中止</summary>
+    public async Task CloseToRightAsync(DocumentViewModel document)
+    {
+        int index = Documents.IndexOf(document);
+        if (index < 0) return;
+        foreach (DocumentViewModel doc in Documents.Skip(index + 1).ToList())
+        {
+            if (!await CloseDocumentAsync(doc)) break;
+        }
+    }
+
     /// <summary>切换活动文档编码：脏文档先确认，确认后按新编码从磁盘重载</summary>
     public async Task SwitchEncodingAsync(Encoding encoding)
     {

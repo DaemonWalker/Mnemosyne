@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**Step 6 已完成**（下一个待执行：Step 7 — 编辑体验增强）
-- 当前 Step 内已完成的小目标：6.1～6.5 全部（构建 0 错误 0 警告；UIA 端到端验证 12 项全部通过）
-- 最后更新：2026-09-04 19:30
+- 当前 Step：**Step 7 已完成**（下一个待执行：Step 8 — 大文件加载）
+- 当前 Step 内已完成的小目标：7.1～7.4 全部（构建 0 错误 0 警告；7.1 验证 13 项、7.2 验证 12 项、7.3 验证 8 项、7.4 验证 11 项全部通过；脏 Tab 关闭确认框用户人工确认通过）
+- 最后更新：2026-09-06 15:31
 
 ## 断点信息
 
@@ -53,3 +53,4 @@
 | 2026-09-04 20:54 | 7 | 7.1 | 多光标：ScintillaHost 开启 MultipleSelection/AdditionalSelectionTyping/AdditionalCaretsBlink（Alt 矩形修饰键为 Scintilla Windows 默认 SCMOD_ALT，无需配置）；KeyDown 内直接处理 Ctrl+D（SelectNextOccurrence：空选择选中当前词；否则大小写敏感查找下一出现并 AddSelection；选择恰覆盖一个词时带 WholeWord 标志；从所有选择末尾向后搜、绕回文首前，与 Sublime 一致）与 Esc（多选时只保留主选择），处理即吞掉不再转发 EditorKeyDown；菜单 Ctrl+D 命令从占位实现改为调用 Editor.SelectNextOccurrence() | 0 警告 0 错误 | UIA 端到端 13 项全部通过（%TEMP%\mnemo-test\step7-1-verify.ps1）：真实按键路径经 AttachThreadInput 共享输入队列 + keybd_event 修饰键 + SendMessage 注入 Scintilla 原生窗口；验证了选词/逐次加选/全词跳过 xfoo/大小写敏感跳过 Foo/FOO/无更多匹配绕回不变/三光标同步输入保存/Esc 退回单光标/Ctrl+点击加光标/Alt+拖拽矩形选择（SC_SEL_RECTANGLE）/列选择同步编辑落盘。注意：跨进程不能给 SCI_GETSELTEXT 传本进程缓冲区（会写坏应用内存）；合成 Alt+拖拽首个 drag 偶有附加 EOF 光标注入伪影（应用真实行为已多处单独确认干净） |
 | 2026-09-06 14:49 | 7 | 7.2 | 缩进：新增 `Services/IndentDetector.cs`（行首统计 Tab 行/空格行，缩进行 <3 不下结论回退默认；空格宽度从候选 [4,2,8,3] 按整除得分选出、打平取靠前）；`DocumentViewModel` 加 IndentUseTabs/IndentWidth（ObservableProperty + NotifyPropertyChangedFor(IndentDisplay)）、IndentDisplay（Loc.Status.Spaces/TabSize 格式化）、SetIndentation 方法，构造函数应用 settings 缩进/换行/空白到 Editor，ApplyReadResult 按内容检测后覆盖；状态栏缩进 TextBlock 改为 Button，点击弹 ContextMenu（使用空格/制表符 + 宽度 2/3/4/8，PlacementMode.Top）切换当前文档 | 0 警告 0 错误 | UIA 端到端 12 项全部通过（%TEMP%\mnemo-test\step7-2-verify.ps1）：4空格/2空格/Tab 缩进文件自动检测正确（SCI_GETUSETABS=2125/SCI_GETTABWIDTH=2121 实测）、仅 1 行缩进的文件回退默认空格4、空格模式 Tab 键插入 4 字符、菜单切换制表符/宽度2 后显示与编辑器同步、Tab 模式 Tab 键插入单个制表符。注意：光标在行缩进区内按 Tab 是"缩进整行"（Scintilla 内建行为），验证时需把光标移到无缩进行 |
 | 2026-09-06 15:05 | 7 | 7.3 | 视图菜单：`MainWindowViewModel` 构造函数改注入 ConfigService（_settings 仍取其 Settings）；新增 WordWrap/ShowWhitespace 两个 ObservableProperty（ctor 从 settings 初始化），OnChanged 里遍历 Documents 应用 `Editor.SetWordWrap/SetViewWhitespace` + 写回 settings + `ConfigService.Save()`（try/catch 失败经 ShowError 报新增 key Loc.Error.SaveSettings.Message）；主菜单新增"视图"菜单（两个 IsCheckable MenuItem，IsChecked TwoWay 绑定）；新文档经 DocumentViewModel 构造函数读 settings 自动继承当前开关 | 0 警告 0 错误 | UIA 端到端 8 项全部通过（%TEMP%\mnemo-test\step7-3-verify.ps1）：默认关闭（SCI_GETWRAPMODE=2269/SCI_GETVIEWWS=2020 实测 0）→ 菜单开换行 wrap=1 → settings.json 持久化 → 开空白字符 ws=1 → 再点关换行 → 重启后 ws=on 生效 |
+| 2026-09-06 15:31 | 7 | 7.4 | Tab 交互：`MainWindowViewModel` 新增 `MoveDocument`（Documents.Move 排序）、`CloseOthersAsync`/`CloseToRightAsync`（复用 CloseDocumentAsync 走脏确认，用户取消即中止）；TabControl 命名 DocumentTabs + AllowDrop，View 层挂 PreviewMouseDown（中键→CloseDocumentCommand；右键→选中该 Tab 并弹 ContextMenu：关闭/关闭其他/关闭右侧/分隔/在资源管理器中打开（explorer.exe /select，无路径禁用，异常报 Loc.Error.Reveal.Message）/复制路径（Clipboard.SetText，无路径禁用））/PreviewMouseLeftButtonDown+MouseMove（超系统拖拽阈值后 DoDragDrop，点在关闭按钮上不启动拖拽）/DragOver/Drop（落到目标 TabItem 索引）；i18n 新增 Loc.Tab.Close/CloseOthers/CloseToRight/CopyPath，Explorer 项复用 Loc.Tree.OpenInExplorer | 0 警告 0 错误 | UIA 端到端 11 项全部通过（%TEMP%\mnemo-test\step7-4-verify.ps1）：3 Tab 初始/左键点选/中键关闭/复制路径（剪贴板=完整路径）/关闭右侧/关闭其他/拖拽排序 [b,a,c]→[a,c,b]/资源管理器中打开（新 explorer 进程）。脏 Tab 关闭确认框由用户人工确认通过。环境要点：会话有锁屏 Backstop 窗口，SendMessage 注入 WPF 元素无效，真实输入（SetCursorPos+mouse_event）可用但启动早期会被吞，所有交互需重试 + 关闭类断言用轮询（菜单动作走 async）；TabItem 的 UIA Name 是 Header 对象 ToString()，标题要取后代 Text 元素 |
