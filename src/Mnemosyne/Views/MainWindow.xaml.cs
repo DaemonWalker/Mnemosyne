@@ -484,7 +484,8 @@ public partial class MainWindow : Window
 
     private void SaveLikeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        e.CanExecute = _viewModel.CanSaveActive;
+        // XAML 中按钮直接挂命令时，InitializeComponent 期间就会查询 CanExecute，此时 _viewModel 尚未赋值
+        e.CanExecute = _viewModel is not null && _viewModel.CanSaveActive;
     }
 
     private void OpenMarkdownPreviewCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -494,7 +495,7 @@ public partial class MainWindow : Window
 
     private void OpenMarkdownPreviewCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        e.CanExecute = _viewModel.CanPreviewActiveDocument;
+        e.CanExecute = _viewModel is not null && _viewModel.CanPreviewActiveDocument;
     }
 
     private void CloseTabCommand_Executed(object sender, ExecutedRoutedEventArgs e)
