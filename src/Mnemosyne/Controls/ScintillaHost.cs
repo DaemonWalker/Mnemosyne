@@ -54,6 +54,11 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.EndAtLastLine = true;
         _scintilla.ScrollWidthTracking = true;
 
+        // 多光标：Ctrl+点击加光标、Alt+拖拽矩形选择（Scintilla 默认矩形修饰键即 Alt）、输入同步到所有光标
+        _scintilla.MultipleSelection = true;
+        _scintilla.AdditionalSelectionTyping = true;
+        _scintilla.AdditionalCaretsBlink = true;
+
         _scintilla.TextChanged += (_, _) =>
         {
             UpdateLineNumberMarginWidth();
@@ -70,6 +75,22 @@ public class ScintillaHost : WindowsFormsHost
         };
         _scintilla.KeyDown += (_, e) =>
         {
+            // Ctrl+D（选中下一个相同出现）与 Esc（退回单光标）属编辑内核行为，在此直接处理，
+            // 不向上转发；菜单里的 Ctrl+D 命令入口另行调用 SelectNextOccurrence()
+            if (e.Control && !e.Shift && !e.Alt && e.KeyCode == WinForms.Keys.D)
+            {
+                SelectNextOccurrence();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
+            if (e.KeyCode == WinForms.Keys.Escape && _scintilla.Selections.Count > 1)
+            {
+                CollapseToMainSelection();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
             EditorKeyDown?.Invoke(this, e);
             if (e.Handled) e.SuppressKeyPress = true;
         };
@@ -181,6 +202,76 @@ public class ScintillaHost : WindowsFormsHost
     public void BeginUndoAction() => _scintilla.BeginUndoAction();
 
     public void EndUndoAction() => _scintilla.EndUndoAction();
+
+    /// <summary>设置缩进方式（Tab/空格）与宽度，两者同时应用到 TabWidth/IndentWidth</summary>
+    public void SetIndentation(bool useTabs, int width)
+    {
+        _scintilla.UseTabs = useTabs;
+        _scintilla.TabWidth = width;
+        _scintilla.IndentWidth = width;
+    }
+
+    public void SetWordWrap(bool wrap) => _scintilla.WrapMode = wrap ? WrapMode.Word : WrapMode.None;
+
+    public void SetViewWhitespace(bool visible) =>
+        _scintilla.ViewWhitespace = visible ? WhitespaceMode.VisibleAlways : WhitespaceMode.Invisible;
+
+    /// <summary>
+    /// Ctrl+D：主选择为空时选中光标所在词；否则按大小写敏感查找选中文本的下一个出现并加为附加选择，
+    /// 选择恰好覆盖一个词时按全词匹配。到达文末后绕回开头（与 Sublime 一致）。
+    /// </summary>
+    public void SelectNextOccurrence()
+    {
+        Selection main = _scintilla.Selections[_scintilla.MainSelection];
+        int start = main.Start;
+        int end = main.End;
+        if (end == start)
+        {
+            int wordStart = _scintilla.WordStartPosition(start, true);
+            int wordEnd = _scintilla.WordEndPosition(start, true);
+            if (wordEnd == wordStart) return;
+            _scintilla.SetSelection(wordEnd, wordStart);
+            _scintilla.ScrollCaret();
+            return;
+        }
+
+        string text = _scintilla.GetTextRange(start, end - start);
+        if (text.Length == 0) return;
+
+        bool wholeWord = _scintilla.WordStartPosition(start, true) == start
+            && _scintilla.WordEndPosition(end, true) == end;
+        _scintilla.SearchFlags = wholeWord ? SearchFlags.MatchCase | SearchFlags.WholeWord : SearchFlags.MatchCase;
+
+        // 从所有选择的最末尾向后找，避免重复命中已选的出现；找不到则绕回到首个选择之前
+        int lastEnd = 0;
+        int firstStart = _scintilla.TextLength;
+        foreach (Selection selection in _scintilla.Selections)
+        {
+            lastEnd = Math.Max(lastEnd, selection.End);
+            firstStart = Math.Min(firstStart, selection.Start);
+        }
+
+        int found = Search(text, lastEnd, _scintilla.TextLength);
+        if (found < 0) found = Search(text, 0, firstStart);
+        if (found < 0) return;
+        _scintilla.AddSelection(found + text.Length, found);
+        _scintilla.ScrollCaret();
+    }
+
+    private int Search(string text, int rangeStart, int rangeEnd)
+    {
+        if (rangeEnd <= rangeStart) return -1;
+        _scintilla.SetTargetRange(rangeStart, rangeEnd);
+        return _scintilla.SearchInTarget(text);
+    }
+
+    /// <summary>Esc：放弃附加选择，只保留主选择</summary>
+    private void CollapseToMainSelection()
+    {
+        Selection main = _scintilla.Selections[_scintilla.MainSelection];
+        _scintilla.SetSelection(main.Caret, main.Anchor);
+        _scintilla.ScrollCaret();
+    }
 
     /// <summary>设置文档行尾模式并按需转换全文行尾符</summary>
     public void SetLineEnding(LineEnding ending, bool convert)

@@ -25,7 +25,7 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.Replace}" Executed="ReplaceCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SearchInFolder}" Executed="SearchInFolderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.CloseTab}" Executed="CloseTabCommand_Executed" CanExecute="SaveCommand_CanExecute" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="SelectNextOccurrenceCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="PlaceholderCommand_Executed" />
     </Window.CommandBindings>
 
@@ -80,11 +80,9 @@
                     <Button Style="{StaticResource StatusBarButtonStyle}"
                             Content="{Binding ActiveDocument.LanguageName}"
                             Click="LanguageButton_Click" />
-                    <TextBlock Text="{Binding IndentDisplay}"
-                               Foreground="{DynamicResource Brush.StatusBar.Foreground}"
-                               FontSize="12"
-                               VerticalAlignment="Center"
-                               Margin="8,0" />
+                    <Button Style="{StaticResource StatusBarButtonStyle}"
+                            Content="{Binding ActiveDocument.IndentDisplay}"
+                            Click="IndentButton_Click" />
                 </StackPanel>
                 <ProgressBar HorizontalAlignment="Right"
                              Width="120"

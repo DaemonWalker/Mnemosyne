@@ -19,6 +19,17 @@
     <sys:String x:Key="Loc.Menu.Edit.Replace">替换(_R)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SearchInFolder">在文件夹中查找(_I)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SelectNextOccurrence">选中下一个匹配项(_D)</sys:String>
+    <sys:String x:Key="Loc.Menu.View">视图(_V)</sys:String>
+    <sys:String x:Key="Loc.Menu.View.WordWrap">自动换行</sys:String>
+    <sys:String x:Key="Loc.Menu.View.ShowWhitespace">显示空白字符</sys:String>
+
+    <sys:String x:Key="Loc.Indent.UseSpaces">使用空格缩进</sys:String>
+    <sys:String x:Key="Loc.Indent.UseTabs">使用制表符缩进</sys:String>
+
+    <sys:String x:Key="Loc.Tab.Close">关闭</sys:String>
+    <sys:String x:Key="Loc.Tab.CloseOthers">关闭其他标签页</sys:String>
+    <sys:String x:Key="Loc.Tab.CloseToRight">关闭右侧标签页</sys:String>
+    <sys:String x:Key="Loc.Tab.CopyPath">复制路径</sys:String>
 
     <sys:String x:Key="Loc.Activity.Files.Tooltip">资源管理器</sys:String>
     <sys:String x:Key="Loc.Activity.Search.Tooltip">搜索</sys:String>

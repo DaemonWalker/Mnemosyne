@@ -19,6 +19,17 @@
     <sys:String x:Key="Loc.Menu.Edit.Replace">_Replace</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SearchInFolder">Find in F_older</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SelectNextOccurrence">Select _Next Occurrence</sys:String>
+    <sys:String x:Key="Loc.Menu.View">_View</sys:String>
+    <sys:String x:Key="Loc.Menu.View.WordWrap">Word Wrap</sys:String>
+    <sys:String x:Key="Loc.Menu.View.ShowWhitespace">Show Whitespace</sys:String>
+
+    <sys:String x:Key="Loc.Indent.UseSpaces">Indent Using Spaces</sys:String>
+    <sys:String x:Key="Loc.Indent.UseTabs">Indent Using Tabs</sys:String>
+
+    <sys:String x:Key="Loc.Tab.Close">Close</sys:String>
+    <sys:String x:Key="Loc.Tab.CloseOthers">Close Other Tabs</sys:String>
+    <sys:String x:Key="Loc.Tab.CloseToRight">Close Tabs to the Right</sys:String>
+    <sys:String x:Key="Loc.Tab.CopyPath">Copy Path</sys:String>
 
     <sys:String x:Key="Loc.Activity.Files.Tooltip">Explorer</sys:String>
     <sys:String x:Key="Loc.Activity.Search.Tooltip">Search</sys:String>

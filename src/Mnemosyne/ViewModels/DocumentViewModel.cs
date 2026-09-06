@@ -42,14 +42,27 @@ public partial class DocumentViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(PositionDisplay))]
     private int _column = 1;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IndentDisplay))]
+    private bool _indentUseTabs;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IndentDisplay))]
+    private int _indentWidth;
+
     public DocumentViewModel(FileService fileService, LocalizationService localization, AppSettings settings)
     {
         _fileService = fileService;
         _localization = localization;
         _title = localization.GetString("Loc.Tab.Untitled");
 
+        _indentUseTabs = settings.IndentUseTabs;
+        _indentWidth = settings.IndentWidth;
         Editor = new ScintillaHost();
         Editor.ApplyFont(settings.FontFamily, settings.FontSize);
+        Editor.SetIndentation(settings.IndentUseTabs, settings.IndentWidth);
+        Editor.SetWordWrap(settings.WordWrap);
+        Editor.SetViewWhitespace(settings.ShowWhitespace);
         Editor.DirtyChanged += (_, _) =>
         {
             IsDirty = Editor.IsDirty;
@@ -60,7 +73,11 @@ public partial class DocumentViewModel : ObservableObject
             Line = Editor.CurrentLineNumber;
             Column = Editor.CurrentColumn;
         };
-        _localization.LanguageChanged += (_, _) => OnPropertyChanged(nameof(PositionDisplay));
+        _localization.LanguageChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(PositionDisplay));
+            OnPropertyChanged(nameof(IndentDisplay));
+        };
         SetLanguage(LanguageRegistry.PlainText);
     }
 
@@ -74,6 +91,10 @@ public partial class DocumentViewModel : ObservableObject
     public LanguageDefinition Language { get; private set; } = LanguageRegistry.PlainText;
 
     public string PositionDisplay => string.Format(_localization.GetString("Loc.Status.LineCol"), Line, Column);
+
+    public string IndentDisplay => IndentUseTabs
+        ? string.Format(_localization.GetString("Loc.Status.TabSize"), IndentWidth)
+        : string.Format(_localization.GetString("Loc.Status.Spaces"), IndentWidth);
 
     public async Task LoadFromFileAsync(string path, CancellationToken cancellationToken = default)
     {
@@ -113,6 +134,14 @@ public partial class DocumentViewModel : ObservableObject
         IsDirty = Editor.IsDirty;
     }
 
+    /// <summary>设置缩进方式与宽度（状态栏点击切换入口；仅影响当前文档的后续输入）</summary>
+    public void SetIndentation(bool useTabs, int width)
+    {
+        IndentUseTabs = useTabs;
+        IndentWidth = width;
+        Editor.SetIndentation(useTabs, width);
+    }
+
     /// <summary>跳转到指定行并选中行内字符区间（文件夹搜索结果跳转用）</summary>
     public void GoToMatch(int line, int startInLine, int length)
     {
@@ -132,6 +161,11 @@ public partial class DocumentViewModel : ObservableObject
         EncodingName = EncodingCatalog.DisplayName(result.Encoding);
         LineEndingName = ToDisplayName(result.LineEnding);
         SetLanguage(LanguageRegistry.GetForFile(path));
+        // 按内容自动检测缩进风格；样本不足时保留设置项默认（构造函数已应用）
+        if (IndentDetector.Detect(result.Text, IndentWidth) is { } detected)
+        {
+            SetIndentation(detected.UseTabs, detected.Width);
+        }
         Line = 1;
         Column = 1;
         IsDirty = false;

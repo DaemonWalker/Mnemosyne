@@ -219,6 +219,41 @@ public partial class MainWindow : Window
         menu.IsOpen = true;
     }
 
+    private void IndentButton_Click(object sender, RoutedEventArgs e)
+    {
+        DocumentViewModel? document = _viewModel.ActiveDocument;
+        if (document is null) return;
+
+        var menu = new ContextMenu { Style = (Style)FindResource("PopupContextMenuStyle") };
+        foreach ((string key, bool useTabs) in new[] { ("Loc.Indent.UseSpaces", false), ("Loc.Indent.UseTabs", true) })
+        {
+            var item = new MenuItem
+            {
+                Style = (Style)FindResource("PopupMenuItemStyle"),
+                Header = _localization.GetString(key),
+                IsChecked = document.IndentUseTabs == useTabs,
+            };
+            item.Click += (_, _) => document.SetIndentation(useTabs, document.IndentWidth);
+            menu.Items.Add(item);
+        }
+        menu.Items.Add(new Separator());
+        foreach (int width in new[] { 2, 3, 4, 8 })
+        {
+            var item = new MenuItem
+            {
+                Style = (Style)FindResource("PopupMenuItemStyle"),
+                Header = width.ToString(),
+                IsChecked = document.IndentWidth == width,
+            };
+            int selected = width;
+            item.Click += (_, _) => document.SetIndentation(document.IndentUseTabs, selected);
+            menu.Items.Add(item);
+        }
+        menu.PlacementTarget = (Button)sender;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Top;
+        menu.IsOpen = true;
+    }
+
     private void LanguageButton_Click(object sender, RoutedEventArgs e)
     {
         DocumentViewModel? document = _viewModel.ActiveDocument;
@@ -321,6 +356,11 @@ public partial class MainWindow : Window
         _viewModel.FindBar.Open(replace);
         // 浮层刚从 Collapsed 变 Visible 时尚未布局完成，焦点延后到输入优先级再设置
         Dispatcher.BeginInvoke(DispatcherPriority.Input, () => FindBar.FocusSearchBox());
+    }
+
+    private void SelectNextOccurrenceCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        _viewModel.ActiveDocument?.Editor.SelectNextOccurrence();
     }
 
     // 仅注册快捷键与菜单入口，具体功能由后续 Step 实现

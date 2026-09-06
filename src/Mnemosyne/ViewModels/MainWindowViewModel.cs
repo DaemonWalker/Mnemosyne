@@ -34,9 +34,6 @@ public partial class MainWindowViewModel : ObservableObject
         {
             if (e.PropertyName == nameof(FileTreeViewModel.RootNode)) SearchPanel.RefreshFolderState();
         };
-        _indentDisplay = settings.IndentUseTabs
-            ? string.Format(localization.GetString("Loc.Status.TabSize"), settings.IndentWidth)
-            : string.Format(localization.GetString("Loc.Status.Spaces"), settings.IndentWidth);
         Documents.CollectionChanged += OnDocumentsChanged;
     }
 
@@ -81,9 +78,6 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(SaveActiveAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(CloseActiveTabCommand))]
     private DocumentViewModel? _activeDocument;
-
-    [ObservableProperty]
-    private string _indentDisplay;
 
     public bool IsSidebarVisible => ActivePanel is not null;
 
