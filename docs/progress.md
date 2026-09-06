@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**Step 8 已完成**（下一个待执行：Step 9 — 插件系统与格式化器）
-- 当前 Step 内已完成的小目标：8.1～8.4 全部（构建 0 错误 0 警告；8.1/8.2/8.4 运行时实测通过，8.3 取消链路端到端实测通过，两处模态对话框交互留待人工点验）
-- 最后更新：2026-09-06 16:25
+- 当前 Step：**Step 9 已完成**（下一个待执行：Step 10 — Markdown）
+- 当前 Step 内已完成的小目标：9.1～9.6 全部（构建 0 错误 0 警告；格式化器单元验证 16 项 + UIA 端到端 20 项全部通过；非法输入的模态错误弹窗留待人工点验）
+- 最后更新：2026-09-06 16:49
 
 ## 断点信息
 
@@ -62,4 +62,6 @@
 | 2026-09-06 16:35 | 9 | 9.2 | `Services/PluginService.cs`：扫 exe 同目录 plugins/*.dll，Assembly.LoadFrom 逐个 try/catch（ReflectionTypeLoadException 降级为加载可解析类型），失败追加 cache/plugin.log（日志失败不致命）；语言标识重复的后到插件忽略并记日志；FindFormatter 不区分大小写；App 组合根创建，window.Show() 后 `ScanAsync()` 后台扫描；`LanguageDefinition` 加 `FormatterId`，注册表 JSON/XML/HTML 分别挂 json/xml/html；MainWindow/VM 构造函数加 PluginService 参数；顺带关闭 Scintilla 内置英文右键菜单（UsePopup(Never)）并加 EditorRightClick 事件、ReplaceAllText（单撤销动作+保光标）、DocumentViewModel.ReplaceAllText（\n→文档行尾符归一化） | 0 警告 0 错误 | Scintilla5.NET 7.0 的弹窗方法名是 UsePopup（非 UsePopUp） |
 | 2026-09-06 16:42 | 9 | 9.3 | `plugins/Mnemosyne.Formatters.Json/JsonFormatter.cs`：JsonDocument 严格解析 → 自写递归输出（对象/数组多行、空容器 `{}`/`[]` 单行、字符串经 JsonSerializer.Serialize 重新转义规范化、数字/布尔/null 原样 GetRawText）；缩进经 FormatterOptions.GetIndent；非法 JSON 抛 FormatterException 带 1 起始行列（列是行内字节偏移，注释注明）；csproj 引 System.Text.Json 8.0.5（netstandard2.0 编译用，运行时由主程序 net10 自带高版本承载，dll 不拷出） | 0 警告 0 错误 | 单元验证与 UI 端到端统一在 9.6 后跑 |
 | 2026-09-06 16:50 | 9 | 9.4 | `plugins/Mnemosyne.Formatters.Xml/XmlFormatter.cs`：XDocument.Parse（不带 PreserveWhitespace）→ XmlWriter（Indent+IndentChars 跟随 FormatterOptions，NewLineChars=\n）；声明手工按原文 version/encoding/standalone 重写（XmlWriter 走 StringBuilder 会把 encoding 写成 utf-16）；注释/CDATA/处理指令由节点遍历天然保留；非法 XML 抛 FormatterException 带 XmlException 行列号；netstandard2.0 内置 System.Xml.Linq 无需额外引用 | 0 警告 0 错误 | — |
-| 2026-09-06 17:05 | 9 | 9.5 | `plugins/Mnemosyne.Formatters.Html/HtmlFormatter.cs`：零依赖自实现容错排版。分词器：注释/DOCTYPE/处理指令/结束/开始标签（引号内 > 豁免）/script/style/pre/textarea 原样内容直扫结束标签；孤立 `<` 当文本；排版：块级元素独占行缩进、行内元素与文本同行（`<p>Hello <b>x</b></p>` 不拆行）、文本空白折叠、标签内属性空白规范化（引号内不动）、hr 按块级其余空元素按行内、未匹配结束标签缩进钳位 0 不报错、任何意外 catch-all 返回原文 | 0 警告 0 错误 | netstandard2.0 无 Span/char 重载 EndsWith/record struct（IsExternalInit），已用 netstandard2.0 兼容写法 |
+| 2026-09-06 17:05 | 9 | 9.5 | `plugins/Mnemosyne.Formatters.Html/HtmlFormatter.cs`：零依赖自实现容错排版。分词器：注释/DOCTYPE/处理指令/结束/开始标签（引号内 > 豁免）/script/style/pre/textarea 原样内容直扫结束标签；孤立 `<` 当文本；排版：块级元素独占行缩进、行内元素与文本同行（`<p>Hello <b>x</b></p>` 不拆行，靠"行首块级开始标签名 = 结束标签名"合并）、文本空白折叠、标签内属性空白规范化（引号内不动）、hr 按块级其余空元素按行内、未匹配/未闭合结束标签缩进钳位 0 不报错、任何意外 catch-all 返回原文 | 0 警告 0 错误 | netstandard2.0 无 Span/char 重载 EndsWith/record struct（IsExternalInit），已用兼容写法 |
+| 2026-09-06 16:49 | 9 | 9.6 | UI 入口：`AppCommands.FormatDocument`（无快捷键，需求 4.11 未定义）；编辑菜单加"格式化文档"（CommandBinding CanExecute 实时查询 `MainWindowViewModel.CanFormatActiveDocument`，菜单打开即重算，无匹配语言/加载中/只读均禁用）；编辑器右键菜单（Scintilla 内置英文菜单已 UsePopup(Never) 关闭，ScintillaHost.MouseDown 右键 → EditorRightClick 事件 → MainWindow 弹本地化 WPF ContextMenu，MousePoint 定位）；`FormatActiveDocumentAsync`：后台线程 Format 成功后才 `DocumentViewModel.ReplaceAllText`（行尾符 \n→文档 EOL 归一化，ScintillaHost.ReplaceAllText 单撤销动作 + 保光标/首可见行），异常（含 FormatterException）弹 `Loc.Error.Format.Message`（格式化器显示名+错误详情）原文不动；i18n 双语词条已加 | 0 警告 0 错误 | 单元验证 16 项全过（C:\Users\Public\fmttest，直接引用插件 dll：JSON 空格4/Tab/空格2+空容器+中文不转义+非法带行列、XML 声明 encoding 保留/注释/Tab/混合内容不换行/非法带行列、HTML 结构/乱稿容错/属性规范化/script 重排/pre 逐字节/孤立<）；UIA 端到端 20 项全过（%TEMP%\mnemo-test\step9-verify.ps1：菜单格式化 JSON/XML/HTML 落盘字节精确、Tab 缩进文件选项跟随为 Tab、.txt 菜单禁用+右键禁用、删 Xml.dll 后 XML 禁用且 JSON 仍正常）。待人工点验（模态框）：非法 JSON/XML 输入的错误提示弹窗（单元已证 FormatterException 带行列 + 代码路径保证替换只在成功后） |
+| 2026-09-06 16:49 | 9 | 提交 | step9 已 commit（116423e 为 [wip]，正式提交见下一条） | 0 警告 0 错误 | 验证脚本：%TEMP%\mnemo-test\step9-verify.ps1、C:\Users\Public\fmttest；注意 PowerShell 5.1 脚本必须 UTF-8 BOM（无 BOM 按 GBK 解析中文注释直接语法错误），Edit 工具重写会丢 BOM 需重补 |
