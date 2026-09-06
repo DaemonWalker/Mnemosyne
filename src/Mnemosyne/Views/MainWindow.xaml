@@ -28,12 +28,14 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="SelectNextOccurrenceCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.FormatDocument}" Executed="FormatDocumentCommand_Executed" CanExecute="FormatDocumentCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}" Executed="OpenMarkdownPreviewCommand_Executed" CanExecute="OpenMarkdownPreviewCommand_CanExecute" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="PlaceholderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.NewFile}" Executed="NewFileCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="OpenSettingsCommand_Executed" />
     </Window.CommandBindings>
 
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="{DynamicResource Loc.Menu.File}">
+                <MenuItem Header="{DynamicResource Loc.Menu.File.NewFile}" Command="{x:Static cmd:AppCommands.NewFile}" />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.Open}" Command="{x:Static cmd:AppCommands.OpenFile}" />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.OpenFolder}" Command="{x:Static cmd:AppCommands.OpenFolder}" />
                 <MenuItem x:Name="RecentFilesMenu"

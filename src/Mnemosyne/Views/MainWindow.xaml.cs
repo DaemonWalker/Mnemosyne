@@ -17,17 +17,20 @@ namespace Mnemosyne.Views;
 public partial class MainWindow : Window
 {
     private readonly LocalizationService _localization;
+    private readonly ConfigService _configService;
     private readonly MainWindowViewModel _viewModel;
     private readonly IReadOnlyList<RoutedUICommand> _appCommands;
+    private SettingsWindow? _settingsWindow;
 
     // 每个 Tab 在 EditorHostGrid 中的常驻内容：普通文档是其 ScintillaHost，预览 Tab 是纯 WPF 视图
     private readonly Dictionary<DocumentViewModel, UIElement> _tabContents = new();
 
-    public MainWindow(ConfigService configService, ThemeService themeService, LocalizationService localization, FileService fileService, RecentFilesService recentFiles, PluginService pluginService, MarkdownRenderService markdownRenderer)
+    public MainWindow(ConfigService configService, ThemeService themeService, LocalizationService localization, FileService fileService, RecentFilesService recentFiles, PluginService pluginService, MarkdownRenderService markdownRenderer, SessionService sessionService)
     {
         InitializeComponent();
         _localization = localization;
-        _viewModel = new MainWindowViewModel(fileService, localization, configService, recentFiles, pluginService, markdownRenderer);
+        _configService = configService;
+        _viewModel = new MainWindowViewModel(fileService, localization, configService, themeService, recentFiles, pluginService, markdownRenderer, sessionService);
         DataContext = _viewModel;
 
         _appCommands = typeof(AppCommands)
@@ -81,6 +84,18 @@ public partial class MainWindow : Window
             string.Format(_localization.GetString("Loc.Dialog.PartialSave.Message"), document.Title),
             _localization.GetString("Loc.Dialog.Confirm.Title"),
             MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+        _viewModel.ConfirmExternalReload = document => MessageBox.Show(this,
+            string.Format(_localization.GetString("Loc.Dialog.ExternalReload.Message"), document.Title),
+            _localization.GetString("Loc.Dialog.Confirm.Title"),
+            MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+        _viewModel.ConfirmExternalConflict = document => MessageBox.Show(this,
+            string.Format(_localization.GetString("Loc.Dialog.ExternalConflict.Message"), document.Title),
+            _localization.GetString("Loc.Dialog.Confirm.Title"),
+            MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+        _viewModel.NotifyExternalDeleted = document => MessageBox.Show(this,
+            string.Format(_localization.GetString("Loc.Dialog.ExternalDeleted.Message"), document.Title),
+            _localization.GetString("Loc.Dialog.Confirm.Title"),
+            MessageBoxButton.OK, MessageBoxImage.Information);
         _viewModel.ShowError = (message, title) =>
             MessageBox.Show(this, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
 
@@ -140,7 +155,12 @@ public partial class MainWindow : Window
         };
 
         Loaded += (_, _) => OpenPendingPaths();
+        // 热退出：进程退出不提示保存（需求 4.9），只兜底暂存脏文档并落盘会话
+        Closing += (_, _) => _viewModel.OnWindowClosing();
     }
+
+    /// <summary>启动时恢复上次会话（由 App 在窗口显示后调用，异步进行不拖慢冷启动）</summary>
+    public Task RestoreSessionAsync() => _viewModel.RestoreSessionAsync();
 
     /// <summary>消费 App.PendingOpenPaths（命令行与次实例转发来的路径）</summary>
     public void OpenPendingPaths()
@@ -558,8 +578,21 @@ public partial class MainWindow : Window
         menu.IsOpen = true;
     }
 
-    // 仅注册快捷键与菜单入口，具体功能由后续 Step 实现
-    private void PlaceholderCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    private void NewFileCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
+        _viewModel.NewFileCommand.Execute(null);
+    }
+
+    private void OpenSettingsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        // 非模态单例窗口：再次触发聚焦既有窗口
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Activate();
+            return;
+        }
+        _settingsWindow = new SettingsWindow(new SettingsViewModel(_configService, _localization, _viewModel)) { Owner = this };
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Show();
     }
 }

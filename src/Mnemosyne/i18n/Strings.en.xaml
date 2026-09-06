@@ -10,6 +10,7 @@
     <sys:String x:Key="Loc.Menu.File.Save">_Save</sys:String>
     <sys:String x:Key="Loc.Menu.File.SaveAs">Save _As...</sys:String>
     <sys:String x:Key="Loc.Menu.File.CloseTab">Close _Tab</sys:String>
+    <sys:String x:Key="Loc.Menu.File.NewFile">_New File</sys:String>
     <sys:String x:Key="Loc.Menu.File.Settings">Se_ttings</sys:String>
     <sys:String x:Key="Loc.Menu.File.RecentFiles">Recent _Files</sys:String>
     <sys:String x:Key="Loc.Menu.File.RecentFolders">Recent F_olders</sys:String>
@@ -74,6 +75,23 @@
     <sys:String x:Key="Loc.Dialog.LoadCancelled.Message">Loading of "{0}" was cancelled; only part of the file is currently loaded.&#xA;&#xA;Yes: close this tab&#xA;No: keep the loaded part</sys:String>
     <sys:String x:Key="Loc.Dialog.PartialSave.Message">"{0}" was only partially loaded. Saving directly would overwrite the original file with incomplete content. Save as a new file instead?</sys:String>
     <sys:String x:Key="Loc.Encoding.Reload.Message">Switching encoding reloads the file from disk and discards unsaved changes. Continue?</sys:String>
+
+    <sys:String x:Key="Loc.Settings.Title">Settings</sys:String>
+    <sys:String x:Key="Loc.Settings.Font">Font</sys:String>
+    <sys:String x:Key="Loc.Settings.FontSize">Font Size</sys:String>
+    <sys:String x:Key="Loc.Settings.Theme">Theme</sys:String>
+    <sys:String x:Key="Loc.Settings.Theme.Dark">Dark</sys:String>
+    <sys:String x:Key="Loc.Settings.Theme.Light">Light</sys:String>
+    <sys:String x:Key="Loc.Settings.Language">Language</sys:String>
+    <sys:String x:Key="Loc.Settings.Language.Chinese">中文</sys:String>
+    <sys:String x:Key="Loc.Settings.Language.English">English</sys:String>
+    <sys:String x:Key="Loc.Settings.Indent">Indentation</sys:String>
+    <sys:String x:Key="Loc.Settings.IndentWidth">Indent Width</sys:String>
+    <sys:String x:Key="Loc.Settings.LargeFileThreshold">Large File Threshold (MB)</sys:String>
+
+    <sys:String x:Key="Loc.Dialog.ExternalReload.Message">The file "{0}" was modified externally. Reload it?</sys:String>
+    <sys:String x:Key="Loc.Dialog.ExternalConflict.Message">The file "{0}" was modified externally and you have unsaved changes. Reloading will discard those changes. Reload it?</sys:String>
+    <sys:String x:Key="Loc.Dialog.ExternalDeleted.Message">The file "{0}" was deleted externally. The content in the editor is kept.</sys:String>
 
     <sys:String x:Key="Loc.Error.Title">Error</sys:String>
     <sys:String x:Key="Loc.Error.OpenFile.Message">Cannot open file "{0}". {1}</sys:String>

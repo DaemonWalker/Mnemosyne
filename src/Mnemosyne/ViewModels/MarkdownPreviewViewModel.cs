@@ -25,9 +25,10 @@ public partial class MarkdownPreviewViewModel : DocumentViewModel
         FileService fileService,
         LocalizationService localization,
         AppSettings settings,
+        SessionService sessionService,
         Action<string> openLocalFile,
         Action<string, string>? showError)
-        : base(fileService, localization, settings)
+        : base(fileService, localization, settings, sessionService)
     {
         Source = source;
         _renderService = renderService;
@@ -43,6 +44,9 @@ public partial class MarkdownPreviewViewModel : DocumentViewModel
 
     /// <summary>预览对应的源 Markdown 文档</summary>
     public DocumentViewModel Source { get; }
+
+    /// <summary>预览 Tab 无可编辑内容，不参与热退出暂存与会话恢复</summary>
+    protected override bool ParticipatesInHotExit => false;
 
     /// <summary>渲染结果控件树（MarkdownRenderService 产出，主题色走资源键自动跟随）</summary>
     [ObservableProperty]

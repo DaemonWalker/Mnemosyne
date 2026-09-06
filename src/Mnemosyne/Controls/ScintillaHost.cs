@@ -161,6 +161,30 @@ public class ScintillaHost : WindowsFormsHost
 
     public void MarkSaved() => _scintilla.SetSavePoint();
 
+    /// <summary>设置光标位置（字符索引，自动钳位）并滚动到可见（会话恢复用）</summary>
+    public void SetCaret(int position)
+    {
+        position = Math.Clamp(position, 0, _scintilla.TextLength);
+        _scintilla.SetEmptySelection(position);
+        _scintilla.ScrollCaret();
+    }
+
+    /// <summary>
+    /// 设置全文并保持"已修改"状态（热退出恢复用）。
+    /// 注意：EmptyUndoBuffer 会把保存点重置到当前位置（实测置文本后 Modified 变回 false），
+    /// 而 Scintilla 只有"到达保存点"消息没有反向消息，因此做一次"插入再删除"的净零编辑让修改标记成立；
+    /// 包成单个撤销动作，用户撤销一次即回到暂存内容（此时文档恰与保存点重合，会短暂显示为干净，属可接受取舍）。
+    /// </summary>
+    public void SetTextAsModified(string text)
+    {
+        _scintilla.Text = text;
+        _scintilla.EmptyUndoBuffer();
+        _scintilla.BeginUndoAction();
+        _scintilla.InsertText(0, " ");
+        _scintilla.DeleteRange(0, 1);
+        _scintilla.EndUndoAction();
+    }
+
     /// <summary>设置全部匹配（indicator 8）与当前匹配（indicator 9，叠加上色）的高亮区间；ranges 为字符索引</summary>
     public void SetSearchHighlights(IReadOnlyList<TextRange> ranges, int currentIndex)
     {

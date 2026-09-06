@@ -10,6 +10,7 @@
     <sys:String x:Key="Loc.Menu.File.Save">保存(_S)</sys:String>
     <sys:String x:Key="Loc.Menu.File.SaveAs">另存为(_A)...</sys:String>
     <sys:String x:Key="Loc.Menu.File.CloseTab">关闭标签页(_W)</sys:String>
+    <sys:String x:Key="Loc.Menu.File.NewFile">新建文件(_N)</sys:String>
     <sys:String x:Key="Loc.Menu.File.Settings">设置(_T)</sys:String>
     <sys:String x:Key="Loc.Menu.File.RecentFiles">最近打开的文件(_R)</sys:String>
     <sys:String x:Key="Loc.Menu.File.RecentFolders">最近打开的文件夹(_F)</sys:String>
@@ -74,6 +75,23 @@
     <sys:String x:Key="Loc.Dialog.LoadCancelled.Message">已取消加载“{0}”，当前只加载了部分内容。&#xA;&#xA;是：关闭该标签页&#xA;否：保留已加载部分</sys:String>
     <sys:String x:Key="Loc.Dialog.PartialSave.Message">“{0}”只加载了部分内容，直接保存会用不完整的内容覆盖原文件。是否另存为新文件？</sys:String>
     <sys:String x:Key="Loc.Encoding.Reload.Message">切换编码将按新编码重新从磁盘加载文件，当前未保存的修改会丢失。是否继续？</sys:String>
+
+    <sys:String x:Key="Loc.Settings.Title">设置</sys:String>
+    <sys:String x:Key="Loc.Settings.Font">字体</sys:String>
+    <sys:String x:Key="Loc.Settings.FontSize">字号</sys:String>
+    <sys:String x:Key="Loc.Settings.Theme">主题</sys:String>
+    <sys:String x:Key="Loc.Settings.Theme.Dark">深色</sys:String>
+    <sys:String x:Key="Loc.Settings.Theme.Light">浅色</sys:String>
+    <sys:String x:Key="Loc.Settings.Language">界面语言</sys:String>
+    <sys:String x:Key="Loc.Settings.Language.Chinese">中文</sys:String>
+    <sys:String x:Key="Loc.Settings.Language.English">English</sys:String>
+    <sys:String x:Key="Loc.Settings.Indent">缩进</sys:String>
+    <sys:String x:Key="Loc.Settings.IndentWidth">缩进宽度</sys:String>
+    <sys:String x:Key="Loc.Settings.LargeFileThreshold">大文件阈值 (MB)</sys:String>
+
+    <sys:String x:Key="Loc.Dialog.ExternalReload.Message">文件“{0}”已被外部修改。是否重新加载？</sys:String>
+    <sys:String x:Key="Loc.Dialog.ExternalConflict.Message">文件“{0}”已被外部修改，且当前有未保存的修改。重新加载将丢失这些修改。是否重新加载？</sys:String>
+    <sys:String x:Key="Loc.Dialog.ExternalDeleted.Message">文件“{0}”已被外部删除，编辑器中的内容保持不变。</sys:String>
 
     <sys:String x:Key="Loc.Error.Title">错误</sys:String>
     <sys:String x:Key="Loc.Error.OpenFile.Message">无法打开文件“{0}”。{1}</sys:String>

@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mnemosyne.Models;
@@ -16,19 +17,26 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly FileService _fileService;
     private readonly LocalizationService _localization;
     private readonly ConfigService _configService;
+    private readonly ThemeService _themeService;
     private readonly PluginService _pluginService;
     private readonly MarkdownRenderService _markdownRenderer;
+    private readonly SessionService _sessionService;
     private readonly AppSettings _settings;
 
     private GridLength _lastSidebarWidth = new(260);
+    private bool _restoringSession;
+    private DispatcherTimer? _sessionDebounce;
+    private readonly HashSet<DocumentViewModel> _externalPrompting = [];
 
-    public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, RecentFilesService recentFiles, PluginService pluginService, MarkdownRenderService markdownRenderer)
+    public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, ThemeService themeService, RecentFilesService recentFiles, PluginService pluginService, MarkdownRenderService markdownRenderer, SessionService sessionService)
     {
         _fileService = fileService;
         _localization = localization;
         _configService = configService;
+        _themeService = themeService;
         _pluginService = pluginService;
         _markdownRenderer = markdownRenderer;
+        _sessionService = sessionService;
         _settings = configService.Settings;
         _wordWrap = _settings.WordWrap;
         _showWhitespace = _settings.ShowWhitespace;
@@ -41,7 +49,11 @@ public partial class MainWindowViewModel : ObservableObject
         SearchPanel.ShowError = (message, title) => ShowError?.Invoke(message, title);
         FileTree.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(FileTreeViewModel.RootNode)) SearchPanel.RefreshFolderState();
+            if (e.PropertyName == nameof(FileTreeViewModel.RootNode))
+            {
+                SearchPanel.RefreshFolderState();
+                SaveSession();
+            }
         };
         Documents.CollectionChanged += OnDocumentsChanged;
     }
@@ -74,6 +86,15 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>截断文档（部分加载）保存到原路径前询问：返回 true 走另存为，false 取消保存</summary>
     public Func<DocumentViewModel, bool>? ConfirmPartialSave { get; set; }
+
+    /// <summary>干净文档被外部修改后询问是否重新加载：true 重新加载，false 保留当前内容</summary>
+    public Func<DocumentViewModel, bool>? ConfirmExternalReload { get; set; }
+
+    /// <summary>脏文档与外部修改冲突时询问：true 重新加载（丢弃未保存修改），false 保留</summary>
+    public Func<DocumentViewModel, bool>? ConfirmExternalConflict { get; set; }
+
+    /// <summary>磁盘文件被外部删除（且文档不脏）时告知用户</summary>
+    public Action<DocumentViewModel>? NotifyExternalDeleted { get; set; }
 
     public Action<string, string>? ShowError { get; set; }
 
@@ -152,7 +173,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         var preview = new MarkdownPreviewViewModel(
-            source, _markdownRenderer, _fileService, _localization, _settings,
+            source, _markdownRenderer, _fileService, _localization, _settings, _sessionService,
             path => _ = OpenDocumentAsync(path),
             (message, title) => ShowError?.Invoke(message, title));
         Documents.Add(preview);
@@ -170,6 +191,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         // 预览 Tab 没有可编辑内容，页内搜索条不挂到它
         FindBar.AttachDocument(value is MarkdownPreviewViewModel ? null : value);
+        SaveSession();
     }
 
     partial void OnSidebarWidthChanged(GridLength value)
@@ -203,6 +225,59 @@ public partial class MainWindowViewModel : ObservableObject
                 string.Format(_localization.GetString("Loc.Error.SaveSettings.Message"), ex.Message),
                 _localization.GetString("Loc.Error.Title"));
         }
+    }
+
+    // ===== 设置即时应用（设置窗口改动即调用，全部落盘 settings.json） =====
+
+    public void ApplyFontSettings(string fontFamily, double fontSize)
+    {
+        _settings.FontFamily = fontFamily;
+        _settings.FontSize = fontSize;
+        foreach (DocumentViewModel doc in Documents) doc.Editor.ApplyFont(fontFamily, fontSize);
+        SaveSettings();
+    }
+
+    public void ApplyThemeSetting(string theme)
+    {
+        _settings.Theme = theme;
+        _themeService.ApplyTheme(theme);
+        SaveSettings();
+    }
+
+    public void ApplyLanguageSetting(string language)
+    {
+        _settings.Language = language;
+        _localization.SetLanguage(language);
+        SaveSettings();
+    }
+
+    /// <summary>修改默认缩进：应用到所有已打开文档并作为新文档默认值</summary>
+    public void ApplyIndentSettings(bool useTabs, int width)
+    {
+        _settings.IndentUseTabs = useTabs;
+        _settings.IndentWidth = width;
+        foreach (DocumentViewModel doc in Documents) doc.SetIndentation(useTabs, width);
+        SaveSettings();
+    }
+
+    public void ApplyLargeFileThreshold(int thresholdMB)
+    {
+        _settings.LargeFileThresholdMB = thresholdMB;
+        SaveSettings();
+    }
+
+    // ===== 新建文档 =====
+
+    [RelayCommand]
+    private void NewFile() => NewDocument();
+
+    /// <summary>新建一个从未保存过的空白文档 Tab</summary>
+    public DocumentViewModel NewDocument()
+    {
+        var document = new DocumentViewModel(_fileService, _localization, _settings, _sessionService);
+        Documents.Add(document);
+        ActiveDocument = document;
+        return document;
     }
 
     [RelayCommand]
@@ -298,7 +373,7 @@ public partial class MainWindowViewModel : ObservableObject
             return null;
         }
 
-        var document = new DocumentViewModel(_fileService, _localization, _settings);
+        var document = new DocumentViewModel(_fileService, _localization, _settings, _sessionService);
 
         // 8.1 阈值判断：超过设置阈值进入大文件模式（边读边显示 + 进度条 + 可取消）
         long fileSize = new FileInfo(fullPath).Length;
@@ -404,8 +479,12 @@ public partial class MainWindowViewModel : ObservableObject
                      .Where(p => ReferenceEquals(p.Source, document)).ToList())
         {
             preview.Detach();
+            preview.DisposeResources();
             Documents.Remove(preview);
         }
+        // 关闭即放弃：热退出暂存一并清除（含"不保存"关闭脏 Tab 的场景）
+        _sessionService.ClearStash(document.HotExitKey);
+        document.DisposeResources();
         Documents.Remove(document);
         if (ActiveDocument is not null && Documents.Contains(ActiveDocument)) return;
         ActiveDocument = Documents.Count > 0 ? Documents[Math.Min(index, Documents.Count - 1)] : null;
@@ -610,7 +689,226 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void OnDocumentsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (e.OldItems is not null)
+        {
+            foreach (DocumentViewModel doc in e.OldItems) UnhookDocument(doc);
+        }
+        if (e.NewItems is not null)
+        {
+            foreach (DocumentViewModel doc in e.NewItems) HookDocument(doc);
+        }
         OnPropertyChanged(nameof(HasOpenDocuments));
         OnPropertyChanged(nameof(ShowEmptyState));
+        SaveSession();
+    }
+
+    private void HookDocument(DocumentViewModel document)
+    {
+        document.Editor.CaretPositionChanged += OnDocumentCaretMoved;
+        document.ExternalChangeDetected += OnExternalChangeDetected;
+        document.PropertyChanged += OnDocumentPropertyChanged;
+    }
+
+    private void UnhookDocument(DocumentViewModel document)
+    {
+        document.Editor.CaretPositionChanged -= OnDocumentCaretMoved;
+        document.ExternalChangeDetected -= OnExternalChangeDetected;
+        document.PropertyChanged -= OnDocumentPropertyChanged;
+    }
+
+    private void OnDocumentCaretMoved(object? sender, EventArgs e) => ScheduleSessionSave();
+
+    private void OnDocumentPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // 另存为/首次保存后路径变化，会话里的 Tab 记录需更新
+        if (e.PropertyName == nameof(DocumentViewModel.FilePath)) SaveSession();
+    }
+
+    // ===== 会话恢复（cache/session.json） =====
+
+    /// <summary>立即保存会话（Tab 增删/移动/活动切换/文件夹变化时调用）</summary>
+    private void SaveSession()
+    {
+        if (_restoringSession) return;
+        _sessionService.SaveSession(BuildSessionState());
+    }
+
+    /// <summary>光标移动等高频变化走 1 秒防抖保存，避免频繁落盘</summary>
+    private void ScheduleSessionSave()
+    {
+        if (_restoringSession) return;
+        if (_sessionDebounce is null)
+        {
+            _sessionDebounce = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _sessionDebounce.Tick += (_, _) =>
+            {
+                _sessionDebounce.Stop();
+                SaveSession();
+            };
+        }
+        _sessionDebounce.Stop();
+        _sessionDebounce.Start();
+    }
+
+    private SessionState BuildSessionState()
+    {
+        // Markdown 预览 Tab 不进会话（启动时不恢复预览，用户可重新打开）
+        List<DocumentViewModel> tabs = Documents.Where(d => d is not MarkdownPreviewViewModel).ToList();
+        return new SessionState
+        {
+            Tabs = tabs.Select(d => new SessionTab
+            {
+                FilePath = d.FilePath,
+                HotExitKey = d.FilePath is null ? d.HotExitKey : null,
+                Title = d.FilePath is null ? d.Title : null,
+                CaretPosition = d.Editor.CaretPosition,
+            }).ToList(),
+            ActiveTabIndex = ActiveDocument is not null ? tabs.IndexOf(ActiveDocument) : -1,
+            OpenFolder = FileTree.RootNode?.FullPath,
+        };
+    }
+
+    /// <summary>启动时恢复上次会话（窗口显示后异步执行，不拖慢冷启动）</summary>
+    public async Task RestoreSessionAsync()
+    {
+        SessionState? state = _sessionService.LoadSession();
+        if (state is null || (state.Tabs.Count == 0 && state.OpenFolder is null)) return;
+
+        _restoringSession = true;
+        var restoredKeys = new HashSet<string>(StringComparer.Ordinal);
+        var restoredDocs = new List<DocumentViewModel>();
+        try
+        {
+            foreach (SessionTab tab in state.Tabs)
+            {
+                try
+                {
+                    DocumentViewModel? document = await RestoreTabAsync(tab, restoredKeys);
+                    if (document is not null) restoredDocs.Add(document);
+                }
+                catch (Exception)
+                {
+                    // 单个 Tab 恢复失败不影响其余 Tab
+                }
+            }
+            if (state.OpenFolder is not null && Directory.Exists(state.OpenFolder))
+            {
+                OpenFolder(state.OpenFolder);
+            }
+            if (state.ActiveTabIndex >= 0 && state.ActiveTabIndex < restoredDocs.Count)
+            {
+                ActiveDocument = restoredDocs[state.ActiveTabIndex];
+            }
+            // 清理孤儿暂存（Tab 被关闭时 ClearStash 失败的残留）
+            foreach (string key in _sessionService.ListStashKeys())
+            {
+                if (!restoredKeys.Contains(key)) _sessionService.ClearStash(key);
+            }
+        }
+        finally
+        {
+            _restoringSession = false;
+            SaveSession();
+        }
+    }
+
+    private async Task<DocumentViewModel?> RestoreTabAsync(SessionTab tab, HashSet<string> restoredKeys)
+    {
+        if (tab.FilePath is not null)
+        {
+            if (!File.Exists(tab.FilePath)) return null;
+            DocumentViewModel? document = await OpenDocumentAsync(tab.FilePath);
+            if (document is null) return null;
+            string key = SessionService.KeyForPath(tab.FilePath);
+            restoredKeys.Add(key);
+            // 有热退出暂存且内容与磁盘不一致时恢复未保存修改（恢复为脏文档）
+            if (_sessionService.ReadStash(key) is { } stash)
+            {
+                if (stash.Content != document.Editor.Text)
+                {
+                    document.RestoreStashContent(stash.Content, tab.CaretPosition);
+                }
+                else
+                {
+                    _sessionService.ClearStash(key);
+                }
+            }
+            // 大文件异步加载未完成时不恢复光标（位置可能超出已加载范围）
+            if (!document.IsDirty && !document.IsLoading) document.RestoreCaret(tab.CaretPosition);
+            return document;
+        }
+
+        if (tab.HotExitKey is null || _sessionService.ReadStash(tab.HotExitKey) is not { } untitledStash) return null;
+        restoredKeys.Add(tab.HotExitKey);
+        DocumentViewModel untitled = NewDocument();
+        // 沿用原暂存键，防抖写回时仍落到同一暂存文件
+        untitled.HotExitKey = tab.HotExitKey;
+        if (!string.IsNullOrEmpty(untitledStash.Metadata.Title)) untitled.Title = untitledStash.Metadata.Title;
+        untitled.RestoreStashContent(untitledStash.Content, tab.CaretPosition);
+        return untitled;
+    }
+
+    /// <summary>窗口关闭：热退出兜底（同步暂存全部脏文档）+ 会话落盘；不提示保存（需求 4.9）</summary>
+    public void OnWindowClosing()
+    {
+        _sessionDebounce?.Stop();
+        foreach (DocumentViewModel doc in Documents) doc.FlushStash();
+        SaveSession();
+    }
+
+    // ===== 外部修改检测 =====
+
+    private void OnExternalChangeDetected(object? sender, EventArgs e)
+    {
+        if (sender is DocumentViewModel document) _ = HandleExternalChangeAsync(document);
+    }
+
+    private async Task HandleExternalChangeAsync(DocumentViewModel document)
+    {
+        // 同一文档同一时间只弹一个提示；加载中的文档不处理（加载完成后状态自然刷新）
+        if (document.IsLoading || !_externalPrompting.Add(document)) return;
+        try
+        {
+            string? path = document.FilePath;
+            if (path is null || !Documents.Contains(document)) return;
+
+            if (!File.Exists(path))
+            {
+                // 外部删除：脏文档继续编辑不打扰；干净文档告知一次，内容保留
+                document.ResetExternalTimestamp();
+                if (!document.IsDirty) NotifyExternalDeleted?.Invoke(document);
+                return;
+            }
+
+            bool reload = document.IsDirty
+                ? ConfirmExternalConflict?.Invoke(document) == true
+                : ConfirmExternalReload?.Invoke(document) == true;
+            if (!reload)
+            {
+                // 保留当前内容：记住当前 mtime，下一次外部变化再提示
+                document.RefreshExternalTimestamp();
+                return;
+            }
+
+            // 重新加载：脏文档的未保存修改丢弃，热退出暂存随内容替换自动清除
+            document.RefreshExternalTimestamp();
+            if (new FileInfo(path).Length > (long)_settings.LargeFileThresholdMB * 1024 * 1024)
+            {
+                _ = LoadLargeDocumentAsync(document, path, document.CurrentEncoding);
+                return;
+            }
+            try
+            {
+                await document.ReloadWithEncodingAsync(document.CurrentEncoding);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                ReportError("Loc.Error.OpenFile.Message", path, ex.Message);
+            }
+        }
+        finally
+        {
+            _externalPrompting.Remove(document);
+        }
     }
 }

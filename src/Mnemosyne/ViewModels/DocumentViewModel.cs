@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Mnemosyne.Controls;
 using Mnemosyne.Models;
@@ -10,11 +11,13 @@ namespace Mnemosyne.ViewModels;
 /// <summary>
 /// 一个打开的文档（对应一个 Tab）。持有自己的 ScintillaHost 实例（每 Tab 一个，见 architecture.md 4.2）。
 /// 文件 IO 异常直接抛给上层（MainWindowViewModel 统一转为本地化提示）。
+/// 脏文档内容由本类自行防抖暂存到热退出缓存（进程退出时由上层 FlushStash 兜底）。
 /// </summary>
 public partial class DocumentViewModel : ObservableObject
 {
     private readonly FileService _fileService;
     private readonly LocalizationService _localization;
+    private readonly SessionService _sessionService;
 
     [ObservableProperty]
     private string _title;
@@ -59,10 +62,16 @@ public partial class DocumentViewModel : ObservableObject
 
     private CancellationTokenSource? _loadCts;
 
-    public DocumentViewModel(FileService fileService, LocalizationService localization, AppSettings settings)
+    private DispatcherTimer? _stashDebounce;
+    private FileSystemWatcher? _externalWatcher;
+    private DateTime? _lastWriteUtc;
+    private bool _suppressExternalEvent;
+
+    public DocumentViewModel(FileService fileService, LocalizationService localization, AppSettings settings, SessionService sessionService)
     {
         _fileService = fileService;
         _localization = localization;
+        _sessionService = sessionService;
         _title = localization.GetString("Loc.Tab.Untitled");
 
         _indentUseTabs = settings.IndentUseTabs;
@@ -76,6 +85,7 @@ public partial class DocumentViewModel : ObservableObject
         {
             IsDirty = Editor.IsDirty;
             ContentChanged?.Invoke(this, EventArgs.Empty);
+            ScheduleStash();
         };
         Editor.CaretPositionChanged += (_, _) =>
         {
@@ -92,8 +102,17 @@ public partial class DocumentViewModel : ObservableObject
 
     public ScintillaHost Editor { get; }
 
+    /// <summary>热退出暂存键：文件文档为路径哈希，新建文档为随机 GUID（首次保存时迁移）</summary>
+    public string HotExitKey { get; internal set; } = SessionService.NewKeyForUntitled();
+
+    /// <summary>是否参与热退出暂存（Markdown 预览 Tab 不参与）</summary>
+    protected virtual bool ParticipatesInHotExit => true;
+
     /// <summary>文档内容变化（搜索条借此刷新匹配；保存点变化也会触发，重搜一次无害）</summary>
     public event EventHandler? ContentChanged;
+
+    /// <summary>磁盘上的文件被外部修改/删除（经 mtime 过滤掉本程序自己的写入与噪声事件）</summary>
+    public event EventHandler? ExternalChangeDetected;
 
     public Encoding CurrentEncoding { get; private set; } = EncodingCatalog.Utf8NoBom;
 
@@ -188,11 +207,16 @@ public partial class DocumentViewModel : ObservableObject
 
     public async Task SaveAsync(string path, CancellationToken cancellationToken = default)
     {
+        // 自己的写入也会触发 FileSystemWatcher，置抑制标记让首个事件被消费掉
+        _suppressExternalEvent = true;
         await _fileService.WriteAsync(path, Editor.Text, CurrentEncoding, cancellationToken);
         FilePath = path;
         Title = Path.GetFileName(path);
+        RefreshExternalTimestamp();
         Editor.MarkSaved();
         IsDirty = false;
+        // 正常保存后清除对应热退出暂存（FilePath 已设置，暂存键已迁移为路径哈希）
+        _sessionService.ClearStash(HotExitKey);
         Saved?.Invoke(this, EventArgs.Empty);
     }
 
@@ -253,6 +277,155 @@ public partial class DocumentViewModel : ObservableObject
         Line = Editor.CurrentLineNumber;
         Column = Editor.CurrentColumn;
     }
+
+    // ===== 热退出暂存 =====
+
+    private void ScheduleStash()
+    {
+        if (!ParticipatesInHotExit) return;
+        if (!IsDirty)
+        {
+            // 干净态不清暂存：打开/重载文档时也会经过干净态，若此时清除会把待恢复的暂存误删。
+            // 暂存的清除只在三处显式发生：保存成功（SaveAsync）、Tab 被移除（上层）、另存为迁移暂存键
+            _stashDebounce?.Stop();
+            return;
+        }
+        if (_stashDebounce is null)
+        {
+            _stashDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+            _stashDebounce.Tick += OnStashDebounceTick;
+        }
+        _stashDebounce.Stop();
+        _stashDebounce.Start();
+    }
+
+    private void OnStashDebounceTick(object? sender, EventArgs e)
+    {
+        _stashDebounce?.Stop();
+        if (!IsDirty) return;
+        // 大文档写出放后台线程，避免阻塞 UI
+        string content = Editor.Text;
+        HotExitStash metadata = CreateStashMetadata();
+        string key = HotExitKey;
+        _ = Task.Run(() => _sessionService.WriteStash(key, metadata, content));
+    }
+
+    /// <summary>进程退出前兜底：同步把脏文档写入暂存（防抖计时器可能还挂着）</summary>
+    public void FlushStash()
+    {
+        if (!ParticipatesInHotExit) return;
+        _stashDebounce?.Stop();
+        if (IsDirty) _sessionService.WriteStash(HotExitKey, CreateStashMetadata(), Editor.Text);
+    }
+
+    /// <summary>Tab 被移除时调用：停防抖、释放外部修改监听。暂存清理由上层按语义决定。</summary>
+    public void DisposeResources()
+    {
+        _stashDebounce?.Stop();
+        _externalWatcher?.Dispose();
+        _externalWatcher = null;
+    }
+
+    private HotExitStash CreateStashMetadata() => new() { FilePath = FilePath, Title = Title };
+
+    /// <summary>用热退出暂存内容替换全文并保持脏状态，同时恢复光标与行尾模式</summary>
+    public void RestoreStashContent(string text, int caretPosition)
+    {
+        Editor.SetTextAsModified(text);
+        Editor.SetLineEnding(FileService.DetectLineEnding(text), convert: false);
+        LineEndingName = ToDisplayName(Editor.CurrentLineEnding);
+        IsDirty = Editor.IsDirty;
+        RestoreCaret(caretPosition);
+    }
+
+    /// <summary>恢复光标位置（字符索引），并同步状态栏行列号</summary>
+    public void RestoreCaret(int position)
+    {
+        Editor.SetCaret(position);
+        Line = Editor.CurrentLineNumber;
+        Column = Editor.CurrentColumn;
+    }
+
+    // ===== 外部修改检测（FileSystemWatcher + mtime 过滤） =====
+
+    partial void OnFilePathChanged(string? value)
+    {
+        // 暂存键跟随路径：新建文档首次保存（或另存为）后改用路径哈希键，旧 GUID 暂存清除
+        if (value is not null)
+        {
+            string newKey = SessionService.KeyForPath(value);
+            if (!string.Equals(newKey, HotExitKey, StringComparison.Ordinal))
+            {
+                string oldKey = HotExitKey;
+                HotExitKey = newKey;
+                _sessionService.ClearStash(oldKey);
+            }
+        }
+        SetupExternalWatcher();
+    }
+
+    private void SetupExternalWatcher()
+    {
+        _externalWatcher?.Dispose();
+        _externalWatcher = null;
+        _lastWriteUtc = null;
+        string? path = FilePath;
+        if (path is null) return;
+        try
+        {
+            _lastWriteUtc = File.GetLastWriteTimeUtc(path);
+            string? directory = Path.GetDirectoryName(path);
+            if (directory is null) return;
+            var watcher = new FileSystemWatcher(directory, Path.GetFileName(path))
+            {
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
+            };
+            watcher.Changed += OnExternalFileEvent;
+            watcher.Deleted += OnExternalFileEvent;
+            watcher.Renamed += OnExternalFileEvent;
+            watcher.Error += OnExternalFileEvent;
+            watcher.EnableRaisingEvents = true;
+            _externalWatcher = watcher;
+        }
+        catch (Exception)
+        {
+            // 监听失败仅失去该文档的外部修改检测，不影响编辑本身
+        }
+    }
+
+    private void OnExternalFileEvent(object? sender, FileSystemEventArgs e) => NotifyExternalEvent();
+
+    private void OnExternalFileEvent(object? sender, RenamedEventArgs e) => NotifyExternalEvent();
+
+    private void OnExternalFileEvent(object? sender, ErrorEventArgs e) => NotifyExternalEvent();
+
+    private void NotifyExternalEvent()
+    {
+        if (_suppressExternalEvent)
+        {
+            _suppressExternalEvent = false;
+            RefreshExternalTimestamp();
+            return;
+        }
+        // mtime 未真正变化视为噪声（属性/访问时间等），文件消失（删除/改名）总是上报
+        string? path = FilePath;
+        if (path is not null && File.Exists(path) && _lastWriteUtc is { } last && File.GetLastWriteTimeUtc(path) <= last)
+        {
+            return;
+        }
+        Dispatcher dispatcher = System.Windows.Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+        dispatcher.BeginInvoke(() => ExternalChangeDetected?.Invoke(this, EventArgs.Empty));
+    }
+
+    /// <summary>把磁盘当前 mtime 记为已见（保存后、用户选择"保留"后调用，避免重复提示）</summary>
+    public void RefreshExternalTimestamp()
+    {
+        string? path = FilePath;
+        _lastWriteUtc = path is not null && File.Exists(path) ? File.GetLastWriteTimeUtc(path) : null;
+    }
+
+    /// <summary>用户选择"保留"后清除记录，使下一次外部变化重新提示</summary>
+    public void ResetExternalTimestamp() => _lastWriteUtc = null;
 
     private void ApplyReadResult(string path, FileReadResult result)
     {

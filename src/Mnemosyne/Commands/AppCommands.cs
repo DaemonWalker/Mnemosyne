@@ -6,6 +6,9 @@ public static class AppCommands
 {
     public static RoutedUICommand OpenFile { get; } = Create(nameof(OpenFile), Key.O);
 
+    // 热退出需要支持"从未保存过的新建文档"，故提供新建文件入口（Ctrl+N 为常见约定）
+    public static RoutedUICommand NewFile { get; } = Create(nameof(NewFile), Key.N);
+
     public static RoutedUICommand OpenFolder { get; } = Create(nameof(OpenFolder), Key.O, ModifierKeys.Shift);
 
     public static RoutedUICommand Save { get; } = Create(nameof(Save), Key.S);
