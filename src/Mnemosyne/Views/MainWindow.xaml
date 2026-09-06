@@ -19,14 +19,15 @@
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenFile}" Executed="OpenFileCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenFolder}" Executed="OpenFolderCommand_Executed" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.Save}" Executed="SaveCommand_Executed" CanExecute="SaveCommand_CanExecute" />
-        <CommandBinding Command="{x:Static cmd:AppCommands.SaveAs}" Executed="SaveAsCommand_Executed" CanExecute="SaveCommand_CanExecute" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.Save}" Executed="SaveCommand_Executed" CanExecute="SaveLikeCommand_CanExecute" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.SaveAs}" Executed="SaveAsCommand_Executed" CanExecute="SaveLikeCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Find}" Executed="FindCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Replace}" Executed="ReplaceCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SearchInFolder}" Executed="SearchInFolderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.CloseTab}" Executed="CloseTabCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="SelectNextOccurrenceCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.FormatDocument}" Executed="FormatDocumentCommand_Executed" CanExecute="FormatDocumentCommand_CanExecute" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}" Executed="OpenMarkdownPreviewCommand_Executed" CanExecute="OpenMarkdownPreviewCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="PlaceholderCommand_Executed" />
     </Window.CommandBindings>
 
@@ -219,13 +220,22 @@
                 </TabControl>
 
                 <!-- 搜索/替换条：WPF/WinForms 空域限制下 WPF 浮层无法覆盖 WindowsFormsHost（Scintilla），
-                     故占编辑器区顶部一整行（右对齐），收起时高度为 0 -->
-                <views:FindBarView x:Name="FindBar"
-                                   Grid.Row="1"
-                                   DataContext="{Binding FindBar}"
-                                   HorizontalAlignment="Right"
-                                   Margin="0,4,24,4"
-                                   Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" />
+                     故占编辑器区顶部一整行（右对齐），收起时高度为 0；
+                     同行右侧为 Markdown 预览按钮（仅 Markdown 文档显示，非 md 文件隐藏） -->
+                <Grid Grid.Row="1">
+                    <views:FindBarView x:Name="FindBar"
+                                       DataContext="{Binding FindBar}"
+                                       HorizontalAlignment="Right"
+                                       Margin="0,4,72,4"
+                                       Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" />
+                    <Button Style="{StaticResource EditorToolbarButtonStyle}"
+                            Content="{DynamicResource Loc.Markdown.Preview}"
+                            ToolTip="{DynamicResource Loc.Markdown.Preview.Tooltip}"
+                            Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}"
+                            HorizontalAlignment="Right"
+                            Margin="0,4,8,4"
+                            Visibility="{Binding CanPreviewActiveDocument, Converter={StaticResource BoolToVisibility}}" />
+                </Grid>
 
                 <!-- ScintillaHost（WindowsFormsHost）从可视树移除会销毁原生句柄并丢失文档内容，
                      因此所有实例常驻此 Grid，仅切换 Visibility，不经 TabControl ContentPresenter 换页 -->

@@ -193,7 +193,11 @@ public partial class DocumentViewModel : ObservableObject
         Title = Path.GetFileName(path);
         Editor.MarkSaved();
         IsDirty = false;
+        Saved?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>文档成功保存到磁盘（Markdown 预览 Tab 借此自动刷新）</summary>
+    public event EventHandler? Saved;
 
     /// <summary>按指定编码重新从磁盘加载（内容被替换，未保存修改丢失，调用方需先确认）</summary>
     public async Task ReloadWithEncodingAsync(Encoding encoding, CancellationToken cancellationToken = default)

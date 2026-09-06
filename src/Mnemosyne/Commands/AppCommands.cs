@@ -22,6 +22,8 @@ public static class AppCommands
 
     public static RoutedUICommand SelectNextOccurrence { get; } = Create(nameof(SelectNextOccurrence), Key.D);
 
+    public static RoutedUICommand OpenMarkdownPreview { get; } = Create(nameof(OpenMarkdownPreview), Key.V, ModifierKeys.Shift);
+
     // 无快捷键：仅菜单/编辑器右键入口（需求 4.11 未为其定义快捷键）
     public static RoutedUICommand FormatDocument { get; } =
         new(nameof(FormatDocument), nameof(FormatDocument), typeof(AppCommands));

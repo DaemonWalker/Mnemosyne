@@ -118,5 +118,6 @@
     <sys:String x:Key="Loc.Markdown.Preview.Title">Preview: {0}</sys:String>
     <sys:String x:Key="Loc.Markdown.ImageFailed">Failed to load image: {0}</sys:String>
     <sys:String x:Key="Loc.Error.OpenLink.Message">Cannot open link "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Error.OpenLink.NotFound">Target file does not exist</sys:String>
 
 </ResourceDictionary>

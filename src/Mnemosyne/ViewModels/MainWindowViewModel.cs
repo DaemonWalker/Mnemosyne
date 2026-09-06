@@ -17,16 +17,18 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly LocalizationService _localization;
     private readonly ConfigService _configService;
     private readonly PluginService _pluginService;
+    private readonly MarkdownRenderService _markdownRenderer;
     private readonly AppSettings _settings;
 
     private GridLength _lastSidebarWidth = new(260);
 
-    public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, RecentFilesService recentFiles, PluginService pluginService)
+    public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, RecentFilesService recentFiles, PluginService pluginService, MarkdownRenderService markdownRenderer)
     {
         _fileService = fileService;
         _localization = localization;
         _configService = configService;
         _pluginService = pluginService;
+        _markdownRenderer = markdownRenderer;
         _settings = configService.Settings;
         _wordWrap = _settings.WordWrap;
         _showWhitespace = _settings.ShowWhitespace;
@@ -107,6 +109,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasActiveDocument))]
+    [NotifyPropertyChangedFor(nameof(CanSaveActive))]
+    [NotifyPropertyChangedFor(nameof(CanPreviewActiveDocument))]
     [NotifyCanExecuteChangedFor(nameof(SaveActiveCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveActiveAsCommand))]
     [NotifyCanExecuteChangedFor(nameof(CloseActiveTabCommand))]
@@ -122,6 +126,39 @@ public partial class MainWindowViewModel : ObservableObject
 
     public bool HasActiveDocument => ActiveDocument is not null;
 
+    /// <summary>预览 Tab 无内容可保存，保存/另存命令对其禁用</summary>
+    public bool CanSaveActive => ActiveDocument is not null and not MarkdownPreviewViewModel;
+
+    /// <summary>当前活动文档可打开 Markdown 预览（非预览 Tab、语言为 Markdown、不在大文件加载中）</summary>
+    public bool CanPreviewActiveDocument =>
+        ActiveDocument is { IsLoading: false } document &&
+        document is not MarkdownPreviewViewModel &&
+        IsMarkdown(document);
+
+    private static bool IsMarkdown(DocumentViewModel document) =>
+        string.Equals(document.Language.LexerName, "markdown", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>为活动 Markdown 文档打开预览 Tab；已有对应预览时聚焦既有 Tab</summary>
+    public void OpenMarkdownPreview()
+    {
+        if (!CanPreviewActiveDocument) return;
+        DocumentViewModel source = ActiveDocument!;
+        MarkdownPreviewViewModel? existing = Documents.OfType<MarkdownPreviewViewModel>()
+            .FirstOrDefault(p => ReferenceEquals(p.Source, source));
+        if (existing is not null)
+        {
+            ActiveDocument = existing;
+            return;
+        }
+
+        var preview = new MarkdownPreviewViewModel(
+            source, _markdownRenderer, _fileService, _localization, _settings,
+            path => _ = OpenDocumentAsync(path),
+            (message, title) => ShowError?.Invoke(message, title));
+        Documents.Add(preview);
+        ActiveDocument = preview;
+    }
+
     public bool ShowEmptyState => Documents.Count == 0;
 
     partial void OnActivePanelChanged(ActivityPanel? value)
@@ -131,7 +168,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnActiveDocumentChanged(DocumentViewModel? value)
     {
-        FindBar.AttachDocument(value);
+        // 预览 Tab 没有可编辑内容，页内搜索条不挂到它
+        FindBar.AttachDocument(value is MarkdownPreviewViewModel ? null : value);
     }
 
     partial void OnSidebarWidthChanged(GridLength value)
@@ -357,25 +395,29 @@ public partial class MainWindowViewModel : ObservableObject
         _loadingDocument?.CancelLoad();
     }
 
-    /// <summary>从 Tab 集合移除文档（不触发脏确认；调用方负责先行确认）</summary>
+    /// <summary>从 Tab 集合移除文档（不触发脏确认；调用方负责先行确认）。源 Markdown 文档被移除时联动移除其预览 Tab。</summary>
     private void RemoveDocument(DocumentViewModel document)
     {
         int index = Documents.IndexOf(document);
         if (index < 0) return;
-        Documents.Remove(document);
-        if (ReferenceEquals(ActiveDocument, document) && Documents.Count > 0)
+        foreach (MarkdownPreviewViewModel preview in Documents.OfType<MarkdownPreviewViewModel>()
+                     .Where(p => ReferenceEquals(p.Source, document)).ToList())
         {
-            ActiveDocument = Documents[Math.Min(index, Documents.Count - 1)];
+            preview.Detach();
+            Documents.Remove(preview);
         }
+        Documents.Remove(document);
+        if (ActiveDocument is not null && Documents.Contains(ActiveDocument)) return;
+        ActiveDocument = Documents.Count > 0 ? Documents[Math.Min(index, Documents.Count - 1)] : null;
     }
 
-    [RelayCommand(CanExecute = nameof(HasActiveDocument))]
+    [RelayCommand(CanExecute = nameof(CanSaveActive))]
     private Task<bool> SaveActiveAsync()
     {
         return SaveDocumentAsync(ActiveDocument!, forcePicker: false);
     }
 
-    [RelayCommand(CanExecute = nameof(HasActiveDocument))]
+    [RelayCommand(CanExecute = nameof(CanSaveActive))]
     private Task<bool> SaveActiveAsAsync()
     {
         return SaveDocumentAsync(ActiveDocument!, forcePicker: true);

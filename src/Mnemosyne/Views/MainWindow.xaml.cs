@@ -20,11 +20,14 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel _viewModel;
     private readonly IReadOnlyList<RoutedUICommand> _appCommands;
 
-    public MainWindow(ConfigService configService, ThemeService themeService, LocalizationService localization, FileService fileService, RecentFilesService recentFiles, PluginService pluginService)
+    // 每个 Tab 在 EditorHostGrid 中的常驻内容：普通文档是其 ScintillaHost，预览 Tab 是纯 WPF 视图
+    private readonly Dictionary<DocumentViewModel, UIElement> _tabContents = new();
+
+    public MainWindow(ConfigService configService, ThemeService themeService, LocalizationService localization, FileService fileService, RecentFilesService recentFiles, PluginService pluginService, MarkdownRenderService markdownRenderer)
     {
         InitializeComponent();
         _localization = localization;
-        _viewModel = new MainWindowViewModel(fileService, localization, configService, recentFiles, pluginService);
+        _viewModel = new MainWindowViewModel(fileService, localization, configService, recentFiles, pluginService, markdownRenderer);
         DataContext = _viewModel;
 
         _appCommands = typeof(AppCommands)
@@ -103,16 +106,30 @@ public partial class MainWindow : Window
         {
             if (e.OldItems is not null)
             {
-                foreach (DocumentViewModel doc in e.OldItems) EditorHostGrid.Children.Remove(doc.Editor);
+                foreach (DocumentViewModel doc in e.OldItems)
+                {
+                    if (_tabContents.Remove(doc, out UIElement? content)) EditorHostGrid.Children.Remove(content);
+                }
             }
             if (e.NewItems is not null)
             {
                 foreach (DocumentViewModel doc in e.NewItems)
                 {
-                    doc.Editor.Visibility = Visibility.Collapsed;
-                    doc.Editor.EditorKeyDown += OnEditorKeyDown;
-                    doc.Editor.EditorRightClick += OnEditorRightClick;
-                    EditorHostGrid.Children.Add(doc.Editor);
+                    UIElement content;
+                    if (doc is MarkdownPreviewViewModel preview)
+                    {
+                        // 预览 Tab 是纯 WPF 内容，不受空域限制，直接放常驻 Grid
+                        content = new MarkdownPreviewView { DataContext = preview };
+                    }
+                    else
+                    {
+                        content = doc.Editor;
+                        doc.Editor.EditorKeyDown += OnEditorKeyDown;
+                        doc.Editor.EditorRightClick += OnEditorRightClick;
+                    }
+                    content.Visibility = Visibility.Collapsed;
+                    _tabContents[doc] = content;
+                    EditorHostGrid.Children.Add(content);
                 }
             }
             UpdateEditorVisibility();
@@ -141,9 +158,12 @@ public partial class MainWindow : Window
             child.Visibility = Visibility.Collapsed;
         }
         DocumentViewModel? active = _viewModel.ActiveDocument;
-        if (active is null) return;
-        active.Editor.Visibility = Visibility.Visible;
-        Dispatcher.BeginInvoke(DispatcherPriority.Input, () => active.Editor.FocusEditor());
+        if (active is null || !_tabContents.TryGetValue(active, out UIElement? content)) return;
+        content.Visibility = Visibility.Visible;
+        if (active is not MarkdownPreviewViewModel)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () => active.Editor.FocusEditor());
+        }
     }
 
     // WinForms 子控件聚焦时 WPF 收不到快捷键，ScintillaHost 转发按键后在此匹配 AppCommands 手势
@@ -460,6 +480,21 @@ public partial class MainWindow : Window
     private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         e.CanExecute = _viewModel.HasActiveDocument;
+    }
+
+    private void SaveLikeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _viewModel.CanSaveActive;
+    }
+
+    private void OpenMarkdownPreviewCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        _viewModel.OpenMarkdownPreview();
+    }
+
+    private void OpenMarkdownPreviewCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _viewModel.CanPreviewActiveDocument;
     }
 
     private void CloseTabCommand_Executed(object sender, ExecutedRoutedEventArgs e)
