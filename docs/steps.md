@@ -118,11 +118,11 @@
 
 **目标**：插件加载机制 + 三个内置格式化器。
 
-- [ ] 9.1 Abstractions：`ICodeFormatter` 接口（含 XML 文档注释）、`FormatterOptions`、元数据属性
-- [ ] 9.2 `PluginService`：扫描 `plugins/` 目录反射加载，逐插件隔离异常，失败记日志；提供按语言查询
-- [ ] 9.3 JSON 格式化器（System.Text.Json 解析后美化输出，缩进跟随当前编辑器设置）
-- [ ] 9.4 XML 格式化器（XDocument 美化，保留声明与注释）
-- [ ] 9.5 HTML 格式化器（容错解析，不规则 HTML 不报错；可自行实现缩进排版）
+- [x] 9.1 Abstractions：`ICodeFormatter` 接口（含 XML 文档注释）、`FormatterOptions`、元数据属性
+- [x] 9.2 `PluginService`：扫描 `plugins/` 目录反射加载，逐插件隔离异常，失败记日志；提供按语言查询
+- [x] 9.3 JSON 格式化器（System.Text.Json 解析后美化输出，缩进跟随当前编辑器设置）
+- [x] 9.4 XML 格式化器（XDocument 美化，保留声明与注释）
+- [x] 9.5 HTML 格式化器（容错解析，不规则 HTML 不报错；可自行实现缩进排版）
 - [ ] 9.6 UI 入口：编辑菜单与编辑器右键"格式化文档"，按当前语言匹配插件，无匹配时禁用并提示
 
 **验收**：三个格式化器对合法/非法输入行为正确（非法输入给错误提示且不破坏原文）；删除某插件 dll 后其余功能不受影响。

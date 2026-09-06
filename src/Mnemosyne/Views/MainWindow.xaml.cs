@@ -20,11 +20,11 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel _viewModel;
     private readonly IReadOnlyList<RoutedUICommand> _appCommands;
 
-    public MainWindow(ConfigService configService, ThemeService themeService, LocalizationService localization, FileService fileService, RecentFilesService recentFiles)
+    public MainWindow(ConfigService configService, ThemeService themeService, LocalizationService localization, FileService fileService, RecentFilesService recentFiles, PluginService pluginService)
     {
         InitializeComponent();
         _localization = localization;
-        _viewModel = new MainWindowViewModel(fileService, localization, configService, recentFiles);
+        _viewModel = new MainWindowViewModel(fileService, localization, configService, recentFiles, pluginService);
         DataContext = _viewModel;
 
         _appCommands = typeof(AppCommands)
@@ -111,6 +111,7 @@ public partial class MainWindow : Window
                 {
                     doc.Editor.Visibility = Visibility.Collapsed;
                     doc.Editor.EditorKeyDown += OnEditorKeyDown;
+                    doc.Editor.EditorRightClick += OnEditorRightClick;
                     EditorHostGrid.Children.Add(doc.Editor);
                 }
             }
@@ -493,6 +494,32 @@ public partial class MainWindow : Window
     private void SelectNextOccurrenceCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         _viewModel.ActiveDocument?.Editor.SelectNextOccurrence();
+    }
+
+    private void FormatDocumentCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        _ = _viewModel.FormatActiveDocumentAsync();
+    }
+
+    private void FormatDocumentCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _viewModel.CanFormatActiveDocument;
+    }
+
+    // 编辑器内右键（Scintilla 内置英文菜单已在 ScintillaHost 关闭，改用本地化 WPF 菜单）
+    private void OnEditorRightClick(object? sender, EventArgs e)
+    {
+        var menu = new ContextMenu { Style = (Style)FindResource("PopupContextMenuStyle") };
+        var item = new MenuItem
+        {
+            Style = (Style)FindResource("PopupMenuItemStyle"),
+            Header = _localization.GetString("Loc.Menu.Edit.FormatDocument"),
+            IsEnabled = _viewModel.CanFormatActiveDocument,
+        };
+        item.Click += (_, _) => _ = _viewModel.FormatActiveDocumentAsync();
+        menu.Items.Add(item);
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+        menu.IsOpen = true;
     }
 
     // 仅注册快捷键与菜单入口，具体功能由后续 Step 实现

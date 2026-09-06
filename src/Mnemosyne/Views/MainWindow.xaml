@@ -26,6 +26,7 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.SearchInFolder}" Executed="SearchInFolderCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.CloseTab}" Executed="CloseTabCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="SelectNextOccurrenceCommand_Executed" CanExecute="SaveCommand_CanExecute" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.FormatDocument}" Executed="FormatDocumentCommand_Executed" CanExecute="FormatDocumentCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="PlaceholderCommand_Executed" />
     </Window.CommandBindings>
 
@@ -57,6 +58,8 @@
                 <MenuItem Header="{DynamicResource Loc.Menu.Edit.SearchInFolder}" Command="{x:Static cmd:AppCommands.SearchInFolder}" />
                 <Separator />
                 <MenuItem Header="{DynamicResource Loc.Menu.Edit.SelectNextOccurrence}" Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" />
+                <Separator />
+                <MenuItem Header="{DynamicResource Loc.Menu.Edit.FormatDocument}" Command="{x:Static cmd:AppCommands.FormatDocument}" />
             </MenuItem>
             <MenuItem Header="{DynamicResource Loc.Menu.View}">
                 <MenuItem Header="{DynamicResource Loc.Menu.View.WordWrap}"

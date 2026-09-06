@@ -19,6 +19,7 @@
     <sys:String x:Key="Loc.Menu.Edit.Replace">替换(_R)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SearchInFolder">在文件夹中查找(_I)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SelectNextOccurrence">选中下一个匹配项(_D)</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.FormatDocument">格式化文档(_M)</sys:String>
     <sys:String x:Key="Loc.Menu.View">视图(_V)</sys:String>
     <sys:String x:Key="Loc.Menu.View.WordWrap">自动换行</sys:String>
     <sys:String x:Key="Loc.Menu.View.ShowWhitespace">显示空白字符</sys:String>
@@ -82,6 +83,7 @@
     <sys:String x:Key="Loc.Error.ReadFolder.Message">无法读取文件夹“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.WatchFolder.Message">无法监听文件夹“{0}”的变化。{1}</sys:String>
     <sys:String x:Key="Loc.Error.SaveSettings.Message">无法保存设置。{0}</sys:String>
+    <sys:String x:Key="Loc.Error.Format.Message">无法格式化文档（{0}）。{1}</sys:String>
     <sys:String x:Key="Loc.Error.CreateEntry.Message">无法创建“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.RenameEntry.Message">无法重命名“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.DeleteEntry.Message">无法删除“{0}”。{1}</sys:String>

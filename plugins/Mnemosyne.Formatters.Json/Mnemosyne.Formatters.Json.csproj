@@ -13,6 +13,8 @@
     <ProjectReference Include="..\..\src\Mnemosyne.Plugin.Abstractions\Mnemosyne.Plugin.Abstractions.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <!-- netstandard2.0 无内置 System.Text.Json；编译用 8.0.x，运行时由主程序（net10）自带的更高版本承载 -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
   <Target Name="CopyPluginToAppOutput" AfterTargets="Build">

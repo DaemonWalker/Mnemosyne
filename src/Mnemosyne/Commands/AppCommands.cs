@@ -22,6 +22,10 @@ public static class AppCommands
 
     public static RoutedUICommand SelectNextOccurrence { get; } = Create(nameof(SelectNextOccurrence), Key.D);
 
+    // 无快捷键：仅菜单/编辑器右键入口（需求 4.11 未为其定义快捷键）
+    public static RoutedUICommand FormatDocument { get; } =
+        new(nameof(FormatDocument), nameof(FormatDocument), typeof(AppCommands));
+
     public static RoutedUICommand OpenSettings { get; } = Create(nameof(OpenSettings), Key.OemComma);
 
     // 手势直接挂在命令上：菜单自动显示快捷键文本，窗口注册 CommandBinding 后即全局生效

@@ -226,6 +226,21 @@ public partial class DocumentViewModel : ObservableObject
         Editor.SetIndentation(useTabs, width);
     }
 
+    /// <summary>
+    /// 用格式化结果替换全文：插件约定返回 "\n" 行尾符，这里按文档当前行尾符转换；
+    /// 替换包在单个撤销动作中（ScintillaHost.ReplaceAllText）。
+    /// </summary>
+    public void ReplaceAllText(string text)
+    {
+        string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+        if (Editor.CurrentLineEnding == LineEnding.CrLf)
+        {
+            normalized = normalized.Replace("\n", "\r\n");
+        }
+        Editor.ReplaceAllText(normalized);
+        IsDirty = Editor.IsDirty;
+    }
+
     /// <summary>跳转到指定行并选中行内字符区间（文件夹搜索结果跳转用）</summary>
     public void GoToMatch(int line, int startInLine, int length)
     {

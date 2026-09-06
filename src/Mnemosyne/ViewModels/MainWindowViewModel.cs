@@ -6,6 +6,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mnemosyne.Models;
+using Mnemosyne.Plugin.Abstractions;
 using Mnemosyne.Services;
 
 namespace Mnemosyne.ViewModels;
@@ -15,15 +16,17 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly FileService _fileService;
     private readonly LocalizationService _localization;
     private readonly ConfigService _configService;
+    private readonly PluginService _pluginService;
     private readonly AppSettings _settings;
 
     private GridLength _lastSidebarWidth = new(260);
 
-    public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, RecentFilesService recentFiles)
+    public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, RecentFilesService recentFiles, PluginService pluginService)
     {
         _fileService = fileService;
         _localization = localization;
         _configService = configService;
+        _pluginService = pluginService;
         _settings = configService.Settings;
         _wordWrap = _settings.WordWrap;
         _showWhitespace = _settings.ShowWhitespace;
@@ -513,6 +516,47 @@ public partial class MainWindowViewModel : ObservableObject
         if (document is null) return;
         document.GoToMatch(location.Line, location.StartInLine, location.Length);
         document.Editor.FocusEditor();
+    }
+
+    /// <summary>当前活动文档是否有可用的格式化插件（供菜单/右键菜单启用态查询，实时计算）</summary>
+    public bool CanFormatActiveDocument =>
+        ActiveDocument is { IsLoading: false } document &&
+        !document.Editor.IsReadOnly &&
+        _pluginService.FindFormatter(document.Language.FormatterId) is not null;
+
+    /// <summary>
+    /// 格式化活动文档：先经插件 Format 成功后再用单个撤销动作替换全文；
+    /// 失败（插件抛异常）只弹本地化错误提示，原文不受影响。
+    /// </summary>
+    public async Task FormatActiveDocumentAsync()
+    {
+        DocumentViewModel? document = ActiveDocument;
+        if (document is null || document.IsLoading || document.Editor.IsReadOnly) return;
+        ICodeFormatter? formatter = _pluginService.FindFormatter(document.Language.FormatterId);
+        if (formatter is null) return;
+
+        string input = document.Editor.Text;
+        var options = new FormatterOptions
+        {
+            UseTabs = document.IndentUseTabs,
+            IndentWidth = document.IndentWidth,
+        };
+
+        string formatted;
+        try
+        {
+            // 大文档格式化可能超过 50ms，放后台线程；异常（含 FormatterException）在此统一兜底
+            formatted = await Task.Run(() => formatter.Format(input, options));
+        }
+        catch (Exception ex)
+        {
+            ShowError?.Invoke(
+                string.Format(_localization.GetString("Loc.Error.Format.Message"), formatter.DisplayName, ex.Message),
+                _localization.GetString("Loc.Error.Title"));
+            return;
+        }
+
+        document.ReplaceAllText(formatted);
     }
 
     private void ReportError(string messageKey, string path, string detail)

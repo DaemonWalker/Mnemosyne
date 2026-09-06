@@ -14,6 +14,7 @@ public partial class App : Application
     public LocalizationService LocalizationService { get; private set; } = null!;
     public FileService FileService { get; private set; } = null!;
     public RecentFilesService RecentFilesService { get; private set; } = null!;
+    public PluginService PluginService { get; private set; } = null!;
 
     // 命令行/次实例转发来的待打开路径暂存于此，由 MainWindow 消费
     public List<string> PendingOpenPaths { get; } = [];
@@ -45,6 +46,7 @@ public partial class App : Application
 
         FileService = new FileService();
         RecentFilesService = new RecentFilesService();
+        PluginService = new PluginService();
 
         AddPendingPaths(e.Args);
         _singleInstance.ArgsReceived += args => Dispatcher.Invoke(() =>
@@ -55,9 +57,11 @@ public partial class App : Application
         });
         _singleInstance.StartListening();
 
-        MainWindow window = new(ConfigService, ThemeService, LocalizationService, FileService, RecentFilesService);
+        MainWindow window = new(ConfigService, ThemeService, LocalizationService, FileService, RecentFilesService, PluginService);
         MainWindow = window;
         window.Show();
+        // 插件扫描放窗口显示后异步进行，不拖慢冷启动（architecture.md 4.1）
+        _ = PluginService.ScanAsync();
     }
 
     protected override void OnExit(ExitEventArgs e)

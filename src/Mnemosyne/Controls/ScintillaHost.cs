@@ -36,6 +36,9 @@ public class ScintillaHost : WindowsFormsHost
     /// <summary>编辑器内按键转发（WPF 命令在 WinForms 子控件聚焦时收不到快捷键，需要此桥接）</summary>
     public event EventHandler<WinForms.KeyEventArgs>? EditorKeyDown;
 
+    /// <summary>编辑器内鼠标右键按下（WPF 侧借此弹本地化右键菜单）</summary>
+    public event EventHandler? EditorRightClick;
+
     public ScintillaHost()
     {
         _scintilla = new Scintilla
@@ -46,6 +49,8 @@ public class ScintillaHost : WindowsFormsHost
         Child = _scintilla;
 
         _scintilla.WrapMode = WrapMode.None;
+        // 关闭 Scintilla 内置右键菜单（英文编辑菜单），改由 WPF 侧弹本地化右键菜单
+        _scintilla.UsePopup(PopupMode.Never);
         _scintilla.IndentationGuides = IndentView.LookBoth;
         _scintilla.CaretLineLayer = Layer.UnderText;
         _scintilla.Margins[LineNumberMargin].Type = MarginType.Number;
@@ -74,9 +79,12 @@ public class ScintillaHost : WindowsFormsHost
                 CaretPositionChanged?.Invoke(this, EventArgs.Empty);
             }
         };
-        _scintilla.KeyDown += (_, e) =>
+        _scintilla.MouseDown += (_, e) =>
         {
-            // Ctrl+D（选中下一个相同出现）与 Esc（退回单光标）属编辑内核行为，在此直接处理，
+            if (e.Button == WinForms.MouseButtons.Right) EditorRightClick?.Invoke(this, EventArgs.Empty);
+        };
+        _scintilla.KeyDown += (_, e) =>
+        {            // Ctrl+D（选中下一个相同出现）与 Esc（退回单光标）属编辑内核行为，在此直接处理，
             // 不向上转发；菜单里的 Ctrl+D 命令入口另行调用 SelectNextOccurrence()
             if (e.Control && !e.Shift && !e.Alt && e.KeyCode == WinForms.Keys.D)
             {
@@ -203,6 +211,19 @@ public class ScintillaHost : WindowsFormsHost
     public void BeginUndoAction() => _scintilla.BeginUndoAction();
 
     public void EndUndoAction() => _scintilla.EndUndoAction();
+
+    /// <summary>用单个撤销动作替换全文（格式化插件用），尽量保持光标位置与首可见行</summary>
+    public void ReplaceAllText(string text)
+    {
+        int caret = Math.Min(_scintilla.CurrentPosition, text.Length);
+        int firstVisibleLine = _scintilla.FirstVisibleLine;
+        _scintilla.BeginUndoAction();
+        _scintilla.SetTargetRange(0, _scintilla.TextLength);
+        _scintilla.ReplaceTarget(text);
+        _scintilla.EndUndoAction();
+        _scintilla.SetEmptySelection(caret);
+        _scintilla.FirstVisibleLine = Math.Min(firstVisibleLine, Math.Max(0, _scintilla.Lines.Count - 1));
+    }
 
     private bool _chunkedLoading;
 
