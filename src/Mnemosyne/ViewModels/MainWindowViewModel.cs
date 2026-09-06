@@ -14,15 +14,19 @@ public partial class MainWindowViewModel : ObservableObject
 {
     private readonly FileService _fileService;
     private readonly LocalizationService _localization;
+    private readonly ConfigService _configService;
     private readonly AppSettings _settings;
 
     private GridLength _lastSidebarWidth = new(260);
 
-    public MainWindowViewModel(FileService fileService, LocalizationService localization, AppSettings settings, RecentFilesService recentFiles)
+    public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, RecentFilesService recentFiles)
     {
         _fileService = fileService;
         _localization = localization;
-        _settings = settings;
+        _configService = configService;
+        _settings = configService.Settings;
+        _wordWrap = _settings.WordWrap;
+        _showWhitespace = _settings.ShowWhitespace;
         RecentFiles = recentFiles;
         FileTree = new FileTreeViewModel(localization);
         FileTree.OpenFileRequested = path => _ = OpenDocumentAsync(path);
@@ -72,6 +76,13 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private GridLength _sidebarWidth = new(260);
 
+    // 视图菜单开关：立即应用到所有已打开文档并写回设置持久化
+    [ObservableProperty]
+    private bool _wordWrap;
+
+    [ObservableProperty]
+    private bool _showWhitespace;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasActiveDocument))]
     [NotifyCanExecuteChangedFor(nameof(SaveActiveCommand))]
@@ -104,6 +115,34 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnSidebarWidthChanged(GridLength value)
     {
         if (value.Value > 0) _lastSidebarWidth = value;
+    }
+
+    partial void OnWordWrapChanged(bool value)
+    {
+        foreach (DocumentViewModel doc in Documents) doc.Editor.SetWordWrap(value);
+        _settings.WordWrap = value;
+        SaveSettings();
+    }
+
+    partial void OnShowWhitespaceChanged(bool value)
+    {
+        foreach (DocumentViewModel doc in Documents) doc.Editor.SetViewWhitespace(value);
+        _settings.ShowWhitespace = value;
+        SaveSettings();
+    }
+
+    private void SaveSettings()
+    {
+        try
+        {
+            _configService.Save();
+        }
+        catch (Exception ex)
+        {
+            ShowError?.Invoke(
+                string.Format(_localization.GetString("Loc.Error.SaveSettings.Message"), ex.Message),
+                _localization.GetString("Loc.Error.Title"));
+        }
     }
 
     [RelayCommand]

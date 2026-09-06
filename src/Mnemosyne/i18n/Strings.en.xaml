@@ -76,6 +76,7 @@
     <sys:String x:Key="Loc.Error.OpenFolder.NotExist">The folder does not exist</sys:String>
     <sys:String x:Key="Loc.Error.ReadFolder.Message">Cannot read folder "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.WatchFolder.Message">Cannot watch folder "{0}" for changes. {1}</sys:String>
+    <sys:String x:Key="Loc.Error.SaveSettings.Message">Cannot save settings. {0}</sys:String>
     <sys:String x:Key="Loc.Error.CreateEntry.Message">Cannot create "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.RenameEntry.Message">Cannot rename "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.DeleteEntry.Message">Cannot delete "{0}". {1}</sys:String>

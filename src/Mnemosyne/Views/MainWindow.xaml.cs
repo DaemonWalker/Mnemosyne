@@ -23,7 +23,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _localization = localization;
-        _viewModel = new MainWindowViewModel(fileService, localization, configService.Settings, recentFiles);
+        _viewModel = new MainWindowViewModel(fileService, localization, configService, recentFiles);
         DataContext = _viewModel;
 
         _appCommands = typeof(AppCommands)

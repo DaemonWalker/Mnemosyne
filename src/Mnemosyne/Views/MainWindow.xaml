@@ -58,6 +58,14 @@
                 <Separator />
                 <MenuItem Header="{DynamicResource Loc.Menu.Edit.SelectNextOccurrence}" Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" />
             </MenuItem>
+            <MenuItem Header="{DynamicResource Loc.Menu.View}">
+                <MenuItem Header="{DynamicResource Loc.Menu.View.WordWrap}"
+                          IsCheckable="True"
+                          IsChecked="{Binding WordWrap, Mode=TwoWay}" />
+                <MenuItem Header="{DynamicResource Loc.Menu.View.ShowWhitespace}"
+                          IsCheckable="True"
+                          IsChecked="{Binding ShowWhitespace, Mode=TwoWay}" />
+            </MenuItem>
         </Menu>
 
         <Border DockPanel.Dock="Bottom"
