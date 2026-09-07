@@ -10,7 +10,8 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 
-$root = Split-Path -Parent $PSScriptRoot
+$root = $PSScriptRoot
+if (-not (Test-Path (Join-Path $root 'Mnemosyne.slnx'))) { $root = Split-Path -Parent $PSScriptRoot }
 $ExePath = Join-Path $root $ExePath
 $exeDir = Split-Path -Parent $ExePath
 $cacheDir = Join-Path $exeDir 'cache'
@@ -157,12 +158,9 @@ Write-Host '== E. markdown preview tab =='
 Open-ViaSingleInstance (Join-Path $testDir 'note.md')
 Check 'E1 md tab opened' (Wait-TabCount $win 4)
 Start-Sleep -Milliseconds 500
-$prevBtn = Find-ByName $win '预览' ([System.Windows.Automation.ControlType]::Button)
-Check 'E2 preview button visible on md tab' ($null -ne $prevBtn)
-if ($null -ne $prevBtn) {
-    $prevBtn.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-    Start-Sleep -Milliseconds 800
-}
+$prevOk = Invoke-Menu $win '视图' 'Markdown 预览'
+Check 'E2 view menu -> markdown preview invoked' $prevOk
+Start-Sleep -Milliseconds 800
 $prevTitle = Find-ByName $win '预览：note.md' ([System.Windows.Automation.ControlType]::Text)
 Check 'E3 preview tab opened with title' ($null -ne $prevTitle)
 $rendered = Find-ByName $win 'Smoke Title' $null

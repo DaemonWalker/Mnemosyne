@@ -9,7 +9,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot
+$root = $PSScriptRoot
+if (-not (Test-Path (Join-Path $root 'Mnemosyne.slnx'))) { $root = Split-Path -Parent $PSScriptRoot }
 Push-Location $root
 try {
     $outDir = Join-Path $root $Output

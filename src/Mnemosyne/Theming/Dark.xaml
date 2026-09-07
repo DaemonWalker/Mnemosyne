@@ -14,12 +14,19 @@
     <Color x:Key="Color.Sidebar.Background">#FF252526</Color>
     <Color x:Key="Color.Sidebar.Selection">#FF37373D</Color>
     <Color x:Key="Color.TabBar.Background">#FF252526</Color>
+    <Color x:Key="Color.TitleBar.Background">#FF3C3C3C</Color>
+    <Color x:Key="Color.CaptionButton.CloseHover">#FFE81123</Color>
     <Color x:Key="Color.StatusBar.Foreground">#FFFFFFFF</Color>
+    <Color x:Key="Color.ScrollBar.Thumb">#FF5A5A5A</Color>
+    <Color x:Key="Color.ScrollBar.ThumbHover">#FF6E6E6E</Color>
+    <Color x:Key="Color.ScrollBar.ThumbPressed">#FF7F7F7F</Color>
 
     <Color x:Key="Color.Editor.Background">#FF1E1E1E</Color>
     <Color x:Key="Color.Editor.Foreground">#FFD4D4D4</Color>
     <Color x:Key="Color.Editor.LineNumber">#FF858585</Color>
     <Color x:Key="Color.Editor.CaretLine">#FF2A2A2A</Color>
+    <Color x:Key="Color.Editor.FoldMargin">#FF1E1E1E</Color>
+    <Color x:Key="Color.Editor.FoldMarker">#FF858585</Color>
     <Color x:Key="Color.Editor.Selection">#FF264F78</Color>
     <Color x:Key="Color.Editor.IndentGuide">#FF404040</Color>
     <Color x:Key="Color.Editor.Caret">#FFAEAFAD</Color>
@@ -56,8 +63,13 @@
     <SolidColorBrush x:Key="Brush.Sidebar.Background" Color="{StaticResource Color.Sidebar.Background}" />
     <SolidColorBrush x:Key="Brush.Sidebar.Selection" Color="{StaticResource Color.Sidebar.Selection}" />
     <SolidColorBrush x:Key="Brush.TabBar.Background" Color="{StaticResource Color.TabBar.Background}" />
+    <SolidColorBrush x:Key="Brush.TitleBar.Background" Color="{StaticResource Color.TitleBar.Background}" />
+    <SolidColorBrush x:Key="Brush.CaptionButton.CloseHover" Color="{StaticResource Color.CaptionButton.CloseHover}" />
     <SolidColorBrush x:Key="Brush.StatusBar.Background" Color="{StaticResource Color.Accent}" />
     <SolidColorBrush x:Key="Brush.StatusBar.Foreground" Color="{StaticResource Color.StatusBar.Foreground}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.Thumb" Color="{StaticResource Color.ScrollBar.Thumb}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.ThumbHover" Color="{StaticResource Color.ScrollBar.ThumbHover}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.ThumbPressed" Color="{StaticResource Color.ScrollBar.ThumbPressed}" />
     <SolidColorBrush x:Key="Brush.Find.CountError" Color="{StaticResource Color.Editor.Error}" />
     <SolidColorBrush x:Key="Brush.Markdown.Link" Color="{StaticResource Color.Editor.Markdown.Link}" />
     <SolidColorBrush x:Key="Brush.Markdown.Quote" Color="{StaticResource Color.Editor.Markdown.Quote}" />

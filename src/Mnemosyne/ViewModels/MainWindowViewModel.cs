@@ -41,7 +41,7 @@ public partial class MainWindowViewModel : ObservableObject
         _wordWrap = _settings.WordWrap;
         _showWhitespace = _settings.ShowWhitespace;
         RecentFiles = recentFiles;
-        FileTree = new FileTreeViewModel(localization);
+        FileTree = new FileTreeViewModel(localization, _settings);
         FileTree.OpenFileRequested = path => _ = OpenDocumentAsync(path);
         FindBar = new FindBarViewModel(localization);
         SearchPanel = new SearchPanelViewModel(fileService, localization, () => FileTree.RootNode?.FullPath);
@@ -227,42 +227,35 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    // ===== 设置即时应用（设置窗口改动即调用，全部落盘 settings.json） =====
+    // ===== 设置批量应用（设置窗口"保存设定"时调用一次，只落盘一次 settings.json） =====
 
-    public void ApplyFontSettings(string fontFamily, double fontSize)
-    {
-        _settings.FontFamily = fontFamily;
-        _settings.FontSize = fontSize;
-        foreach (DocumentViewModel doc in Documents) doc.Editor.ApplyFont(fontFamily, fontSize);
-        SaveSettings();
-    }
+    /// <summary>UI 字体/字号应用钩子，由 View 注入（作用于窗口根，沿可视树继承）</summary>
+    public Action? ApplyUiFontSettings { get; set; }
 
-    public void ApplyThemeSetting(string theme)
+    /// <summary>一次性应用设置窗口的全部修改。WordWrap/ShowWhitespace 由视图菜单直改，不在此列</summary>
+    public void ApplyAllSettings(AppSettings settings)
     {
-        _settings.Theme = theme;
-        _themeService.ApplyTheme(theme);
-        SaveSettings();
-    }
+        _settings.FontFamily = settings.FontFamily;
+        _settings.FontSize = settings.FontSize;
+        _settings.Theme = settings.Theme;
+        _settings.Language = settings.Language;
+        _settings.IndentUseTabs = settings.IndentUseTabs;
+        _settings.IndentWidth = settings.IndentWidth;
+        _settings.LargeFileThresholdMB = settings.LargeFileThresholdMB;
+        _settings.HideDotFiles = settings.HideDotFiles;
+        _settings.HideHiddenFiles = settings.HideHiddenFiles;
+        _settings.UiFontFamily = settings.UiFontFamily;
+        _settings.UiFontSize = settings.UiFontSize;
 
-    public void ApplyLanguageSetting(string language)
-    {
-        _settings.Language = language;
-        _localization.SetLanguage(language);
-        SaveSettings();
-    }
-
-    /// <summary>修改默认缩进：应用到所有已打开文档并作为新文档默认值</summary>
-    public void ApplyIndentSettings(bool useTabs, int width)
-    {
-        _settings.IndentUseTabs = useTabs;
-        _settings.IndentWidth = width;
-        foreach (DocumentViewModel doc in Documents) doc.SetIndentation(useTabs, width);
-        SaveSettings();
-    }
-
-    public void ApplyLargeFileThreshold(int thresholdMB)
-    {
-        _settings.LargeFileThresholdMB = thresholdMB;
+        foreach (DocumentViewModel doc in Documents)
+        {
+            doc.Editor.ApplyFont(settings.FontFamily, settings.FontSize);
+            doc.SetIndentation(settings.IndentUseTabs, settings.IndentWidth);
+        }
+        _themeService.ApplyTheme(settings.Theme);
+        _localization.SetLanguage(settings.Language);
+        ApplyUiFontSettings?.Invoke();
+        FileTree.RefreshVisible();
         SaveSettings();
     }
 
@@ -305,7 +298,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             if (Directory.Exists(path))
             {
-                OpenFolder(path);
+                await OpenFolderAsync(path);
             }
             else
             {
@@ -315,20 +308,85 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenFolder()
+    private async Task OpenFolderAsync()
     {
         string? path = OpenFolderPicker?.Invoke();
-        if (path is not null) OpenFolder(path);
+        if (path is not null) await OpenFolderAsync(path);
     }
 
-    /// <summary>打开文件夹到侧边栏文件树并记录最近列表</summary>
-    public void OpenFolder(string path)
+    /// <summary>
+    /// 打开文件夹到侧边栏文件树并记录最近列表。切换到不同文件夹时：旧文件夹下的 Tab 静默关闭
+    /// （未保存修改写入热退出暂存，不弹保存确认），随后还原新文件夹下留有暂存的未保存修改。
+    /// </summary>
+    public async Task OpenFolderAsync(string path)
     {
-        FileTree.OpenFolder(path);
-        if (FileTree.HasFolder)
+        string fullPath;
+        try
         {
-            RecentFiles.RecordFolder(Path.GetFullPath(path));
-            ActivePanel = Models.ActivityPanel.Files;
+            fullPath = Path.GetFullPath(path);
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
+        string? oldRoot = FileTree.RootNode?.FullPath;
+        FileTree.OpenFolder(path);
+        // 打开失败（目录不存在等）时文件树保持原状，旧文件夹的 Tab 也不动
+        if (!string.Equals(FileTree.RootNode?.FullPath, fullPath, StringComparison.OrdinalIgnoreCase)) return;
+
+        RecentFiles.RecordFolder(fullPath);
+        ActivePanel = Models.ActivityPanel.Files;
+
+        if (oldRoot is not null && !string.Equals(oldRoot, fullPath, StringComparison.OrdinalIgnoreCase))
+        {
+            CloseFolderDocuments(oldRoot);
+        }
+        await RestoreFolderStashAsync(fullPath);
+    }
+
+    /// <summary>静默关闭指定文件夹下的所有文档 Tab：脏文档先写热退出暂存（preserveStash 保留），不弹保存确认</summary>
+    private void CloseFolderDocuments(string folderRoot)
+    {
+        string rootPrefix = folderRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        foreach (DocumentViewModel document in Documents
+                     .Where(d => d is not MarkdownPreviewViewModel &&
+                                 !d.IsLoading &&
+                                 d.FilePath is not null &&
+                                 d.FilePath.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
+                     .ToList())
+        {
+            document.FlushStash();
+            RemoveDocument(document, preserveStash: true);
+        }
+    }
+
+    /// <summary>还原 FilePath 落在指定文件夹下的热退出暂存为脏 Tab；磁盘文件已删除的暂存清除</summary>
+    private async Task RestoreFolderStashAsync(string folderRoot)
+    {
+        string rootPrefix = folderRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        foreach (string key in _sessionService.ListStashKeys())
+        {
+            if (_sessionService.ReadStash(key) is not { Metadata.FilePath: { } filePath } stash) continue;
+            if (!filePath.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+            // 已打开的同路径 Tab 其暂存由会话恢复/编辑防抖负责，跳过避免重复还原或误清
+            if (Documents.Any(d => string.Equals(d.FilePath, filePath, StringComparison.OrdinalIgnoreCase))) continue;
+            if (!File.Exists(filePath))
+            {
+                _sessionService.ClearStash(key);
+                continue;
+            }
+            DocumentViewModel? document = await OpenDocumentAsync(filePath);
+            // 大文件异步加载未完成时不覆盖内容，暂存留待下次打开该文件夹再还原
+            if (document is null || document.IsLoading) continue;
+            if (stash.Content != document.Editor.Text)
+            {
+                document.RestoreStashContent(stash.Content, 0);
+            }
+            else
+            {
+                _sessionService.ClearStash(key);
+            }
         }
     }
 
@@ -339,9 +397,9 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenRecentFolder(string? path)
+    private async Task OpenRecentFolderAsync(string? path)
     {
-        if (path is not null) OpenFolder(path);
+        if (path is not null) await OpenFolderAsync(path);
     }
 
     /// <summary>打开文件到新 Tab；同路径已打开时聚焦既有 Tab。返回打开的文档，失败返回 null。</summary>
@@ -470,8 +528,8 @@ public partial class MainWindowViewModel : ObservableObject
         _loadingDocument?.CancelLoad();
     }
 
-    /// <summary>从 Tab 集合移除文档（不触发脏确认；调用方负责先行确认）。源 Markdown 文档被移除时联动移除其预览 Tab。</summary>
-    private void RemoveDocument(DocumentViewModel document)
+    /// <summary>从 Tab 集合移除文档（不触发脏确认；调用方负责先行确认）。源 Markdown 文档被移除时联动移除其预览 Tab。preserveStash 为 true 时保留热退出暂存（切换文件夹场景，再次打开时还原）。</summary>
+    private void RemoveDocument(DocumentViewModel document, bool preserveStash = false)
     {
         int index = Documents.IndexOf(document);
         if (index < 0) return;
@@ -483,7 +541,7 @@ public partial class MainWindowViewModel : ObservableObject
             Documents.Remove(preview);
         }
         // 关闭即放弃：热退出暂存一并清除（含"不保存"关闭脏 Tab 的场景）
-        _sessionService.ClearStash(document.HotExitKey);
+        if (!preserveStash) _sessionService.ClearStash(document.HotExitKey);
         document.DisposeResources();
         Documents.Remove(document);
         if (ActiveDocument is not null && Documents.Contains(ActiveDocument)) return;
@@ -793,16 +851,19 @@ public partial class MainWindowViewModel : ObservableObject
             }
             if (state.OpenFolder is not null && Directory.Exists(state.OpenFolder))
             {
-                OpenFolder(state.OpenFolder);
+                await OpenFolderAsync(state.OpenFolder);
             }
             if (state.ActiveTabIndex >= 0 && state.ActiveTabIndex < restoredDocs.Count)
             {
                 ActiveDocument = restoredDocs[state.ActiveTabIndex];
             }
-            // 清理孤儿暂存（Tab 被关闭时 ClearStash 失败的残留）
+            // 清理孤儿暂存（Tab 被关闭时 ClearStash 失败的残留）；
+            // 带路径的暂存保留——可能是上次切换文件夹时留下的未保存修改，再次打开该文件夹时还原
             foreach (string key in _sessionService.ListStashKeys())
             {
-                if (!restoredKeys.Contains(key)) _sessionService.ClearStash(key);
+                if (restoredKeys.Contains(key)) continue;
+                if (_sessionService.ReadStash(key) is { Metadata.FilePath: not null }) continue;
+                _sessionService.ClearStash(key);
             }
         }
         finally

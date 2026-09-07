@@ -4,6 +4,11 @@
 
     <sys:String x:Key="Loc.App.Title">Mnemosyne</sys:String>
 
+    <sys:String x:Key="Loc.TitleBar.Minimize">Minimize</sys:String>
+    <sys:String x:Key="Loc.TitleBar.Maximize">Maximize</sys:String>
+    <sys:String x:Key="Loc.TitleBar.Restore">Restore</sys:String>
+    <sys:String x:Key="Loc.TitleBar.Close">Close</sys:String>
+
     <sys:String x:Key="Loc.Menu.File">_File</sys:String>
     <sys:String x:Key="Loc.Menu.File.Open">_Open File...</sys:String>
     <sys:String x:Key="Loc.Menu.File.OpenFolder">Open Fol_der...</sys:String>
@@ -24,6 +29,7 @@
     <sys:String x:Key="Loc.Menu.View">_View</sys:String>
     <sys:String x:Key="Loc.Menu.View.WordWrap">Word Wrap</sys:String>
     <sys:String x:Key="Loc.Menu.View.ShowWhitespace">Show Whitespace</sys:String>
+    <sys:String x:Key="Loc.Menu.View.MarkdownPreview">Markdown Preview</sys:String>
 
     <sys:String x:Key="Loc.Indent.UseSpaces">Indent Using Spaces</sys:String>
     <sys:String x:Key="Loc.Indent.UseTabs">Indent Using Tabs</sys:String>
@@ -88,6 +94,14 @@
     <sys:String x:Key="Loc.Settings.Indent">Indentation</sys:String>
     <sys:String x:Key="Loc.Settings.IndentWidth">Indent Width</sys:String>
     <sys:String x:Key="Loc.Settings.LargeFileThreshold">Large File Threshold (MB)</sys:String>
+    <sys:String x:Key="Loc.Settings.WordWrap">Word Wrap</sys:String>
+    <sys:String x:Key="Loc.Settings.ShowWhitespace">Show Whitespace</sys:String>
+    <sys:String x:Key="Loc.Settings.HideDotFiles">Hide files and folders starting with .</sys:String>
+    <sys:String x:Key="Loc.Settings.HideHiddenFiles">Hide files and folders with the hidden attribute</sys:String>
+    <sys:String x:Key="Loc.Settings.UiFont">UI Font</sys:String>
+    <sys:String x:Key="Loc.Settings.UiFontSize">UI Font Size</sys:String>
+    <sys:String x:Key="Loc.Settings.UiFontDefault">System Default</sys:String>
+    <sys:String x:Key="Loc.Settings.Save">Save Settings</sys:String>
 
     <sys:String x:Key="Loc.Dialog.ExternalReload.Message">The file "{0}" was modified externally. Reload it?</sys:String>
     <sys:String x:Key="Loc.Dialog.ExternalConflict.Message">The file "{0}" was modified externally and you have unsaved changes. Reloading will discard those changes. Reload it?</sys:String>

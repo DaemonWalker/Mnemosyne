@@ -11,7 +11,15 @@
         AllowDrop="True"
         DragOver="Window_DragOver"
         Drop="Window_Drop"
-        Background="{DynamicResource Brush.Window.Background}">
+        Background="{DynamicResource Brush.Window.Background}"
+        StateChanged="Window_StateChanged">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32"
+                      CornerRadius="0"
+                      GlassFrameThickness="0"
+                      ResizeBorderThickness="6"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
@@ -32,8 +40,17 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="OpenSettingsCommand_Executed" />
     </Window.CommandBindings>
 
-    <DockPanel>
-        <Menu DockPanel.Dock="Top">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Background="{DynamicResource Brush.TitleBar.Background}">
+            <Grid>
+                <Menu HorizontalAlignment="Left"
+                      VerticalAlignment="Center"
+                      WindowChrome.IsHitTestVisibleInChrome="True">
             <MenuItem Header="{DynamicResource Loc.Menu.File}">
                 <MenuItem Header="{DynamicResource Loc.Menu.File.NewFile}" Command="{x:Static cmd:AppCommands.NewFile}" />
                 <MenuItem Header="{DynamicResource Loc.Menu.File.Open}" Command="{x:Static cmd:AppCommands.OpenFile}" />
@@ -71,9 +88,69 @@
                 <MenuItem Header="{DynamicResource Loc.Menu.View.ShowWhitespace}"
                           IsCheckable="True"
                           IsChecked="{Binding ShowWhitespace, Mode=TwoWay}" />
+                <Separator />
+                <MenuItem Header="{DynamicResource Loc.Menu.View.MarkdownPreview}"
+                          Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}" />
             </MenuItem>
-        </Menu>
+                </Menu>
 
+                <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
+                           Foreground="{DynamicResource Brush.Secondary.Foreground}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           IsHitTestVisible="False" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource CaptionButtonStyle}"
+                            ToolTip="{DynamicResource Loc.TitleBar.Minimize}"
+                            AutomationProperties.Name="{DynamicResource Loc.TitleBar.Minimize}"
+                            Click="MinimizeButton_Click">
+                        <Path Width="10"
+                              Height="10"
+                              Stretch="Uniform"
+                              Data="M0,5.5 H10"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1" />
+                    </Button>
+                    <Button x:Name="MaximizeButton"
+                            Style="{StaticResource CaptionButtonStyle}"
+                            ToolTip="{DynamicResource Loc.TitleBar.Maximize}"
+                            AutomationProperties.Name="{DynamicResource Loc.TitleBar.Maximize}"
+                            Click="MaximizeButton_Click">
+                        <Grid>
+                            <Path x:Name="MaximizeIcon"
+                                  Width="10"
+                                  Height="10"
+                                  Stretch="Uniform"
+                                  Data="M0.5,0.5 H9.5 V9.5 H0.5 Z"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1" />
+                            <Path x:Name="RestoreIcon"
+                                  Width="10"
+                                  Height="10"
+                                  Stretch="Uniform"
+                                  Data="M2.5,0.5 H9.5 V7.5 H7.5 M0.5,2.5 H7.5 V9.5 H0.5 Z"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1"
+                                  Visibility="Collapsed" />
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource CloseCaptionButtonStyle}"
+                            ToolTip="{DynamicResource Loc.TitleBar.Close}"
+                            AutomationProperties.Name="{DynamicResource Loc.TitleBar.Close}"
+                            Click="CloseButton_Click">
+                        <Path Width="10"
+                              Height="10"
+                              Stretch="Uniform"
+                              Data="M0.5,0.5 L9.5,9.5 M0.5,9.5 L9.5,0.5"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <DockPanel Grid.Row="1">
         <Border DockPanel.Dock="Bottom"
                 Height="24"
                 Background="{DynamicResource Brush.StatusBar.Background}">
@@ -82,7 +159,6 @@
                             Visibility="{Binding HasOpenDocuments, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="{Binding ActiveDocument.PositionDisplay}"
                                Foreground="{DynamicResource Brush.StatusBar.Foreground}"
-                               FontSize="12"
                                VerticalAlignment="Center"
                                Margin="8,0" />
                     <Button Style="{StaticResource StatusBarButtonStyle}"
@@ -103,7 +179,6 @@
                             Visibility="{Binding LoadProgressVisible, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="{Binding LoadProgressText}"
                                Foreground="{DynamicResource Brush.StatusBar.Foreground}"
-                               FontSize="12"
                                VerticalAlignment="Center" />
                     <ProgressBar Width="120"
                                  Height="10"
@@ -222,21 +297,13 @@
                 </TabControl>
 
                 <!-- 搜索/替换条：WPF/WinForms 空域限制下 WPF 浮层无法覆盖 WindowsFormsHost（Scintilla），
-                     故占编辑器区顶部一整行（右对齐），收起时高度为 0；
-                     同行右侧为 Markdown 预览按钮（仅 Markdown 文档显示，非 md 文件隐藏） -->
+                     故占编辑器区顶部一整行（右对齐），收起时高度为 0 -->
                 <Grid Grid.Row="1">
                     <views:FindBarView x:Name="FindBar"
                                        DataContext="{Binding FindBar}"
                                        HorizontalAlignment="Right"
-                                       Margin="0,4,72,4"
+                                       Margin="0,4,8,4"
                                        Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" />
-                    <Button Style="{StaticResource EditorToolbarButtonStyle}"
-                            Content="{DynamicResource Loc.Markdown.Preview}"
-                            ToolTip="{DynamicResource Loc.Markdown.Preview.Tooltip}"
-                            Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}"
-                            HorizontalAlignment="Right"
-                            Margin="0,4,8,4"
-                            Visibility="{Binding CanPreviewActiveDocument, Converter={StaticResource BoolToVisibility}}" />
                 </Grid>
 
                 <!-- ScintillaHost（WindowsFormsHost）从可视树移除会销毁原生句柄并丢失文档内容，
@@ -255,5 +322,6 @@
                            Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisibility}}" />
             </Grid>
         </Grid>
-    </DockPanel>
+        </DockPanel>
+    </Grid>
 </Window>

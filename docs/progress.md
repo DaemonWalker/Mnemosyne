@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- 当前 Step：**全部 12 个 Step 已完成**（Step 12 — 性能打磨与发布 已收官）
-- 当前 Step 内已完成的小目标：12.1～12.4 全部（构建 0 错误 0 警告；发布包冒烟 27/27 通过；发布包冷启动实测无会话 avg=482ms、有会话 avg=521ms，均 <1 秒达标）
-- 最后更新：2026-09-06 22:45
+- 当前 Step：**全部 12 个 Step 已完成**；发布后用户反馈修复批次（13 项 + 深色 ComboBox 修复）已完成并验证
+- 当前 Step 内已完成的小目标：12.1～12.4 全部；2026-09-07 反馈批次：构建 0 错误 0 警告，发布包冒烟 27/27 通过
+- 最后更新：2026-09-07 21:10
 
 ## 断点信息
 
@@ -81,3 +81,6 @@
 | 2026-09-06 22:45 | 12 | 12.4 | 走查未发现需修复的问题（12.3 冒烟 27/27 + 各 Step 既有验证记录全绿），无代码改动。最终验收：`dotnet build` 全解决方案 0 错误 0 警告；发布包（Release + R2R，`artifacts/publish/`）冷启动最终实测——测量方法：`scripts/measure-coldstart.ps1`，进程启动 → UIA 主窗口可见时间差，环境：本机 E:\ 位于 NVMe SSD（ZHITAI TiPlus 系列），PS 5.1，每轮前 taskkill 清场。**无会话 5 次 avg=482ms（min 463/max 554）；有会话（2 Tab 恢复）5 次 avg=521ms（min 466/max 615）**，均满足"普通 SSD 冷启动 1 秒内"指标 | 0 警告 0 错误 | 全部 12 个 Step 完成 |
 | 2026-09-06 22:50 | 12 | 提交 | step12 已 commit（789e8cd，含 [wip] c9d7698）；**push 失败**（github.com 连接被重置，按协议只试一次，待网络恢复后人工 `git push`） | 0 警告 0 错误 | 新增：scripts/publish.ps1、scripts/measure-coldstart.ps1、scripts/regression-smoke.ps1、docs/regression-checklist.md |
 | 2026-09-07 06:49 | 12 | 收尾 | step12 三个提交（c9d7698/789e8cd/bd88605）补推成功：直连 github.com 不通，经本机代理 127.0.0.1:7890 推送（git -c http.proxy 一次性指定，未改全局配置） | — | 主对话执行；全部 12 个 Step 的代码与文档均已同步 origin/main |
+| 2026-09-07 19:07 | — | 标题栏改版 | 应用户要求做 VSCode 风格标题栏（菜单并入标题栏一行）：`MainWindow.xaml` 加 `WindowChrome`（CaptionHeight=32、ResizeBorderThickness=6、UseAeroCaptionButtons=False，保留原生拖拽/双击最大化/Aero Snap），根布局改两行 Grid——32px 标题栏（左侧 Menu + 居中窗口标题 + 右侧自绘最小化/最大化还原/关闭按钮，Path 描边图标，最大化时 `Window_StateChanged` 切换还原图标与 ToolTip/AutomationName）+ 原 DockPanel 内容；`Controls.xaml` 新增隐式 MenuItem 样式按 Role 分模板（TopLevelHeader/TopLevelItem/SubmenuHeader/SubmenuItem，子菜单项含勾选列与 InputGestureText 快捷键列，Popup AllowsTransparency 自绘边框，PART_Popup 协定名保留）、隐式 Separator 样式、`CaptionButtonStyle`/`CloseCaptionButtonStyle`（悬停红底白叉）；`Dark.xaml`/`Light.xaml` 新增 `Color/Brush.TitleBar.Background` 与 `Color/Brush.CaptionButton.CloseHover`；i18n 新增 `Loc.TitleBar.Minimize/Maximize/Restore/Close` 双语；按钮走 `SystemCommands`，Close 仍触发原 Closing 热退出逻辑 | 0 警告 0 错误 | UIA 冒烟通过：菜单可展开（文件菜单 9 项）、三个窗口按钮可按名找到、关闭按钮可正常退出；PrintWindow(PW_RENDERFULLCONTENT) 截图核对视觉效果正常。注意：窗口按钮无文字 Content，依赖 `AutomationProperties.Name` 供 UIA 识别；本机屏幕被全屏游戏占用时 CopyFromScreen 截不到窗口，须用 PrintWindow |
+| 2026-09-07 19:11 | — | 构建脚本 | 新增 `scripts/build.ps1`（PS 5.1、ASCII）：一键构建全解决方案（`-c` 可切配置，默认 Debug），`-warnaserror` 强制 0 警告基线；`-Run` 开关在构建成功后杀掉旧进程并启动 Debug exe（单实例应用必须先清场） | 0 警告 0 错误 | 已实测：构建通过；`-Run` 启动进程成功（PID 可见后清理） |
+| 2026-09-07 21:10 | — | 反馈批次 | 用户反馈 13 项 + 截图补充 1 项全部完成：①选中文本时取消当前行高亮（VSCode 行为，UpdateUI 里按选区切换 CaretLineBackColor alpha 0/255；CaretLineBackColorAlpha 属性已 Obsolete 不能用）；②打开新文件夹关闭旧根路径下 Tab，脏文档静默写热退出暂存（RemoveDocument 加 preserveStash），重开同文件夹时扫描暂存还原（磁盘已删的清暂存不还原，RestoreSessionAsync 孤儿清理改为保留带 FilePath 的暂存）；③ScrollBar 全套自绘模板主题化；④崩溃日志 `Services/CrashLogger.cs`（cache/error.log，1MB 轮转，三全局钩子只记崩溃不改崩溃语义）；⑤文件树两个隐藏开关（`.` 开头 / Windows Hidden 属性，默认都开，`RefreshVisible()` 递归刷新保展开态）；⑥预览按钮删、入"视图"菜单（新键 Loc.Menu.View.MarkdownPreview）；⑦22 种语言代码折叠（fold/fold.html 属性 + margin1 Symbol + AutomaticFold，大文件模式关闭；**Markdown/Batch/Makefile 的 Lexer 实测不支持折叠**，以 Lexilla 5.5.0 为准）；⑧可配置 UI 字体/字号（UiFontFamily/UiFontSize，MainWindow 根继承，清掉大部分硬编码 FontSize）；⑨ComboBox 选中框显示 record ToString 的根因在 Controls.xaml 自定义模板缺 `ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"`；⑩设置窗口改模态 ShowDialog + "保存设定"按钮一次性应用（AppSettings.Clone + ApplyAllSettings 只写一次盘，取消=从未生效无需还原）；⑪GlyphTypeface 比较 i/l/W/M 字宽判等宽加粗；⑫ToolWindow+NoResize；⑬文件树新建 bug=RefreshParentOf 对占位节点（FullPath=父目录本身）错刷祖父级 + 编辑框焦点竞争改 Dispatcher.BeginInvoke。深色 ComboBox 修复=ToggleButton 模板未绑背景 | 0 警告 0 错误 | 发布包冒烟 27/27 通过（E2 改为菜单路径）；publish.ps1/regression-smoke.ps1 从 scripts/ 移到根目录后 `$root` 计算失效，已修为自动探测（脚本内注释与 progress 旧条目中的 scripts/ 路径均以根目录为准）；滚动条观感、折叠交互、设置窗口 ToolWindow 外观等视觉效果待人工点验 |

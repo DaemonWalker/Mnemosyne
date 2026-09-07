@@ -6,7 +6,9 @@
         SizeToContent="Height"
         MinHeight="360"
         WindowStartupLocation="CenterOwner"
-        KeyDown="Window_KeyDown"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
         Background="{DynamicResource Brush.Window.Background}"
         Foreground="{DynamicResource Brush.Window.Foreground}">
     <Window.Resources>
@@ -30,58 +32,107 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Font}" />
         <ComboBox Grid.Row="0" Grid.Column="1" Margin="0,4"
                   ItemsSource="{Binding FontFamilies}"
-                  DisplayMemberPath="Display"
                   SelectedValuePath="FamilyName"
-                  SelectedValue="{Binding SelectedFontFamily, Mode=TwoWay}" />
+                  SelectedValue="{Binding SelectedFontFamily, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Display}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMonospace}" Value="True">
+                                        <Setter Property="FontWeight" Value="Bold" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
 
         <TextBlock Grid.Row="1" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.FontSize}" />
         <TextBox Grid.Row="1" Grid.Column="1" Margin="0,4"
                  Width="80" HorizontalAlignment="Left"
                  Text="{Binding FontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
-        <TextBlock Grid.Row="2" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Theme}" />
+        <TextBlock Grid.Row="2" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.UiFont}" />
         <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,4"
+                  ItemsSource="{Binding UiFontFamilies}"
+                  DisplayMemberPath="Display"
+                  SelectedValuePath="FamilyName"
+                  SelectedValue="{Binding SelectedUiFontFamily, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="3" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.UiFontSize}" />
+        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4"
+                 Width="80" HorizontalAlignment="Left"
+                 Text="{Binding UiFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+        <TextBlock Grid.Row="4" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Theme}" />
+        <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,4"
                   ItemsSource="{Binding Themes}"
                   DisplayMemberPath="Display"
                   SelectedValuePath="Key"
                   SelectedValue="{Binding SelectedTheme, Mode=TwoWay}" />
 
-        <TextBlock Grid.Row="3" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Language}" />
-        <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="5" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Language}" />
+        <ComboBox Grid.Row="5" Grid.Column="1" Margin="0,4"
                   ItemsSource="{Binding Languages}"
                   DisplayMemberPath="Display"
                   SelectedValuePath="Key"
                   SelectedValue="{Binding SelectedLanguage, Mode=TwoWay}" />
 
-        <TextBlock Grid.Row="4" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Indent}" />
-        <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="6" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Indent}" />
+        <ComboBox Grid.Row="6" Grid.Column="1" Margin="0,4"
                   ItemsSource="{Binding IndentModes}"
                   DisplayMemberPath="Display"
                   SelectedValuePath="UseTabs"
                   SelectedValue="{Binding IndentUseTabs, Mode=TwoWay}" />
 
-        <TextBlock Grid.Row="5" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.IndentWidth}" />
-        <ComboBox Grid.Row="5" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="7" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.IndentWidth}" />
+        <ComboBox Grid.Row="7" Grid.Column="1" Margin="0,4"
                   Width="80" HorizontalAlignment="Left"
                   ItemsSource="{Binding IndentWidths}"
                   SelectedItem="{Binding IndentWidth, Mode=TwoWay}" />
 
-        <TextBlock Grid.Row="6" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.LargeFileThreshold}" />
-        <TextBox Grid.Row="6" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="8" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.LargeFileThreshold}" />
+        <TextBox Grid.Row="8" Grid.Column="1" Margin="0,4"
                  Width="80" HorizontalAlignment="Left"
                  Text="{Binding LargeFileThresholdMB, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
-        <CheckBox Grid.Row="7" Grid.Column="1" Margin="0,6"
-                  Content="{DynamicResource Loc.Menu.View.WordWrap}"
+        <CheckBox Grid.Row="9" Grid.Column="1" Margin="0,6"
+                  Content="{DynamicResource Loc.Settings.WordWrap}"
                   IsChecked="{Binding WordWrap, Mode=TwoWay}" />
 
-        <CheckBox Grid.Row="8" Grid.Column="1" Margin="0,2,0,6"
-                  Content="{DynamicResource Loc.Menu.View.ShowWhitespace}"
+        <CheckBox Grid.Row="10" Grid.Column="1" Margin="0,2"
+                  Content="{DynamicResource Loc.Settings.ShowWhitespace}"
                   IsChecked="{Binding ShowWhitespace, Mode=TwoWay}" />
+
+        <CheckBox Grid.Row="11" Grid.Column="1" Margin="0,2"
+                  Content="{DynamicResource Loc.Settings.HideDotFiles}"
+                  IsChecked="{Binding HideDotFiles, Mode=TwoWay}" />
+
+        <CheckBox Grid.Row="12" Grid.Column="1" Margin="0,2,0,6"
+                  Content="{DynamicResource Loc.Settings.HideHiddenFiles}"
+                  IsChecked="{Binding HideHiddenFiles, Mode=TwoWay}" />
+
+        <StackPanel Grid.Row="13" Grid.ColumnSpan="2" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button MinWidth="80" Margin="0,0,8,0" IsDefault="True"
+                    Content="{DynamicResource Loc.Settings.Save}"
+                    Command="{Binding SaveCommand}" />
+            <Button MinWidth="80" IsCancel="True"
+                    Content="{DynamicResource Loc.Common.Cancel}" />
+        </StackPanel>
     </Grid>
 </Window>

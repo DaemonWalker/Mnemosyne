@@ -27,6 +27,17 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // 只记录不拦截：Handled 保持 false，维持默认崩溃退出语义
+        DispatcherUnhandledException += (_, args) => CrashLogger.Log("Dispatcher", args.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            if (args.ExceptionObject is Exception ex)
+            {
+                CrashLogger.Log("AppDomain", ex);
+            }
+        };
+        TaskScheduler.UnobservedTaskException += (_, args) => CrashLogger.Log("Task", args.Exception);
+
         _singleInstance = new SingleInstanceManager();
         if (!_singleInstance.TryBecomePrimary(e.Args))
         {

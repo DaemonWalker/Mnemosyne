@@ -15,6 +15,8 @@ namespace Mnemosyne.Controls;
 public class ScintillaHost : WindowsFormsHost
 {
     private const int LineNumberMargin = 0;
+    private const int FoldingMargin = 1;
+    private const int FoldingMarginWidth = 16;
 
     // 0-7 留给 Lexer 语法错误等用途，搜索高亮用 8/9（当前匹配叠加在全部匹配之上）
     private const int MatchIndicator = 8;
@@ -26,6 +28,7 @@ public class ScintillaHost : WindowsFormsHost
     private string _fontFamily = "Consolas";
     private double _fontSize = 13;
     private LanguageDefinition _language = LanguageRegistry.PlainText;
+    private Color? _caretLineColor;
 
     /// <summary>内容或保存点变化（读取 IsDirty 获得最新状态）</summary>
     public event EventHandler? DirtyChanged;
@@ -54,8 +57,20 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.IndentationGuides = IndentView.LookBoth;
         _scintilla.CaretLineLayer = Layer.UnderText;
         _scintilla.Margins[LineNumberMargin].Type = MarginType.Number;
-        _scintilla.Margins[1].Width = 0;
+        // 折叠边栏宽度按语言在 ConfigureFolding 中开/关，这里只配类型与标记
+        _scintilla.Margins[FoldingMargin].Type = MarginType.Symbol;
+        _scintilla.Margins[FoldingMargin].Mask = Marker.MaskFolders;
+        _scintilla.Margins[FoldingMargin].Sensitive = true;
+        _scintilla.Margins[FoldingMargin].Width = 0;
         _scintilla.Margins[2].Width = 0;
+        _scintilla.Markers[Marker.Folder].Symbol = MarkerSymbol.BoxPlus;
+        _scintilla.Markers[Marker.FolderOpen].Symbol = MarkerSymbol.BoxMinus;
+        _scintilla.Markers[Marker.FolderSub].Symbol = MarkerSymbol.VLine;
+        _scintilla.Markers[Marker.FolderTail].Symbol = MarkerSymbol.LCorner;
+        _scintilla.Markers[Marker.FolderEnd].Symbol = MarkerSymbol.BoxPlusConnected;
+        _scintilla.Markers[Marker.FolderOpenMid].Symbol = MarkerSymbol.BoxMinusConnected;
+        _scintilla.Markers[Marker.FolderMidTail].Symbol = MarkerSymbol.TCorner;
+        _scintilla.AutomaticFold = AutomaticFold.Show | AutomaticFold.Click | AutomaticFold.Change;
         _scintilla.EndAtLastLine = true;
         _scintilla.ScrollWidthTracking = true;
 
@@ -74,6 +89,7 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.SavePointLeft += (_, _) => DirtyChanged?.Invoke(this, EventArgs.Empty);
         _scintilla.UpdateUI += (_, e) =>
         {
+            if (e.Change.HasFlag(UpdateChange.Selection)) UpdateCaretLineHighlight();
             if (e.Change.HasFlag(UpdateChange.Selection) || e.Change.HasFlag(UpdateChange.Content))
             {
                 CaretPositionChanged?.Invoke(this, EventArgs.Empty);
@@ -112,6 +128,7 @@ public class ScintillaHost : WindowsFormsHost
         get => _scintilla.Text;
         set
         {
+            _largeFileMode = false;
             _scintilla.Text = value;
             _scintilla.EmptyUndoBuffer();
             _scintilla.SetSavePoint();
@@ -251,15 +268,20 @@ public class ScintillaHost : WindowsFormsHost
 
     private bool _chunkedLoading;
 
+    /// <summary>大文件加载过的文档保持此标记：折叠计算开销大，大文件模式下不启用折叠</summary>
+    private bool _largeFileMode;
+
     /// <summary>
     /// 进入大文件分块加载：Lexer 关闭（加载完成前不高亮）、只读（阻止用户输入，AppendChunk 内部临时解除）、
-    /// 关闭撤销记录。Scintilla5.NET 未封装 UndoCollection，经 DirectMessage 调 SCI_SETUNDOCOLLECTION(2012)。
+    /// 关闭撤销记录、关闭折叠。Scintilla5.NET 未封装 UndoCollection，经 DirectMessage 调 SCI_SETUNDOCOLLECTION(2012)。
     /// </summary>
     public void BeginChunkedLoad()
     {
         _chunkedLoading = true;
+        _largeFileMode = true;
         _scintilla.LexerName = "null";
         _scintilla.ReadOnly = true;
+        _scintilla.Margins[FoldingMargin].Width = 0;
         _scintilla.DirectMessage(2012, IntPtr.Zero);
     }
 
@@ -391,7 +413,41 @@ public class ScintillaHost : WindowsFormsHost
         }
         if (!string.IsNullOrEmpty(language.Keywords)) _scintilla.SetKeywords(0, language.Keywords);
         if (!string.IsNullOrEmpty(language.SecondaryKeywords)) _scintilla.SetKeywords(1, language.SecondaryKeywords);
+        ConfigureFolding();
         ApplyTheme();
+    }
+
+    /// <summary>
+    /// 按当前语言配置折叠：Lexer 属性是控件级持久状态，不支持折叠的语言必须显式设回 "0" 清除残留；
+    /// LexHTML 系（xml/hypertext/phpscript）的元素折叠需额外开 fold.html。
+    /// </summary>
+    private void ConfigureFolding()
+    {
+        bool enabled = _language.SupportsFolding && !_largeFileMode;
+        _scintilla.SetProperty("fold", enabled ? "1" : "0");
+        bool htmlFamily = _language.LexerName is "xml" or "hypertext" or "phpscript";
+        _scintilla.SetProperty("fold.html", enabled && htmlFamily ? "1" : "0");
+        _scintilla.Margins[FoldingMargin].Width = enabled ? FoldingMarginWidth : 0;
+    }
+
+    /// <summary>VSCode 行为：存在非空选区时隐藏当前行高亮（不透明行色会盖住选区色），选区清空后恢复</summary>
+    private void UpdateCaretLineHighlight()
+    {
+        if (_caretLineColor is not { } caretLine) return;
+        bool hasSelection = false;
+        foreach (Selection selection in _scintilla.Selections)
+        {
+            if (selection.End != selection.Start)
+            {
+                hasSelection = true;
+                break;
+            }
+        }
+        int alpha = hasSelection ? 0 : 255;
+        if (_scintilla.CaretLineBackColor.A != alpha)
+        {
+            _scintilla.CaretLineBackColor = Color.FromArgb(alpha, caretLine);
+        }
     }
 
     /// <summary>主题切换时由外部调用，遍历所有实例重设颜色</summary>
@@ -424,12 +480,24 @@ public class ScintillaHost : WindowsFormsHost
 
         Color background = EditorColor("Background");
         _scintilla.CaretForeColor = EditorColor("Caret");
-        // Scintilla v5：CaretLineVisible 已废弃，BackColor 带 alpha=255 即显示当前行高亮
-        Color caretLine = EditorColor("CaretLine");
-        _scintilla.CaretLineBackColor = Color.FromArgb(255, caretLine);
+        // Scintilla v5：CaretLineVisible 已废弃，BackColor 的 alpha 通道控制当前行高亮显隐（255 显示）；
+        // 先按新主题色重置为 255，再按选区状态恢复显隐
+        _caretLineColor = EditorColor("CaretLine");
+        _scintilla.CaretLineBackColor = Color.FromArgb(255, _caretLineColor.Value);
+        UpdateCaretLineHighlight();
         _scintilla.SelectionBackColor = EditorColor("Selection");
         _scintilla.WhitespaceTextColor = EditorColor("Whitespace");
         _scintilla.WhitespaceBackColor = background;
+
+        Color foldMargin = EditorColor("FoldMargin");
+        Color foldMarker = EditorColor("FoldMarker");
+        _scintilla.SetFoldMarginColor(true, foldMargin);
+        _scintilla.SetFoldMarginHighlightColor(true, foldMargin);
+        for (int i = Marker.FolderEnd; i <= Marker.FolderOpen; i++)
+        {
+            _scintilla.Markers[i].SetForeColor(foldMarker);
+            _scintilla.Markers[i].SetBackColor(foldMargin);
+        }
 
         _scintilla.Styles[SciStyle.LineNumber].ForeColor = EditorColor("LineNumber");
         _scintilla.Styles[SciStyle.LineNumber].BackColor = background;

@@ -11,4 +11,10 @@ public class AppSettings
     public int LargeFileThresholdMB { get; set; } = 50;
     public bool WordWrap { get; set; }
     public bool ShowWhitespace { get; set; }
+    public bool HideDotFiles { get; set; } = true;
+    public bool HideHiddenFiles { get; set; } = true;
+    public string UiFontFamily { get; set; } = "";
+    public double UiFontSize { get; set; } = 12;
+
+    public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }

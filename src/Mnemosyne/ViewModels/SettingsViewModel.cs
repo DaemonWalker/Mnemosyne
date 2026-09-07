@@ -2,27 +2,28 @@ using System.Globalization;
 using System.Windows.Markup;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Mnemosyne.Models;
 using Mnemosyne.Services;
 
 namespace Mnemosyne.ViewModels;
 
 /// <summary>
-/// 设置窗口 ViewModel。所有改动即时应用（经 MainWindowViewModel 的应用方法遍历已打开文档并落盘），
-/// 窗口本身不持有"确定/取消"语义。自动换行/空白显示直接转发到主 VM（与视图菜单共用同一属性，双向同步）。
+/// 设置窗口 ViewModel。编辑只改本地属性，点"保存设定"才经 MainWindowViewModel.ApplyAllSettings
+/// 一次性应用并落盘；取消/Esc 直接关窗，修改从未生效故无需还原。
+/// 自动换行/空白显示例外：与视图菜单共用主 VM 属性，保持即时生效。
 /// </summary>
 public partial class SettingsViewModel : ObservableObject
 {
     public record NamedOption(string Key, string Display);
 
-    public record FontOption(string Display, string FamilyName);
+    public record FontOption(string Display, string FamilyName, bool IsMonospace);
 
     public record IndentModeOption(bool UseTabs, string Display);
 
     private readonly ConfigService _configService;
     private readonly LocalizationService _localization;
     private readonly MainWindowViewModel _mainViewModel;
-    private bool _initializing = true;
 
     public SettingsViewModel(ConfigService configService, LocalizationService localization, MainWindowViewModel mainViewModel)
     {
@@ -32,8 +33,11 @@ public partial class SettingsViewModel : ObservableObject
         AppSettings settings = configService.Settings;
 
         FontFamilies = Fonts.SystemFontFamilies
-            .Select(f => new FontOption(GetFontDisplayName(f), f.Source))
+            .Select(f => new FontOption(GetFontDisplayName(f), f.Source, IsMonospaceFont(f)))
             .OrderBy(f => f.Display, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        UiFontFamilies = new[] { new FontOption(_localization.GetString("Loc.Settings.UiFontDefault"), "", false) }
+            .Concat(FontFamilies)
             .ToList();
         IndentWidths = [2, 3, 4, 8];
         RebuildOptions();
@@ -45,29 +49,20 @@ public partial class SettingsViewModel : ObservableObject
         _indentUseTabs = settings.IndentUseTabs;
         _indentWidth = settings.IndentWidth;
         _largeFileThresholdMB = settings.LargeFileThresholdMB;
-        _initializing = false;
-
-        // 语言切换后选项显示名需要按新语言重建
-        _localization.LanguageChanged += (_, _) =>
-        {
-            _initializing = true;
-            RebuildOptions();
-            OnPropertyChanged(nameof(SelectedTheme));
-            OnPropertyChanged(nameof(SelectedLanguage));
-            OnPropertyChanged(nameof(IndentUseTabs));
-            _initializing = false;
-        };
-        // 视图菜单切换换行/空白时同步本窗口勾选状态
-        _mainViewModel.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(MainWindowViewModel.WordWrap)) OnPropertyChanged(nameof(WordWrap));
-            if (e.PropertyName == nameof(MainWindowViewModel.ShowWhitespace)) OnPropertyChanged(nameof(ShowWhitespace));
-        };
+        _hideDotFiles = settings.HideDotFiles;
+        _hideHiddenFiles = settings.HideHiddenFiles;
+        _selectedUiFontFamily = settings.UiFontFamily;
+        _uiFontSize = settings.UiFontSize;
     }
 
     public IReadOnlyList<FontOption> FontFamilies { get; }
 
+    public IReadOnlyList<FontOption> UiFontFamilies { get; }
+
     public IReadOnlyList<int> IndentWidths { get; }
+
+    /// <summary>保存/取消时请求关窗，参数即 DialogResult</summary>
+    public Action<bool>? CloseRequested { get; set; }
 
     [ObservableProperty]
     private IReadOnlyList<NamedOption> _themes = [];
@@ -99,6 +94,18 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private int _largeFileThresholdMB;
 
+    [ObservableProperty]
+    private bool _hideDotFiles;
+
+    [ObservableProperty]
+    private bool _hideHiddenFiles;
+
+    [ObservableProperty]
+    private string? _selectedUiFontFamily;
+
+    [ObservableProperty]
+    private double _uiFontSize;
+
     /// <summary>自动换行：与主 VM（视图菜单）共用同一属性</summary>
     public bool WordWrap
     {
@@ -113,47 +120,23 @@ public partial class SettingsViewModel : ObservableObject
         set => _mainViewModel.ShowWhitespace = value;
     }
 
-    partial void OnSelectedFontFamilyChanged(string? value)
+    [RelayCommand]
+    private void Save()
     {
-        if (_initializing || string.IsNullOrEmpty(value)) return;
-        _mainViewModel.ApplyFontSettings(value, FontSize);
-    }
-
-    partial void OnFontSizeChanged(double value)
-    {
-        if (_initializing) return;
-        double clamped = Math.Clamp(value, 6, 72);
-        _mainViewModel.ApplyFontSettings(SelectedFontFamily ?? _configService.Settings.FontFamily, clamped);
-    }
-
-    partial void OnSelectedThemeChanged(string? value)
-    {
-        if (_initializing || value is null) return;
-        _mainViewModel.ApplyThemeSetting(value);
-    }
-
-    partial void OnSelectedLanguageChanged(string? value)
-    {
-        if (_initializing || value is null) return;
-        _mainViewModel.ApplyLanguageSetting(value);
-    }
-
-    partial void OnIndentUseTabsChanged(bool value)
-    {
-        if (_initializing) return;
-        _mainViewModel.ApplyIndentSettings(value, IndentWidth);
-    }
-
-    partial void OnIndentWidthChanged(int value)
-    {
-        if (_initializing) return;
-        _mainViewModel.ApplyIndentSettings(IndentUseTabs, value);
-    }
-
-    partial void OnLargeFileThresholdMBChanged(int value)
-    {
-        if (_initializing) return;
-        _mainViewModel.ApplyLargeFileThreshold(Math.Clamp(value, 1, 4096));
+        AppSettings snapshot = _configService.Settings.Clone();
+        snapshot.FontFamily = SelectedFontFamily ?? snapshot.FontFamily;
+        snapshot.FontSize = Math.Clamp(FontSize, 6, 72);
+        snapshot.Theme = SelectedTheme ?? snapshot.Theme;
+        snapshot.Language = SelectedLanguage ?? snapshot.Language;
+        snapshot.IndentUseTabs = IndentUseTabs;
+        snapshot.IndentWidth = IndentWidth;
+        snapshot.LargeFileThresholdMB = Math.Clamp(LargeFileThresholdMB, 1, 4096);
+        snapshot.HideDotFiles = HideDotFiles;
+        snapshot.HideHiddenFiles = HideHiddenFiles;
+        snapshot.UiFontFamily = SelectedUiFontFamily ?? "";
+        snapshot.UiFontSize = Math.Clamp(UiFontSize, 8, 32);
+        _mainViewModel.ApplyAllSettings(snapshot);
+        CloseRequested?.Invoke(true);
     }
 
     private void RebuildOptions()
@@ -179,5 +162,30 @@ public partial class SettingsViewModel : ObservableObject
     {
         var language = XmlLanguage.GetLanguage(CultureInfo.CurrentUICulture.Name);
         return family.FamilyNames.TryGetValue(language, out string? name) ? name : family.Source;
+    }
+
+    /// <summary>比较 i/l 与 W/M 的字形步宽判定等宽；取不到字形信息时按非等宽处理</summary>
+    private static bool IsMonospaceFont(System.Windows.Media.FontFamily family)
+    {
+        try
+        {
+            foreach (Typeface typeface in family.GetTypefaces())
+            {
+                if (!typeface.TryGetGlyphTypeface(out GlyphTypeface glyph)) continue;
+                var map = glyph.CharacterToGlyphMap;
+                if (!map.TryGetValue('i', out ushort i) || !map.TryGetValue('W', out ushort w)) continue;
+                if (!map.TryGetValue('l', out ushort l)) l = i;
+                if (!map.TryGetValue('M', out ushort m)) m = w;
+                // AdvanceWidths 已按 DesignEmHeight 归一化，直接比较
+                double width = glyph.AdvanceWidths[i];
+                return width == glyph.AdvanceWidths[l]
+                    && width == glyph.AdvanceWidths[w]
+                    && width == glyph.AdvanceWidths[m];
+            }
+        }
+        catch (Exception)
+        {
+        }
+        return false;
     }
 }

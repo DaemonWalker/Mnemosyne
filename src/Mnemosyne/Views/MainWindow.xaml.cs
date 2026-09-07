@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -20,7 +21,6 @@ public partial class MainWindow : Window
     private readonly ConfigService _configService;
     private readonly MainWindowViewModel _viewModel;
     private readonly IReadOnlyList<RoutedUICommand> _appCommands;
-    private SettingsWindow? _settingsWindow;
 
     // 每个 Tab 在 EditorHostGrid 中的常驻内容：普通文档是其 ScintillaHost，预览 Tab 是纯 WPF 视图
     private readonly Dictionary<DocumentViewModel, UIElement> _tabContents = new();
@@ -32,6 +32,8 @@ public partial class MainWindow : Window
         _configService = configService;
         _viewModel = new MainWindowViewModel(fileService, localization, configService, themeService, recentFiles, pluginService, markdownRenderer, sessionService);
         DataContext = _viewModel;
+        _viewModel.ApplyUiFontSettings = ApplyUiFont;
+        ApplyUiFont();
 
         _appCommands = typeof(AppCommands)
             .GetProperties(BindingFlags.Public | BindingFlags.Static)
@@ -169,6 +171,26 @@ public partial class MainWindow : Window
         string[] paths = app.PendingOpenPaths.ToArray();
         app.PendingOpenPaths.Clear();
         _ = _viewModel.OpenPathsAsync(paths);
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
+
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(this);
+        else SystemCommands.MaximizeWindow(this);
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => SystemCommands.CloseWindow(this);
+
+    private void Window_StateChanged(object? sender, EventArgs e)
+    {
+        bool maximized = WindowState == WindowState.Maximized;
+        MaximizeIcon.Visibility = maximized ? Visibility.Collapsed : Visibility.Visible;
+        RestoreIcon.Visibility = maximized ? Visibility.Visible : Visibility.Collapsed;
+        string tooltipKey = maximized ? "Loc.TitleBar.Restore" : "Loc.TitleBar.Maximize";
+        MaximizeButton.SetResourceReference(ToolTipProperty, tooltipKey);
+        MaximizeButton.SetResourceReference(AutomationProperties.NameProperty, tooltipKey);
     }
 
     private void UpdateEditorVisibility()
@@ -585,14 +607,21 @@ public partial class MainWindow : Window
 
     private void OpenSettingsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        // 非模态单例窗口：再次触发聚焦既有窗口
-        if (_settingsWindow is not null)
+        // 模态对话框：每次打开新建实例，保存才生效，取消/Esc 放弃全部修改
+        var window = new SettingsWindow(new SettingsViewModel(_configService, _localization, _viewModel))
         {
-            _settingsWindow.Activate();
-            return;
-        }
-        _settingsWindow = new SettingsWindow(new SettingsViewModel(_configService, _localization, _viewModel)) { Owner = this };
-        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
-        _settingsWindow.Show();
+            Owner = this,
+            FontFamily = FontFamily,
+            FontSize = FontSize,
+        };
+        window.ShowDialog();
+    }
+
+    private void ApplyUiFont()
+    {
+        AppSettings settings = _configService.Settings;
+        if (string.IsNullOrEmpty(settings.UiFontFamily)) ClearValue(FontFamilyProperty);
+        else FontFamily = new System.Windows.Media.FontFamily(settings.UiFontFamily);
+        FontSize = settings.UiFontSize;
     }
 }

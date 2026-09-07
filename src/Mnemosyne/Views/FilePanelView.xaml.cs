@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Mnemosyne.Services;
 using Mnemosyne.ViewModels;
 
@@ -100,6 +101,13 @@ public partial class FilePanelView : UserControl
     {
         var box = (TextBox)sender;
         if (box.DataContext is not FileTreeNodeViewModel { IsEditing: true } node) return;
+        // 右键菜单 Click 触发的 Loaded 可能早于菜单完全关闭，同步抢焦点会被弹回，延迟到输入阶段处理
+        box.Dispatcher.BeginInvoke(() => FocusEditBox(box, node), DispatcherPriority.Input);
+    }
+
+    private static void FocusEditBox(TextBox box, FileTreeNodeViewModel node)
+    {
+        if (box.DataContext != node || !node.IsEditing) return;
         box.Focus();
         Keyboard.Focus(box);
         if (node.IsPlaceholder)

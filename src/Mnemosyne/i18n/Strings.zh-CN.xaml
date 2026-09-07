@@ -4,6 +4,11 @@
 
     <sys:String x:Key="Loc.App.Title">Mnemosyne</sys:String>
 
+    <sys:String x:Key="Loc.TitleBar.Minimize">最小化</sys:String>
+    <sys:String x:Key="Loc.TitleBar.Maximize">最大化</sys:String>
+    <sys:String x:Key="Loc.TitleBar.Restore">还原</sys:String>
+    <sys:String x:Key="Loc.TitleBar.Close">关闭</sys:String>
+
     <sys:String x:Key="Loc.Menu.File">文件(_F)</sys:String>
     <sys:String x:Key="Loc.Menu.File.Open">打开文件(_O)...</sys:String>
     <sys:String x:Key="Loc.Menu.File.OpenFolder">打开文件夹(_D)...</sys:String>
@@ -24,6 +29,7 @@
     <sys:String x:Key="Loc.Menu.View">视图(_V)</sys:String>
     <sys:String x:Key="Loc.Menu.View.WordWrap">自动换行</sys:String>
     <sys:String x:Key="Loc.Menu.View.ShowWhitespace">显示空白字符</sys:String>
+    <sys:String x:Key="Loc.Menu.View.MarkdownPreview">Markdown 预览</sys:String>
 
     <sys:String x:Key="Loc.Indent.UseSpaces">使用空格缩进</sys:String>
     <sys:String x:Key="Loc.Indent.UseTabs">使用制表符缩进</sys:String>
@@ -88,6 +94,14 @@
     <sys:String x:Key="Loc.Settings.Indent">缩进</sys:String>
     <sys:String x:Key="Loc.Settings.IndentWidth">缩进宽度</sys:String>
     <sys:String x:Key="Loc.Settings.LargeFileThreshold">大文件阈值 (MB)</sys:String>
+    <sys:String x:Key="Loc.Settings.WordWrap">自动换行</sys:String>
+    <sys:String x:Key="Loc.Settings.ShowWhitespace">显示空白字符</sys:String>
+    <sys:String x:Key="Loc.Settings.HideDotFiles">隐藏以 . 开头的文件和文件夹</sys:String>
+    <sys:String x:Key="Loc.Settings.HideHiddenFiles">隐藏具有隐藏属性的文件和文件夹</sys:String>
+    <sys:String x:Key="Loc.Settings.UiFont">界面字体</sys:String>
+    <sys:String x:Key="Loc.Settings.UiFontSize">界面字号</sys:String>
+    <sys:String x:Key="Loc.Settings.UiFontDefault">系统默认</sys:String>
+    <sys:String x:Key="Loc.Settings.Save">保存设定</sys:String>
 
     <sys:String x:Key="Loc.Dialog.ExternalReload.Message">文件“{0}”已被外部修改。是否重新加载？</sys:String>
     <sys:String x:Key="Loc.Dialog.ExternalConflict.Message">文件“{0}”已被外部修改，且当前有未保存的修改。重新加载将丢失这些修改。是否重新加载？</sys:String>

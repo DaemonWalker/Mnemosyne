@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Mnemosyne.Models;
 using Mnemosyne.Services;
 
 namespace Mnemosyne.ViewModels;
@@ -19,6 +20,7 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
     private const int DebounceMilliseconds = 300;
 
     private readonly LocalizationService _localization;
+    private readonly AppSettings _settings;
     private readonly object _pendingLock = new();
     private readonly HashSet<string> _pendingDirectories = new(StringComparer.OrdinalIgnoreCase);
 
@@ -26,9 +28,10 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
     private System.Threading.Timer? _debounceTimer;
     private bool _isCommittingEdit;
 
-    public FileTreeViewModel(LocalizationService localization)
+    public FileTreeViewModel(LocalizationService localization, AppSettings settings)
     {
         _localization = localization;
+        _settings = settings;
     }
 
     [ObservableProperty]
@@ -312,11 +315,11 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
             var children = new List<FileTreeNodeViewModel>();
             foreach (string dir in Directory.EnumerateDirectories(directoryPath))
             {
-                children.Add(FileTreeNodeViewModel.CreateDirectory(dir));
+                if (!IsHidden(dir)) children.Add(FileTreeNodeViewModel.CreateDirectory(dir));
             }
             foreach (string file in Directory.EnumerateFiles(directoryPath))
             {
-                children.Add(FileTreeNodeViewModel.CreateFile(file));
+                if (!IsHidden(file)) children.Add(FileTreeNodeViewModel.CreateFile(file));
             }
             children.Sort(static (a, b) => a.IsDirectory == b.IsDirectory
                 ? string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase)
@@ -327,6 +330,38 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
         {
             ReportError("Loc.Error.ReadFolder.Message", directoryPath, ex.Message);
             return [];
+        }
+    }
+
+    /// <summary>按设置过滤 . 开头项与带 Windows 隐藏属性的项；属性读取失败按不过滤处理</summary>
+    private bool IsHidden(string path)
+    {
+        if (_settings.HideDotFiles && Path.GetFileName(path).StartsWith('.')) return true;
+        if (_settings.HideHiddenFiles)
+        {
+            try
+            {
+                if ((File.GetAttributes(path) & FileAttributes.Hidden) != 0) return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+            }
+        }
+        return false;
+    }
+
+    /// <summary>设置变更后递归刷新所有已加载节点：保留展开状态，按新过滤规则增删子项</summary>
+    public void RefreshVisible()
+    {
+        if (RootNode is not null) RefreshLoadedRecursive(RootNode);
+    }
+
+    private void RefreshLoadedRecursive(FileTreeNodeViewModel node)
+    {
+        RefreshNode(node);
+        foreach (FileTreeNodeViewModel child in node.Children)
+        {
+            if (child.IsDirectory && !child.HasDummyChild) RefreshLoadedRecursive(child);
         }
     }
 
@@ -365,7 +400,8 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
 
     private void RefreshParentOf(FileTreeNodeViewModel node)
     {
-        FileTreeNodeViewModel? parent = FindNode(Path.GetDirectoryName(node.FullPath));
+        // 占位节点的 FullPath 就是父目录本身，取 GetDirectoryName 会刷到祖父层级
+        FileTreeNodeViewModel? parent = FindNode(node.IsPlaceholder ? node.FullPath : Path.GetDirectoryName(node.FullPath));
         if (parent is not null) RefreshNode(parent);
     }
 
