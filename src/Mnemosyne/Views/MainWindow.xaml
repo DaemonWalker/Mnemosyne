@@ -5,6 +5,7 @@
         xmlns:models="clr-namespace:Mnemosyne.Models"
         xmlns:views="clr-namespace:Mnemosyne.Views"
         Title="{DynamicResource Loc.App.Title}"
+        Icon="pack://application:,,,/Resources/mnemosyne.ico"
         Width="1000" Height="640"
         MinWidth="480" MinHeight="320"
         WindowStartupLocation="CenterScreen"

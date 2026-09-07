@@ -7,7 +7,7 @@
 
 - 当前 Step：**全部 12 个 Step 已完成**；发布后用户反馈修复批次（13 项 + 深色 ComboBox 修复）已完成并验证
 - 当前 Step 内已完成的小目标：12.1～12.4 全部；2026-09-07 反馈批次：构建 0 错误 0 警告，发布包冒烟 27/27 通过
-- 最后更新：2026-09-07 22:04（新增设置项：资源管理器右键菜单注册 ×2 + 允许多实例，已实测验证）
+- 最后更新：2026-09-07 23:21（新增应用图标：exe 图标 + 各窗口图标，多尺寸 ico，已验证嵌入与解码）
 
 ## 断点信息
 
@@ -87,3 +87,4 @@
 | 2026-09-07 21:39 | — | 脚本整理 | 根目录脚本合并为单个 `build.ps1`：默认 Debug 开发构建（`-warnaserror` 0 警告基线，`-Run` 构建后启动）；`-Publish` 开关走 Release 发布流程（全解构建 → `dotnet publish -r win-x64 --self-contained false -p:PublishReadyToRun=true` → 拷贝插件 dll 到发布包 plugins/ → 建 config/、cache/），可选 `-Runtime`/`-Output`。`publish.ps1` 删除；`measure-coldstart.ps1`、`regression-smoke.ps1` 移回 `scripts/`（`$root` 自动探测逻辑两处均兼容） | 0 警告 0 错误 | 已实测：默认 Debug 构建通过；`-Publish` 发布包生成通过（Mnemosyne.exe + 3 个 Formatters 插件 dll 齐全） |
 | 2026-09-07 22:04 | — | 右键菜单+多实例 | 设置新增 3 个开关（`AppSettings.AllowMultipleInstances/ShellFileContextMenu/ShellFolderContextMenu`）：①新增 `Services/ShellIntegrationService.cs`（静态无状态），HKCU 下 `Software\Classes\*\shell\Mnemosyne`（命令 `"exe" "%1"`）与 `Software\Classes\Directory\shell\Mnemosyne`（`"%V"`），均带 Icon 值，开=覆盖写、关=DeleteSubKeyTree，无需管理员；菜单文本按当前界面语言取 `Loc.Shell.OpenFile/OpenFolder`；②`App.OnStartup` 把 ConfigService.Load 提前到单实例检查之前，AllowMultipleInstances=true 时完全不创建 SingleInstanceManager（次实例不再经管道转发）；③`ApplyAllSettings` 在 SetLanguage 之后同步注册表，失败弹 `Loc.Error.ShellIntegration.Message` 不阻断其余设置落盘；④设置窗口加 3 行 CheckBox（TextBlock 内嵌 TextWrapping），i18n 双语词条已加 | 0 警告 0 错误 | 已实测：临时 console 引用 Mnemosyne.dll 调 Apply，注册表文件/文件夹键文本+Icon+command 值核对正确，关开关后两键删除；多实例开=双进程并存、关=进程数恒 1。注意：PowerShell 访问含 `*` 的注册表路径必须用 `-LiteralPath`，否则按通配符枚举整个 Classes  hive 卡死 |
 | 2026-09-07 22:30 | — | 右键菜单补漏 | 用户反馈"右键文件夹没有菜单"：排查注册表确认 `Directory\shell\Mnemosyne` 已正确写入，原因是用户右键的是**文件夹窗口内空白处**（属 `Directory\Background` 类，此前未注册）。修复：`ShellIntegrationService` 的文件夹开关改为同时注册 `Directory\shell` 与 `Directory\Background\shell`（命令同为 `"%V"`，Background 场景 %V 即当前文件夹），取消时两键一并删除。实测：临时 harness 注册三键值核对正确、off 后三键全删；随后用带 BOM 的 PS 脚本（.NET Registry API 直写，规避 PS 5.1 无 BOM 按 ANSI 读脚本的乱码坑）按正式 exe 路径恢复三键真实注册，逐值比对中文文案相等 | 0 警告 0 错误 | 教训：测试 harness 调用 Apply 会用 harness 自身 ProcessPath 覆盖正式注册，测完必须恢复正式键值 |
+| 2026-09-07 23:21 | — | 应用图标 | 新增多尺寸应用图标（16/24/32/48/64 用 BMP 帧、128/256 用 PNG 帧——System.Drawing.Icon 对 PNG 帧解码有 bug，纯 PNG ico 会炸）：`scripts/generate-icon.ps1`（GDI+ 绘制 1024 主图=主题蓝渐变圆角方块 + 白色 Segoe UI Bold "M"，高质量缩放逐帧输出）生成 `Resources/mnemosyne.ico` 与 256px 预览 PNG；csproj 加 `ApplicationIcon`（exe 图标）并把 ico 以 Resource 打入程序集；MainWindow/SettingsWindow/LanguagePickerWindow 均设 `Icon="pack://application:,,,/Resources/mnemosyne.ico"` | 0 警告 0 错误 | 已验证：ExtractAssociatedIcon 从构建产物提取到目标图标（exe 嵌入成功）；WIC IconDecoder 可解码全部 7 帧；g.resources 含 pack 资源。注意：MainWindow 自定义 WindowChrome 标题栏不画图标（任务栏/Alt-Tab 正常）；SettingsWindow 为 ToolWindow 标题栏本就不显图标 |

@@ -10,7 +10,12 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Mnemosyne</AssemblyName>
     <RootNamespace>Mnemosyne</RootNamespace>
+    <ApplicationIcon>Resources\mnemosyne.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\mnemosyne.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
