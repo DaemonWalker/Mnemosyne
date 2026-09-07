@@ -30,8 +30,6 @@ public class MarkdownRenderService
         .UseAdvancedExtensions()
         .Build();
 
-    private static readonly WpfFontFamily s_codeFont = new WpfFontFamily("Consolas");
-
     private readonly LocalizationService _localization;
 
     public MarkdownRenderService(LocalizationService localization)
@@ -39,14 +37,17 @@ public class MarkdownRenderService
         _localization = localization;
     }
 
-    private sealed record RenderContext(string? BaseDirectory, Action<string>? LinkHandler, string ForegroundKey);
+    private sealed record RenderContext(string? BaseDirectory, Action<string>? LinkHandler, string ForegroundKey, double BaseFontSize);
 
-    /// <summary>渲染 Markdown 文本为控件树；baseDirectory 用于解析图片与链接的相对路径（源 md 文件目录）</summary>
-    public FrameworkElement Render(string markdown, string? baseDirectory, Action<string>? linkHandler)
+    /// <summary>渲染 Markdown 文本为控件树；baseDirectory 用于解析图片与链接的相对路径（源 md 文件目录）；字体字号沿用编辑器设置</summary>
+    public FrameworkElement Render(string markdown, string? baseDirectory, Action<string>? linkHandler, string fontFamily, double fontSize)
     {
-        var context = new RenderContext(baseDirectory, linkHandler, "Brush.Window.Foreground");
+        var context = new RenderContext(baseDirectory, linkHandler, "Brush.Window.Foreground", Math.Clamp(fontSize, 6, 72));
         MarkdownDocument document = Markdown.Parse(markdown, s_pipeline);
         var panel = new StackPanel();
+        // 根上设可继承字体属性，整棵树（含代码块）跟随编辑器字体字号
+        if (!string.IsNullOrWhiteSpace(fontFamily)) TextElement.SetFontFamily(panel, new WpfFontFamily(fontFamily));
+        TextElement.SetFontSize(panel, context.BaseFontSize);
         foreach (MdBlock block in document)
         {
             panel.Children.Add(RenderBlock(block, context));
@@ -76,13 +77,14 @@ public class MarkdownRenderService
     private UIElement RenderHeading(HeadingBlock heading, RenderContext context)
     {
         var text = new TextBlock { TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.Bold };
+        // 标题字号按编辑器字号等比放大（比例对应原 12pt 基准下的 24/20/17/15/13.5）
         text.FontSize = heading.Level switch
         {
-            1 => 24,
-            2 => 20,
-            3 => 17,
-            4 => 15,
-            _ => 13.5,
+            1 => context.BaseFontSize * 2.0,
+            2 => context.BaseFontSize * 1.67,
+            3 => context.BaseFontSize * 1.42,
+            4 => context.BaseFontSize * 1.25,
+            _ => context.BaseFontSize * 1.125,
         };
         text.SetResourceReference(TextBlock.ForegroundProperty, context.ForegroundKey);
         if (heading.Inline is not null) AppendInlines(text.Inlines, heading.Inline, context);
@@ -162,7 +164,7 @@ public class MarkdownRenderService
         }
         if (builder.Length > 0) builder.Length--;
 
-        var text = new TextBlock { Text = builder.ToString(), FontFamily = s_codeFont };
+        var text = new TextBlock { Text = builder.ToString() };
         text.SetResourceReference(TextBlock.ForegroundProperty, context.ForegroundKey);
         var border = new Border
         {
@@ -274,7 +276,7 @@ public class MarkdownRenderService
         {
             builder.Append(line.ToString()).Append('\n');
         }
-        var text = new TextBlock { Text = builder.ToString().TrimEnd(), FontFamily = s_codeFont };
+        var text = new TextBlock { Text = builder.ToString().TrimEnd() };
         text.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Secondary.Foreground");
         return text;
     }
@@ -308,7 +310,7 @@ public class MarkdownRenderService
             }
             case CodeInline code:
             {
-                var run = new Run(code.Content) { FontFamily = s_codeFont };
+                var run = new Run(code.Content);
                 run.SetResourceReference(TextElement.BackgroundProperty, "Brush.Control.Background");
                 inlines.Add(run);
                 break;

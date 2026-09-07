@@ -15,6 +15,7 @@ public partial class MarkdownPreviewViewModel : DocumentViewModel
 {
     private readonly MarkdownRenderService _renderService;
     private readonly LocalizationService _localization;
+    private readonly AppSettings _settings;
     private readonly Action<string> _openLocalFile;
     private readonly Action<string, string>? _showError;
     private string? _renderedText;
@@ -33,6 +34,7 @@ public partial class MarkdownPreviewViewModel : DocumentViewModel
         Source = source;
         _renderService = renderService;
         _localization = localization;
+        _settings = settings;
         _openLocalFile = openLocalFile;
         _showError = showError;
         UpdateTitle();
@@ -61,7 +63,14 @@ public partial class MarkdownPreviewViewModel : DocumentViewModel
         string text = Source.Editor.Text;
         if (text == _renderedText) return;
         _renderedText = text;
-        PreviewContent = _renderService.Render(text, BaseDirectory, OnLinkClicked);
+        PreviewContent = _renderService.Render(text, BaseDirectory, OnLinkClicked, _settings.FontFamily, _settings.FontSize);
+    }
+
+    /// <summary>编辑器字体/字号设置变更后强制重渲染（主 VM 原地更新同一 AppSettings 实例，此处直接取到新值）</summary>
+    public void RefreshFonts()
+    {
+        _renderedText = null;
+        Refresh();
     }
 
     /// <summary>源 Tab 关闭联动关闭本 Tab 前调用，解除事件订阅</summary>

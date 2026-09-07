@@ -15,6 +15,9 @@ public class AppSettings
     public bool HideHiddenFiles { get; set; } = true;
     public string UiFontFamily { get; set; } = "";
     public double UiFontSize { get; set; } = 12;
+    public bool AllowMultipleInstances { get; set; }
+    public bool ShellFileContextMenu { get; set; }
+    public bool ShellFolderContextMenu { get; set; }
 
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }

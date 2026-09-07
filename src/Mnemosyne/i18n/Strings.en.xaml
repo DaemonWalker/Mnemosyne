@@ -101,7 +101,13 @@
     <sys:String x:Key="Loc.Settings.UiFont">UI Font</sys:String>
     <sys:String x:Key="Loc.Settings.UiFontSize">UI Font Size</sys:String>
     <sys:String x:Key="Loc.Settings.UiFontDefault">System Default</sys:String>
+    <sys:String x:Key="Loc.Settings.AllowMultipleInstances">Allow multiple instances (takes effect after restart)</sys:String>
+    <sys:String x:Key="Loc.Settings.ShellFileContextMenu">Add "Open with Mnemosyne" to the file context menu</sys:String>
+    <sys:String x:Key="Loc.Settings.ShellFolderContextMenu">Add "Open folder with Mnemosyne" to the folder context menu</sys:String>
     <sys:String x:Key="Loc.Settings.Save">Save Settings</sys:String>
+
+    <sys:String x:Key="Loc.Shell.OpenFile">Open with Mnemosyne</sys:String>
+    <sys:String x:Key="Loc.Shell.OpenFolder">Open folder with Mnemosyne</sys:String>
 
     <sys:String x:Key="Loc.Dialog.ExternalReload.Message">The file "{0}" was modified externally. Reload it?</sys:String>
     <sys:String x:Key="Loc.Dialog.ExternalConflict.Message">The file "{0}" was modified externally and you have unsaved changes. Reloading will discard those changes. Reload it?</sys:String>
@@ -115,6 +121,7 @@
     <sys:String x:Key="Loc.Error.ReadFolder.Message">Cannot read folder "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.WatchFolder.Message">Cannot watch folder "{0}" for changes. {1}</sys:String>
     <sys:String x:Key="Loc.Error.SaveSettings.Message">Cannot save settings. {0}</sys:String>
+    <sys:String x:Key="Loc.Error.ShellIntegration.Message">Cannot update the Explorer context menu. {0}</sys:String>
     <sys:String x:Key="Loc.Error.Format.Message">Could not format the document ({0}). {1}</sys:String>
     <sys:String x:Key="Loc.Error.CreateEntry.Message">Cannot create "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.RenameEntry.Message">Cannot rename "{0}". {1}</sys:String>

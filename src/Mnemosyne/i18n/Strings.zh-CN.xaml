@@ -101,7 +101,13 @@
     <sys:String x:Key="Loc.Settings.UiFont">界面字体</sys:String>
     <sys:String x:Key="Loc.Settings.UiFontSize">界面字号</sys:String>
     <sys:String x:Key="Loc.Settings.UiFontDefault">系统默认</sys:String>
+    <sys:String x:Key="Loc.Settings.AllowMultipleInstances">允许同时运行多个实例（重启后生效）</sys:String>
+    <sys:String x:Key="Loc.Settings.ShellFileContextMenu">在文件右键菜单添加“用 Mnemosyne 打开”</sys:String>
+    <sys:String x:Key="Loc.Settings.ShellFolderContextMenu">在文件夹右键菜单添加“用 Mnemosyne 打开文件夹”</sys:String>
     <sys:String x:Key="Loc.Settings.Save">保存设定</sys:String>
+
+    <sys:String x:Key="Loc.Shell.OpenFile">用 Mnemosyne 打开</sys:String>
+    <sys:String x:Key="Loc.Shell.OpenFolder">用 Mnemosyne 打开文件夹</sys:String>
 
     <sys:String x:Key="Loc.Dialog.ExternalReload.Message">文件“{0}”已被外部修改。是否重新加载？</sys:String>
     <sys:String x:Key="Loc.Dialog.ExternalConflict.Message">文件“{0}”已被外部修改，且当前有未保存的修改。重新加载将丢失这些修改。是否重新加载？</sys:String>
@@ -115,6 +121,7 @@
     <sys:String x:Key="Loc.Error.ReadFolder.Message">无法读取文件夹“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.WatchFolder.Message">无法监听文件夹“{0}”的变化。{1}</sys:String>
     <sys:String x:Key="Loc.Error.SaveSettings.Message">无法保存设置。{0}</sys:String>
+    <sys:String x:Key="Loc.Error.ShellIntegration.Message">无法更新资源管理器右键菜单。{0}</sys:String>
     <sys:String x:Key="Loc.Error.Format.Message">无法格式化文档（{0}）。{1}</sys:String>
     <sys:String x:Key="Loc.Error.CreateEntry.Message">无法创建“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.RenameEntry.Message">无法重命名“{0}”。{1}</sys:String>

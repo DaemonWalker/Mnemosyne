@@ -15,11 +15,21 @@ namespace Mnemosyne.ViewModels;
 /// </summary>
 public partial class SettingsViewModel : ObservableObject
 {
-    public record NamedOption(string Key, string Display);
+    // ToString 返回显示文本：ComboBox 折叠态选择框不走 DisplayMemberPath，回退按 ToString 渲染
+    public record NamedOption(string Key, string Display)
+    {
+        public override string ToString() => Display;
+    }
 
-    public record FontOption(string Display, string FamilyName, bool IsMonospace);
+    public record FontOption(string Display, string FamilyName, bool IsMonospace)
+    {
+        public override string ToString() => Display;
+    }
 
-    public record IndentModeOption(bool UseTabs, string Display);
+    public record IndentModeOption(bool UseTabs, string Display)
+    {
+        public override string ToString() => Display;
+    }
 
     private readonly ConfigService _configService;
     private readonly LocalizationService _localization;
@@ -53,6 +63,9 @@ public partial class SettingsViewModel : ObservableObject
         _hideHiddenFiles = settings.HideHiddenFiles;
         _selectedUiFontFamily = settings.UiFontFamily;
         _uiFontSize = settings.UiFontSize;
+        _allowMultipleInstances = settings.AllowMultipleInstances;
+        _shellFileContextMenu = settings.ShellFileContextMenu;
+        _shellFolderContextMenu = settings.ShellFolderContextMenu;
     }
 
     public IReadOnlyList<FontOption> FontFamilies { get; }
@@ -106,6 +119,15 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private double _uiFontSize;
 
+    [ObservableProperty]
+    private bool _allowMultipleInstances;
+
+    [ObservableProperty]
+    private bool _shellFileContextMenu;
+
+    [ObservableProperty]
+    private bool _shellFolderContextMenu;
+
     /// <summary>自动换行：与主 VM（视图菜单）共用同一属性</summary>
     public bool WordWrap
     {
@@ -135,6 +157,9 @@ public partial class SettingsViewModel : ObservableObject
         snapshot.HideHiddenFiles = HideHiddenFiles;
         snapshot.UiFontFamily = SelectedUiFontFamily ?? "";
         snapshot.UiFontSize = Math.Clamp(UiFontSize, 8, 32);
+        snapshot.AllowMultipleInstances = AllowMultipleInstances;
+        snapshot.ShellFileContextMenu = ShellFileContextMenu;
+        snapshot.ShellFolderContextMenu = ShellFolderContextMenu;
         _mainViewModel.ApplyAllSettings(snapshot);
         CloseRequested?.Invoke(true);
     }

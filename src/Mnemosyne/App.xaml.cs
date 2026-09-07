@@ -38,18 +38,22 @@ public partial class App : Application
         };
         TaskScheduler.UnobservedTaskException += (_, args) => CrashLogger.Log("Task", args.Exception);
 
-        _singleInstance = new SingleInstanceManager();
-        if (!_singleInstance.TryBecomePrimary(e.Args))
+        // 配置要先于单实例检查加载：AllowMultipleInstances 决定是否走互斥/参数转发
+        ConfigService = new ConfigService();
+        AppSettings settings = ConfigService.Load();
+
+        if (!settings.AllowMultipleInstances)
         {
-            Shutdown();
-            return;
+            _singleInstance = new SingleInstanceManager();
+            if (!_singleInstance.TryBecomePrimary(e.Args))
+            {
+                Shutdown();
+                return;
+            }
         }
 
         // GBK/Big5 等代码页编码需要注册 Provider（.NET Core 默认只有 UTF 系列）
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-        ConfigService = new ConfigService();
-        AppSettings settings = ConfigService.Load();
 
         ThemeService = new ThemeService(this);
         ThemeService.ApplyTheme(settings.Theme);
@@ -64,13 +68,16 @@ public partial class App : Application
         SessionService = new SessionService();
 
         AddPendingPaths(e.Args);
-        _singleInstance.ArgsReceived += args => Dispatcher.Invoke(() =>
+        if (_singleInstance is not null)
         {
-            AddPendingPaths(args);
-            ActivateMainWindow();
-            (MainWindow as MainWindow)?.OpenPendingPaths();
-        });
-        _singleInstance.StartListening();
+            _singleInstance.ArgsReceived += args => Dispatcher.Invoke(() =>
+            {
+                AddPendingPaths(args);
+                ActivateMainWindow();
+                (MainWindow as MainWindow)?.OpenPendingPaths();
+            });
+            _singleInstance.StartListening();
+        }
 
         MainWindow window = new(ConfigService, ThemeService, LocalizationService, FileService, RecentFilesService, PluginService, MarkdownRenderer, SessionService);
         MainWindow = window;

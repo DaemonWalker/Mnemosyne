@@ -246,16 +246,37 @@ public partial class MainWindowViewModel : ObservableObject
         _settings.HideHiddenFiles = settings.HideHiddenFiles;
         _settings.UiFontFamily = settings.UiFontFamily;
         _settings.UiFontSize = settings.UiFontSize;
+        _settings.AllowMultipleInstances = settings.AllowMultipleInstances;
+        _settings.ShellFileContextMenu = settings.ShellFileContextMenu;
+        _settings.ShellFolderContextMenu = settings.ShellFolderContextMenu;
 
         foreach (DocumentViewModel doc in Documents)
         {
             doc.Editor.ApplyFont(settings.FontFamily, settings.FontSize);
             doc.SetIndentation(settings.IndentUseTabs, settings.IndentWidth);
+            if (doc is MarkdownPreviewViewModel preview) preview.RefreshFonts();
         }
         _themeService.ApplyTheme(settings.Theme);
         _localization.SetLanguage(settings.Language);
         ApplyUiFontSettings?.Invoke();
         FileTree.RefreshVisible();
+
+        // 右键菜单文本按当前界面语言写入注册表；失败不阻断其余设置落盘
+        try
+        {
+            ShellIntegrationService.Apply(
+                settings.ShellFileContextMenu,
+                settings.ShellFolderContextMenu,
+                _localization.GetString("Loc.Shell.OpenFile"),
+                _localization.GetString("Loc.Shell.OpenFolder"));
+        }
+        catch (Exception ex)
+        {
+            ShowError?.Invoke(
+                string.Format(_localization.GetString("Loc.Error.ShellIntegration.Message"), ex.Message),
+                _localization.GetString("Loc.Error.Title"));
+        }
+
         SaveSettings();
     }
 
