@@ -4,7 +4,7 @@
         xmlns:cmd="clr-namespace:Mnemosyne.Commands"
         xmlns:models="clr-namespace:Mnemosyne.Models"
         xmlns:views="clr-namespace:Mnemosyne.Views"
-        Title="{DynamicResource Loc.App.Title}"
+        Title="{Binding WindowTitle}"
         Icon="pack://application:,,,/Resources/mnemosyne.ico"
         Width="1000" Height="640"
         MinWidth="480" MinHeight="320"
@@ -41,7 +41,7 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="OpenSettingsCommand_Executed" />
     </Window.CommandBindings>
 
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="32" />
             <RowDefinition Height="*" />

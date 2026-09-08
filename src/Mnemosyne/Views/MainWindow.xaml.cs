@@ -191,6 +191,8 @@ public partial class MainWindow : Window
         string tooltipKey = maximized ? "Loc.TitleBar.Restore" : "Loc.TitleBar.Maximize";
         MaximizeButton.SetResourceReference(ToolTipProperty, tooltipKey);
         MaximizeButton.SetResourceReference(AutomationProperties.NameProperty, tooltipKey);
+        // WindowChrome 最大化时窗口整体外扩 ResizeBorderThickness（6px），补偿使内容与正常窗口的屏幕内边距一致
+        RootGrid.Margin = maximized ? new Thickness(6) : new Thickness(0);
     }
 
     private void UpdateEditorVisibility()

@@ -105,6 +105,14 @@ public partial class FilePanelView : UserControl
         box.Dispatcher.BeginInvoke(() => FocusEditBox(box, node), DispatcherPriority.Input);
     }
 
+    private void EditBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        // Loaded 只触发一次，重命名已有节点时文本框早已加载，需要在可见性变化时补焦点
+        var box = (TextBox)sender;
+        if (!box.IsVisible || box.DataContext is not FileTreeNodeViewModel { IsEditing: true } node) return;
+        box.Dispatcher.BeginInvoke(() => FocusEditBox(box, node), DispatcherPriority.Input);
+    }
+
     private static void FocusEditBox(TextBox box, FileTreeNodeViewModel node)
     {
         if (box.DataContext != node || !node.IsEditing) return;

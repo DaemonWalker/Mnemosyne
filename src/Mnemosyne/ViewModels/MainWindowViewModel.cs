@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -27,6 +28,10 @@ public partial class MainWindowViewModel : ObservableObject
     private bool _restoringSession;
     private DispatcherTimer? _sessionDebounce;
     private readonly HashSet<DocumentViewModel> _externalPrompting = [];
+    // 正在打开中的路径（异步加载期间去重），防止同一文件从文件夹/查找等入口并发打开出重复 Tab
+    private readonly Dictionary<string, Task<DocumentViewModel?>> _openingDocuments = new(StringComparer.OrdinalIgnoreCase);
+    // 监听活动文档的 Title 变化（另存为/重命名后同步窗口标题）
+    private DocumentViewModel? _titleSubscribed;
 
     public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, ThemeService themeService, RecentFilesService recentFiles, PluginService pluginService, MarkdownRenderService markdownRenderer, SessionService sessionService)
     {
@@ -53,6 +58,7 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 SearchPanel.RefreshFolderState();
                 SaveSession();
+                UpdateWindowTitle();
             }
         };
         Documents.CollectionChanged += OnDocumentsChanged;
@@ -137,6 +143,10 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(CloseActiveTabCommand))]
     private DocumentViewModel? _activeDocument;
 
+    // 窗口标题：活动文件名 > 打开的文件夹名 > 仅应用名
+    [ObservableProperty]
+    private string _windowTitle = "Mnemosyne";
+
     public bool IsSidebarVisible => ActivePanel is not null;
 
     public bool IsFilePanelVisible => ActivePanel == Models.ActivityPanel.Files;
@@ -189,9 +199,34 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnActiveDocumentChanged(DocumentViewModel? value)
     {
+        if (_titleSubscribed is not null) _titleSubscribed.PropertyChanged -= OnActiveDocumentPropertyChanged;
+        _titleSubscribed = value;
+        if (value is not null) value.PropertyChanged += OnActiveDocumentPropertyChanged;
         // 预览 Tab 没有可编辑内容，页内搜索条不挂到它
         FindBar.AttachDocument(value is MarkdownPreviewViewModel ? null : value);
         SaveSession();
+        UpdateWindowTitle();
+    }
+
+    private void OnActiveDocumentPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(DocumentViewModel.Title)) UpdateWindowTitle();
+    }
+
+    private void UpdateWindowTitle()
+    {
+        if (ActiveDocument is not null)
+        {
+            WindowTitle = "Mnemosyne - " + ActiveDocument.Title;
+        }
+        else if (FileTree.RootNode is { } root)
+        {
+            WindowTitle = "Mnemosyne - " + Path.GetFileName(root.FullPath.TrimEnd(Path.DirectorySeparatorChar));
+        }
+        else
+        {
+            WindowTitle = "Mnemosyne";
+        }
     }
 
     partial void OnSidebarWidthChanged(GridLength value)
@@ -423,7 +458,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (path is not null) await OpenFolderAsync(path);
     }
 
-    /// <summary>打开文件到新 Tab；同路径已打开时聚焦既有 Tab。返回打开的文档，失败返回 null。</summary>
+    /// <summary>打开文件到新 Tab；同路径已打开或正在打开时聚焦既有 Tab。返回打开的文档，失败返回 null。</summary>
     public async Task<DocumentViewModel?> OpenDocumentAsync(string path)
     {
         string fullPath;
@@ -436,20 +471,45 @@ public partial class MainWindowViewModel : ObservableObject
             return null;
         }
 
-        DocumentViewModel? existing = Documents.FirstOrDefault(d =>
-            string.Equals(d.FilePath, fullPath, StringComparison.OrdinalIgnoreCase));
-        if (existing is not null)
+        // 同路径正在异步加载（大文件或启动并发），等待同一个 Task 而不是再开一个 Tab
+        if (_openingDocuments.TryGetValue(fullPath, out Task<DocumentViewModel?>? pending))
         {
-            ActiveDocument = existing;
-            return existing;
+            DocumentViewModel? pendingDoc = await pending;
+            if (pendingDoc is not null && Documents.Contains(pendingDoc)) ActiveDocument = pendingDoc;
+            return pendingDoc;
         }
 
+        Task<DocumentViewModel?> task = OpenDocumentCoreAsync(fullPath);
+        _openingDocuments[fullPath] = task;
+        try
+        {
+            return await task;
+        }
+        finally
+        {
+            _openingDocuments.Remove(fullPath);
+        }
+    }
+
+    private async Task<DocumentViewModel?> OpenDocumentCoreAsync(string fullPath)
+    {
         // 目录由 OpenPathsAsync 路由到文件树，这里兜底忽略
         if (Directory.Exists(fullPath)) return null;
         if (!File.Exists(fullPath))
         {
             ReportError("Loc.Error.OpenFile.Message", fullPath, _localization.GetString("Loc.Dialog.Confirm.Title"));
             return null;
+        }
+
+        // 在去重早退之前记录：已打开的文件（含会话恢复的 Tab）再次打开时也要刷新历史
+        RecentFiles.RecordFile(fullPath);
+
+        DocumentViewModel? existing = Documents.FirstOrDefault(d =>
+            string.Equals(d.FilePath, fullPath, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            ActiveDocument = existing;
+            return existing;
         }
 
         var document = new DocumentViewModel(_fileService, _localization, _settings, _sessionService);
@@ -460,7 +520,6 @@ public partial class MainWindowViewModel : ObservableObject
         {
             Documents.Add(document);
             ActiveDocument = document;
-            RecentFiles.RecordFile(fullPath);
             _ = LoadLargeDocumentAsync(document, fullPath, forcedEncoding: null);
             return document;
         }
@@ -477,7 +536,6 @@ public partial class MainWindowViewModel : ObservableObject
 
         Documents.Add(document);
         ActiveDocument = document;
-        RecentFiles.RecordFile(fullPath);
         return document;
     }
 

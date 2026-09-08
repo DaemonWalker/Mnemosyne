@@ -53,11 +53,12 @@
                          VerticalAlignment="Center"
                          Text="{Binding EditText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Loaded="EditBox_Loaded"
+                         IsVisibleChanged="EditBox_IsVisibleChanged"
                          KeyDown="EditBox_KeyDown"
-                         LostFocus="EditBox_LostFocus"
-                         Visibility="Collapsed">
+                         LostFocus="EditBox_LostFocus">
                     <TextBox.Style>
                         <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                            <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsEditing}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
