@@ -283,7 +283,7 @@
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource Brush.Window.Foreground}"
                                            Visibility="{Binding IsDirty, Converter={StaticResource BoolToVisibility}}" />
-                                <TextBlock Text="{Binding Title}"
+                                <TextBlock Text="{Binding DisplayTitle}"
                                            Margin="4,0,0,0"
                                            VerticalAlignment="Center" />
                                 <Button Style="{StaticResource TabCloseButtonStyle}"

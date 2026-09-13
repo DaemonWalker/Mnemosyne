@@ -30,7 +30,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly HashSet<DocumentViewModel> _externalPrompting = [];
     // 正在打开中的路径（异步加载期间去重），防止同一文件从文件夹/查找等入口并发打开出重复 Tab
     private readonly Dictionary<string, Task<DocumentViewModel?>> _openingDocuments = new(StringComparer.OrdinalIgnoreCase);
-    // 监听活动文档的 Title 变化（另存为/重命名后同步窗口标题）
+    // 监听活动文档的 DisplayTitle 变化（另存为/重命名/切换文件夹后同步窗口标题）
     private DocumentViewModel? _titleSubscribed;
 
     public MainWindowViewModel(FileService fileService, LocalizationService localization, ConfigService configService, ThemeService themeService, RecentFilesService recentFiles, PluginService pluginService, MarkdownRenderService markdownRenderer, SessionService sessionService)
@@ -57,6 +57,7 @@ public partial class MainWindowViewModel : ObservableObject
             if (e.PropertyName == nameof(FileTreeViewModel.RootNode))
             {
                 SearchPanel.RefreshFolderState();
+                UpdateDocumentDisplayPaths();
                 SaveSession();
                 UpdateWindowTitle();
             }
@@ -143,7 +144,7 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(CloseActiveTabCommand))]
     private DocumentViewModel? _activeDocument;
 
-    // 窗口标题：活动文件名 > 打开的文件夹名 > 仅应用名
+    // 窗口标题：活动文档相对路径 > 打开的文件夹名 > 仅应用名
     [ObservableProperty]
     private string _windowTitle = "Mnemosyne";
 
@@ -210,14 +211,14 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void OnActiveDocumentPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(DocumentViewModel.Title)) UpdateWindowTitle();
+        if (e.PropertyName == nameof(DocumentViewModel.DisplayTitle)) UpdateWindowTitle();
     }
 
     private void UpdateWindowTitle()
     {
         if (ActiveDocument is not null)
         {
-            WindowTitle = "Mnemosyne - " + ActiveDocument.Title;
+            WindowTitle = "Mnemosyne - " + ActiveDocument.DisplayTitle;
         }
         else if (FileTree.RootNode is { } root)
         {
@@ -227,6 +228,30 @@ public partial class MainWindowViewModel : ObservableObject
         {
             WindowTitle = "Mnemosyne";
         }
+    }
+
+    // ===== 文档显示路径（Tab 标签/窗口标题用） =====
+
+    /// <summary>按当前工作区根目录重算所有文档的显示路径（打开/切换文件夹时调用）</summary>
+    private void UpdateDocumentDisplayPaths()
+    {
+        foreach (DocumentViewModel doc in Documents)
+        {
+            doc.RelativePath = ComputeDisplayPath(doc.FilePath);
+        }
+    }
+
+    /// <summary>文件在工作区内时返回相对路径，否则返回完整路径；无路径文档返回 null</summary>
+    private string? ComputeDisplayPath(string? filePath)
+    {
+        if (filePath is null) return null;
+        string? root = FileTree.RootNode?.FullPath;
+        if (root is null) return filePath;
+        string relative = Path.GetRelativePath(root, filePath);
+        bool outsideRoot = relative is ".." ||
+            relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            relative.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal);
+        return outsideRoot ? filePath : relative;
     }
 
     partial void OnSidebarWidthChanged(GridLength value)
@@ -844,6 +869,7 @@ public partial class MainWindowViewModel : ObservableObject
         document.Editor.CaretPositionChanged += OnDocumentCaretMoved;
         document.ExternalChangeDetected += OnExternalChangeDetected;
         document.PropertyChanged += OnDocumentPropertyChanged;
+        document.RelativePath = ComputeDisplayPath(document.FilePath);
     }
 
     private void UnhookDocument(DocumentViewModel document)
@@ -857,8 +883,12 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void OnDocumentPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        // 另存为/首次保存后路径变化，会话里的 Tab 记录需更新
-        if (e.PropertyName == nameof(DocumentViewModel.FilePath)) SaveSession();
+        // 另存为/首次保存后路径变化，会话里的 Tab 记录与显示路径需更新
+        if (e.PropertyName == nameof(DocumentViewModel.FilePath) && sender is DocumentViewModel document)
+        {
+            document.RelativePath = ComputeDisplayPath(document.FilePath);
+            SaveSession();
+        }
     }
 
     // ===== 会话恢复（cache/session.json） =====

@@ -20,7 +20,13 @@ public partial class DocumentViewModel : ObservableObject
     private readonly SessionService _sessionService;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayTitle))]
     private string _title;
+
+    // 相对工作区根目录的显示路径（由 MainWindowViewModel 按当前打开文件夹维护；无路径文档为 null）
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayTitle))]
+    private string? _relativePath;
 
     [ObservableProperty]
     private bool _isDirty;
@@ -117,6 +123,9 @@ public partial class DocumentViewModel : ObservableObject
     public Encoding CurrentEncoding { get; private set; } = EncodingCatalog.Utf8NoBom;
 
     public LanguageDefinition Language { get; private set; } = LanguageRegistry.PlainText;
+
+    /// <summary>Tab 标签与窗口标题显示用：有路径时为相对路径（不在工作区内则为完整路径），无路径文档回退为 Title</summary>
+    public string DisplayTitle => RelativePath ?? Title;
 
     public string PositionDisplay => string.Format(_localization.GetString("Loc.Status.LineCol"), Line, Column);
 
