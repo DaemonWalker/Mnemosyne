@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Documents;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Mnemosyne.Models;
 using Mnemosyne.Services;
@@ -50,9 +51,9 @@ public partial class MarkdownPreviewViewModel : DocumentViewModel
     /// <summary>预览 Tab 无可编辑内容，不参与热退出暂存与会话恢复</summary>
     protected override bool ParticipatesInHotExit => false;
 
-    /// <summary>渲染结果控件树（MarkdownRenderService 产出，主题色走资源键自动跟随）</summary>
+    /// <summary>渲染结果文档（MarkdownRenderService 产出，由 FlowDocumentScrollViewer 承载，主题色走资源键自动跟随）</summary>
     [ObservableProperty]
-    private FrameworkElement? _previewContent;
+    private FlowDocument? _previewContent;
 
     private string? BaseDirectory =>
         Source.FilePath is null ? null : Path.GetDirectoryName(Source.FilePath);

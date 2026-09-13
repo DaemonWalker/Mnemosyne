@@ -16,12 +16,17 @@ using MdTableCell = Markdig.Extensions.Tables.TableCell;
 using MdTableRow = Markdig.Extensions.Tables.TableRow;
 using MdInline = Markdig.Syntax.Inlines.Inline;
 using MdTable = Markdig.Extensions.Tables.Table;
+using WpfBlock = System.Windows.Documents.Block;
 using WpfFontFamily = System.Windows.Media.FontFamily;
+using WpfTable = System.Windows.Documents.Table;
+using WpfTableCell = System.Windows.Documents.TableCell;
+using WpfTableRow = System.Windows.Documents.TableRow;
+using WpfTableRowGroup = System.Windows.Documents.TableRowGroup;
 
 namespace Mnemosyne.Services;
 
 /// <summary>
-/// Markdig（GFM 扩展）解析 Markdown → WPF 原生控件树（不用 WebView2，requirements.md 2）。
+/// Markdig（GFM 扩展）解析 Markdown → FlowDocument（FlowDocumentScrollViewer 承载，支持选中复制，不用 WebView2，requirements.md 2）。
 /// 全部颜色经 SetResourceReference 引用主题资源键，主题切换自动跟随；仅在 UI 线程调用。
 /// </summary>
 public class MarkdownRenderService
@@ -39,25 +44,25 @@ public class MarkdownRenderService
 
     private sealed record RenderContext(string? BaseDirectory, Action<string>? LinkHandler, string ForegroundKey, double BaseFontSize);
 
-    /// <summary>渲染 Markdown 文本为控件树；baseDirectory 用于解析图片与链接的相对路径（源 md 文件目录）；字体字号沿用编辑器设置</summary>
-    public FrameworkElement Render(string markdown, string? baseDirectory, Action<string>? linkHandler, string fontFamily, double fontSize)
+    /// <summary>渲染 Markdown 文本为 FlowDocument；baseDirectory 用于解析图片与链接的相对路径（源 md 文件目录）；字体字号沿用编辑器设置</summary>
+    public FlowDocument Render(string markdown, string? baseDirectory, Action<string>? linkHandler, string fontFamily, double fontSize)
     {
         var context = new RenderContext(baseDirectory, linkHandler, "Brush.Window.Foreground", Math.Clamp(fontSize, 6, 72));
         MarkdownDocument document = Markdown.Parse(markdown, s_pipeline);
-        var panel = new StackPanel();
-        // 根上设可继承字体属性，整棵树（含代码块）跟随编辑器字体字号
-        if (!string.IsNullOrWhiteSpace(fontFamily)) TextElement.SetFontFamily(panel, new WpfFontFamily(fontFamily));
-        TextElement.SetFontSize(panel, context.BaseFontSize);
+        var flow = new FlowDocument { PagePadding = new Thickness(0) };
+        // 根上设可继承字体属性，整篇文档（含代码块）跟随编辑器字体字号
+        if (!string.IsNullOrWhiteSpace(fontFamily)) TextElement.SetFontFamily(flow, new WpfFontFamily(fontFamily));
+        TextElement.SetFontSize(flow, context.BaseFontSize);
         foreach (MdBlock block in document)
         {
-            panel.Children.Add(RenderBlock(block, context));
+            flow.Blocks.Add(RenderBlock(block, context));
         }
-        return panel;
+        return flow;
     }
 
-    private UIElement RenderBlock(MdBlock block, RenderContext context)
+    private WpfBlock RenderBlock(MdBlock block, RenderContext context)
     {
-        UIElement element = block switch
+        WpfBlock element = block switch
         {
             HeadingBlock heading => RenderHeading(heading, context),
             ParagraphBlock paragraph => RenderParagraph(paragraph, context),
@@ -68,17 +73,17 @@ public class MarkdownRenderService
             MdTable table => RenderTable(table, context),
             ThematicBreakBlock => RenderHorizontalRule(),
             HtmlBlock html => RenderHtmlBlock(html, context),
-            _ => new TextBlock(),
+            _ => new Paragraph(),
         };
-        if (element is FrameworkElement fe) fe.Margin = new Thickness(0, 0, 0, 10);
+        element.Margin = new Thickness(0, 0, 0, 10);
         return element;
     }
 
-    private UIElement RenderHeading(HeadingBlock heading, RenderContext context)
+    private WpfBlock RenderHeading(HeadingBlock heading, RenderContext context)
     {
-        var text = new TextBlock { TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.Bold };
+        var paragraph = new Paragraph { FontWeight = FontWeights.Bold };
         // 标题字号按编辑器字号等比放大（比例对应原 12pt 基准下的 24/20/17/15/13.5）
-        text.FontSize = heading.Level switch
+        paragraph.FontSize = heading.Level switch
         {
             1 => context.BaseFontSize * 2.0,
             2 => context.BaseFontSize * 1.67,
@@ -86,76 +91,89 @@ public class MarkdownRenderService
             4 => context.BaseFontSize * 1.25,
             _ => context.BaseFontSize * 1.125,
         };
-        text.SetResourceReference(TextBlock.ForegroundProperty, context.ForegroundKey);
-        if (heading.Inline is not null) AppendInlines(text.Inlines, heading.Inline, context);
+        paragraph.SetResourceReference(TextElement.ForegroundProperty, context.ForegroundKey);
+        if (heading.Inline is not null) AppendInlines(paragraph.Inlines, heading.Inline, context);
 
         // 一/二级标题带下边框线（常见 Markdown 预览观感）
         if (heading.Level <= 2)
         {
-            var border = new Border
-            {
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                Padding = new Thickness(0, 0, 0, 4),
-                Child = text,
-            };
-            border.SetResourceReference(Border.BorderBrushProperty, "Brush.Control.Border");
-            return border;
+            paragraph.BorderThickness = new Thickness(0, 0, 0, 1);
+            paragraph.Padding = new Thickness(0, 0, 0, 4);
+            paragraph.SetResourceReference(WpfBlock.BorderBrushProperty, "Brush.Control.Border");
         }
-        return text;
+        return paragraph;
     }
 
-    private UIElement RenderParagraph(ParagraphBlock paragraph, RenderContext context)
+    private WpfBlock RenderParagraph(ParagraphBlock paragraph, RenderContext context)
     {
         // 段落仅含一张图片时按块级图片渲染（占整行，不受文本行高约束）
         if (paragraph.Inline?.FirstChild is LinkInline { IsImage: true } image && ReferenceEquals(image, paragraph.Inline.LastChild))
         {
-            return CreateImage(image.Url, ExtractPlainText(image), context);
+            return new BlockUIContainer(CreateImage(image.Url, ExtractPlainText(image), context));
         }
 
-        var text = new TextBlock { TextWrapping = TextWrapping.Wrap };
-        text.SetResourceReference(TextBlock.ForegroundProperty, context.ForegroundKey);
-        if (paragraph.Inline is not null) AppendInlines(text.Inlines, paragraph.Inline, context);
-        return text;
+        var p = new Paragraph();
+        p.SetResourceReference(TextElement.ForegroundProperty, context.ForegroundKey);
+        if (paragraph.Inline is not null) AppendInlines(p.Inlines, paragraph.Inline, context);
+        return p;
     }
 
-    private UIElement RenderList(ListBlock list, RenderContext context)
+    private WpfBlock RenderList(ListBlock list, RenderContext context)
     {
-        var panel = new StackPanel();
+        var section = new Section();
         int number = 1;
         if (list.IsOrdered && int.TryParse(list.OrderedStart, out int start)) number = start;
 
         foreach (MdBlock item in list)
         {
-            var grid = new Grid { Margin = new Thickness(0, 0, 0, 4) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(26) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            var marker = new TextBlock
+            // 每项一个 Section 保持分组；左缩进让出标记位，首段 TextIndent 负值形成悬挂缩进
+            var itemSection = new Section
             {
-                Text = list.IsOrdered ? number.ToString() + "." : "•",
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 0, 8, 0),
+                Padding = new Thickness(26, 0, 0, 0),
+                Margin = new Thickness(0, 0, 0, 4),
             };
-            marker.SetResourceReference(TextBlock.ForegroundProperty, context.ForegroundKey);
+            string marker = list.IsOrdered ? number.ToString() + "." : "•";
             number++;
 
-            var content = new StackPanel();
             if (item is Markdig.Syntax.ContainerBlock container)
             {
+                bool first = true;
                 foreach (MdBlock child in container)
                 {
-                    content.Children.Add(RenderBlock(child, context));
+                    WpfBlock childBlock = RenderBlock(child, context);
+                    if (first)
+                    {
+                        first = false;
+                        if (childBlock is Paragraph firstParagraph)
+                        {
+                            firstParagraph.TextIndent = -26;
+                            var markerRun = new Run(marker + " ");
+                            if (firstParagraph.Inlines.FirstInline is { } firstInline)
+                            {
+                                firstParagraph.Inlines.InsertBefore(firstInline, markerRun);
+                            }
+                            else
+                            {
+                                firstParagraph.Inlines.Add(markerRun);
+                            }
+                        }
+                        else
+                        {
+                            // 首块非段落（如代码块/子列表）时补一个只含标记的段落
+                            var markerParagraph = new Paragraph();
+                            markerParagraph.Inlines.Add(new Run(marker));
+                            itemSection.Blocks.Add(markerParagraph);
+                        }
+                    }
+                    itemSection.Blocks.Add(childBlock);
                 }
             }
-            Grid.SetColumn(content, 1);
-            grid.Children.Add(marker);
-            grid.Children.Add(content);
-            panel.Children.Add(grid);
+            section.Blocks.Add(itemSection);
         }
-        return panel;
+        return section;
     }
 
-    private UIElement RenderCodeBlock(StringLineGroup lines, RenderContext context)
+    private WpfBlock RenderCodeBlock(StringLineGroup lines, RenderContext context)
     {
         var builder = new StringBuilder();
         foreach (StringLine line in lines.Lines)
@@ -164,64 +182,57 @@ public class MarkdownRenderService
         }
         if (builder.Length > 0) builder.Length--;
 
-        var text = new TextBlock { Text = builder.ToString() };
-        text.SetResourceReference(TextBlock.ForegroundProperty, context.ForegroundKey);
-        var border = new Border
-        {
-            Padding = new Thickness(10, 6, 10, 6),
-            CornerRadius = new CornerRadius(4),
-            Child = text,
-        };
-        border.SetResourceReference(Border.BackgroundProperty, "Brush.Control.Background");
-        return border;
+        var paragraph = new Paragraph { Padding = new Thickness(10, 6, 10, 6) };
+        paragraph.SetResourceReference(TextElement.ForegroundProperty, context.ForegroundKey);
+        paragraph.SetResourceReference(WpfBlock.BackgroundProperty, "Brush.Control.Background");
+        paragraph.Inlines.Add(new Run(builder.ToString()));
+        return paragraph;
     }
 
-    private UIElement RenderQuote(QuoteBlock quote, RenderContext context)
+    private WpfBlock RenderQuote(QuoteBlock quote, RenderContext context)
     {
         // 引用内文字用引用色（套嵌引用保持同一前景色）
         var innerContext = context with { ForegroundKey = "Brush.Markdown.Quote" };
-        var content = new StackPanel();
-        foreach (MdBlock child in quote)
-        {
-            content.Children.Add(RenderBlock(child, innerContext));
-        }
-        var border = new Border
+        var section = new Section
         {
             BorderThickness = new Thickness(3, 0, 0, 0),
             Padding = new Thickness(10, 2, 0, 2),
-            Child = content,
         };
-        border.SetResourceReference(Border.BorderBrushProperty, "Brush.Markdown.Quote");
-        return border;
+        section.SetResourceReference(WpfBlock.BorderBrushProperty, "Brush.Markdown.Quote");
+        foreach (MdBlock child in quote)
+        {
+            section.Blocks.Add(RenderBlock(child, innerContext));
+        }
+        return section;
     }
 
-    private UIElement RenderTable(MdTable table, RenderContext context)
+    private WpfBlock RenderTable(MdTable table, RenderContext context)
     {
-        var grid = new Grid();
         int columnCount = 0;
         foreach (MdTableRow row in table)
         {
             columnCount = Math.Max(columnCount, row.Count);
         }
+        var docTable = new WpfTable { CellSpacing = 0 };
         for (int i = 0; i < columnCount; i++)
         {
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            docTable.Columns.Add(new TableColumn());
         }
 
-        int rowIndex = 0;
+        var rowGroup = new WpfTableRowGroup();
         foreach (MdTableRow row in table)
         {
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var docRow = new WpfTableRow();
             for (int columnIndex = 0; columnIndex < row.Count; columnIndex++)
             {
                 MdTableCell cell = (MdTableCell)row[columnIndex];
-                var text = new TextBlock { TextWrapping = TextWrapping.Wrap };
-                text.SetResourceReference(TextBlock.ForegroundProperty, context.ForegroundKey);
-                if (row.IsHeader) text.FontWeight = FontWeights.Bold;
+                var cellParagraph = new Paragraph();
+                cellParagraph.SetResourceReference(TextElement.ForegroundProperty, context.ForegroundKey);
+                if (row.IsHeader) cellParagraph.FontWeight = FontWeights.Bold;
                 if (columnIndex < table.ColumnDefinitions.Count &&
                     table.ColumnDefinitions[columnIndex].Alignment is { } alignment)
                 {
-                    text.TextAlignment = alignment switch
+                    cellParagraph.TextAlignment = alignment switch
                     {
                         TableColumnAlign.Center => TextAlignment.Center,
                         TableColumnAlign.Right => TextAlignment.Right,
@@ -230,55 +241,51 @@ public class MarkdownRenderService
                 }
                 foreach (MdBlock cellBlock in cell)
                 {
-                    if (cellBlock is Markdig.Syntax.ParagraphBlock cellParagraph && cellParagraph.Inline is not null)
+                    if (cellBlock is Markdig.Syntax.ParagraphBlock cellMdParagraph && cellMdParagraph.Inline is not null)
                     {
-                        AppendInlines(text.Inlines, cellParagraph.Inline, context);
+                        AppendInlines(cellParagraph.Inlines, cellMdParagraph.Inline, context);
                     }
                 }
 
-                // 单元格只画右/下边框，外层 Border 补左/上边框，拼出完整表格线
-                var cellBorder = new Border
+                // 单元格全边框，拼出完整表格线
+                var docCell = new WpfTableCell(cellParagraph)
                 {
-                    BorderThickness = new Thickness(0, 0, 1, 1),
+                    BorderThickness = new Thickness(1),
                     Padding = new Thickness(8, 4, 8, 4),
-                    Child = text,
                 };
-                cellBorder.SetResourceReference(Border.BorderBrushProperty, "Brush.Control.Border");
-                if (row.IsHeader) cellBorder.SetResourceReference(Border.BackgroundProperty, "Brush.Control.Background");
-                Grid.SetRow(cellBorder, rowIndex);
-                Grid.SetColumn(cellBorder, columnIndex);
-                grid.Children.Add(cellBorder);
+                docCell.SetResourceReference(WpfBlock.BorderBrushProperty, "Brush.Control.Border");
+                if (row.IsHeader) docCell.SetResourceReference(WpfBlock.BackgroundProperty, "Brush.Control.Background");
+                docRow.Cells.Add(docCell);
             }
-            rowIndex++;
+            rowGroup.Rows.Add(docRow);
         }
-
-        var outer = new Border
-        {
-            BorderThickness = new Thickness(1, 1, 0, 0),
-            HorizontalAlignment = HorizontalAlignment.Left,
-            Child = grid,
-        };
-        outer.SetResourceReference(Border.BorderBrushProperty, "Brush.Control.Border");
-        return outer;
+        docTable.RowGroups.Add(rowGroup);
+        return docTable;
     }
 
-    private UIElement RenderHorizontalRule()
+    private WpfBlock RenderHorizontalRule()
     {
-        var border = new Border { Height = 1, Margin = new Thickness(0, 4, 0, 4) };
-        border.SetResourceReference(Border.BackgroundProperty, "Brush.Control.Border");
-        return border;
+        // 空段落仅一行高，下边框即分隔线
+        var paragraph = new Paragraph
+        {
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Margin = new Thickness(0, 4, 0, 4),
+        };
+        paragraph.SetResourceReference(WpfBlock.BorderBrushProperty, "Brush.Control.Border");
+        return paragraph;
     }
 
-    private UIElement RenderHtmlBlock(HtmlBlock html, RenderContext context)
+    private WpfBlock RenderHtmlBlock(HtmlBlock html, RenderContext context)
     {
         var builder = new StringBuilder();
         foreach (StringLine line in html.Lines.Lines)
         {
             builder.Append(line.ToString()).Append('\n');
         }
-        var text = new TextBlock { Text = builder.ToString().TrimEnd() };
-        text.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Secondary.Foreground");
-        return text;
+        var paragraph = new Paragraph();
+        paragraph.Inlines.Add(new Run(builder.ToString().TrimEnd()));
+        paragraph.SetResourceReference(TextElement.ForegroundProperty, "Brush.Secondary.Foreground");
+        return paragraph;
     }
 
     private void AppendInlines(InlineCollection inlines, ContainerInline container, RenderContext context)
