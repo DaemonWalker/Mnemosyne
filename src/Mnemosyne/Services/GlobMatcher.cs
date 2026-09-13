@@ -6,7 +6,8 @@ namespace Mnemosyne.Services;
 /// <summary>
 /// VSCode 风格 glob 匹配（逗号分隔多个模式，作用于相对搜索根目录、正斜杠分隔的路径）：
 /// * 匹配段内任意字符，? 匹配段内单字符，** 跨目录层级。
-/// 不含 / 的模式按任意层级的文件名匹配（如 *.cs）；含 / 的模式从根锚定（如 src/**）。
+/// 不以 **/ 开头的模式按任意层级匹配（如 *.cs、test/** 均可命中任意深度；
+/// test/** 与 **/test/** 等价）；以 **/ 开头的模式显式锚定层级。
 /// 以 /** 结尾的模式同时为目录生成裁剪规则（如 **/bin/** 可整体跳过 bin 目录）。
 /// 匹配不区分大小写（Windows 文件系统语义）。
 /// </summary>
@@ -57,9 +58,9 @@ public sealed class GlobMatcher
     private static string ToRegex(string pattern)
     {
         var builder = new StringBuilder("^");
-        if (!pattern.Contains('/'))
+        if (!pattern.StartsWith("**/", StringComparison.Ordinal))
         {
-            // 无 / 模式：任意层级文件名（VSCode 语义）
+            // 无 / 模式（如 *.cs）与不以 **/ 开头的模式（如 test/**）均按任意层级匹配（VSCode 语义）
             builder.Append("(?:.*/)?");
         }
         int i = 0;
