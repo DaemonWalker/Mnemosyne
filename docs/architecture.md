@@ -26,7 +26,7 @@ docs/                               # 本文档目录
 |---|---|
 | Scintilla5.NET | 编辑器内核（Scintilla v5 封装） |
 | Markdig | Markdown 解析 |
-| UtfUnknown | 编码自动探测（UDE） |
+| UTF.Unknown | 编码自动探测（UDE） |
 | CommunityToolkit.Mvvm | MVVM（源生成器，无反射开销） |
 
 配置序列化用内置 `System.Text.Json`，不引第三方。
@@ -92,5 +92,5 @@ src/Mnemosyne/
 
 ## 5. 构建与发布
 
-- 开发：`dotnet build`（要求 0 警告作为每步验收条件之一）
+- 开发：`dotnet build`（要求 0 警告，见 code-style.md §8）；根目录 `build.ps1` 一键构建/启动，`-Publish` 走发布
 - 发布：`dotnet publish -c Release -r win-x64 --self-contained false -p:PublishReadyToRun=true`
