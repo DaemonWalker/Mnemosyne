@@ -239,6 +239,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             doc.RelativePath = ComputeDisplayPath(doc.FilePath);
         }
+        UpdateDuplicateTitleFlags();
     }
 
     /// <summary>文件在工作区内时返回相对路径，否则返回完整路径；无路径文档返回 null</summary>
@@ -861,7 +862,18 @@ public partial class MainWindowViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(HasOpenDocuments));
         OnPropertyChanged(nameof(ShowEmptyState));
+        UpdateDuplicateTitleFlags();
         SaveSession();
+    }
+
+    /// <summary>存在文件名相同但显示路径不同的 Tab 时，这些 Tab 的标签改用路径显示以区分</summary>
+    private void UpdateDuplicateTitleFlags()
+    {
+        foreach (IGrouping<string, DocumentViewModel> group in Documents.GroupBy(d => d.Title, StringComparer.OrdinalIgnoreCase))
+        {
+            bool duplicate = group.Select(d => d.RelativePath).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1;
+            foreach (DocumentViewModel doc in group) doc.ShowPathInTitle = duplicate;
+        }
     }
 
     private void HookDocument(DocumentViewModel document)
@@ -883,10 +895,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void OnDocumentPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        // 另存为/首次保存后路径变化，会话里的 Tab 记录与显示路径需更新
-        if (e.PropertyName == nameof(DocumentViewModel.FilePath) && sender is DocumentViewModel document)
+        // 另存为/首次保存后路径与文件名变化，会话里的 Tab 记录、显示路径与重名标记需更新
+        if (e.PropertyName is nameof(DocumentViewModel.FilePath) or nameof(DocumentViewModel.Title) && sender is DocumentViewModel document)
         {
             document.RelativePath = ComputeDisplayPath(document.FilePath);
+            UpdateDuplicateTitleFlags();
             SaveSession();
         }
     }

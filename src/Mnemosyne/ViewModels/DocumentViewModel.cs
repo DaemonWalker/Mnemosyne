@@ -28,6 +28,11 @@ public partial class DocumentViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(DisplayTitle))]
     private string? _relativePath;
 
+    // 存在同名 Tab 时由 MainWindowViewModel 置位，DisplayTitle 改用显示路径以区分
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayTitle))]
+    private bool _showPathInTitle;
+
     [ObservableProperty]
     private bool _isDirty;
 
@@ -124,8 +129,8 @@ public partial class DocumentViewModel : ObservableObject
 
     public LanguageDefinition Language { get; private set; } = LanguageRegistry.PlainText;
 
-    /// <summary>Tab 标签与窗口标题显示用：有路径时为相对路径（不在工作区内则为完整路径），无路径文档回退为 Title</summary>
-    public string DisplayTitle => RelativePath ?? Title;
+    /// <summary>Tab 标签与窗口标题显示用：默认文件名；存在同名 Tab 时改用显示路径（工作区内为相对路径，区外为完整路径），无路径文档始终为 Title</summary>
+    public string DisplayTitle => ShowPathInTitle && RelativePath is not null ? RelativePath : Title;
 
     public string PositionDisplay => string.Format(_localization.GetString("Loc.Status.LineCol"), Line, Column);
 
