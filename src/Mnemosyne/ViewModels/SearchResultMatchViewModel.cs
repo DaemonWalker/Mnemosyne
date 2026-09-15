@@ -4,7 +4,8 @@ using Mnemosyne.Models;
 
 namespace Mnemosyne.ViewModels;
 
-/// <summary>结果树中的一条匹配行。显示文本去掉行首空白（不越过匹配起点）并截断超长行。</summary>
+/// <summary>结果树中的一条匹配行。显示文本去掉行首空白（不越过匹配起点）并截断超长行；
+/// 匹配落在截断窗口之外时窗口向右滑动，保证匹配始终可见。</summary>
 public partial class SearchResultMatchViewModel : ObservableObject
 {
     private const int MaxDisplayChars = 300;
@@ -20,11 +21,19 @@ public partial class SearchResultMatchViewModel : ObservableObject
         string line = match.LineText;
         int trim = 0;
         while (trim < match.Start && trim < line.Length && char.IsWhiteSpace(line[trim])) trim++;
-        int displayEnd = Math.Min(line.Length, trim + MaxDisplayChars);
-        int matchEnd = Math.Min(match.Start + match.Length, displayEnd);
-        PrefixText = line[trim..match.Start];
-        MatchText = line[match.Start..matchEnd];
-        SuffixText = line[matchEnd..displayEnd];
+
+        // 钳制匹配范围，防御搜索后文件被修改导致的越界索引
+        int matchStart = Math.Clamp(match.Start, trim, line.Length);
+        int matchEndFull = Math.Clamp(match.Start + match.Length, matchStart, line.Length);
+
+        // 匹配落在窗口右侧之外时向右滑动窗口，保证匹配完整可见
+        int windowStart = Math.Min(Math.Max(trim, matchEndFull - MaxDisplayChars), matchStart);
+        int windowEnd = Math.Min(line.Length, windowStart + MaxDisplayChars);
+        int matchEnd = Math.Min(matchEndFull, windowEnd);
+
+        PrefixText = line[windowStart..matchStart];
+        MatchText = line[matchStart..matchEnd];
+        SuffixText = line[matchEnd..windowEnd];
     }
 
     public SearchResultLocation Location { get; }
