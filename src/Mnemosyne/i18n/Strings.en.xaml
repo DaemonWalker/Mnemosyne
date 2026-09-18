@@ -30,6 +30,7 @@
     <sys:String x:Key="Loc.Menu.View.WordWrap">Word Wrap</sys:String>
     <sys:String x:Key="Loc.Menu.View.ShowWhitespace">Show Whitespace</sys:String>
     <sys:String x:Key="Loc.Menu.View.MarkdownPreview">Markdown Preview</sys:String>
+    <sys:String x:Key="Loc.Menu.View.Terminal">Terminal</sys:String>
 
     <sys:String x:Key="Loc.Indent.UseSpaces">Indent Using Spaces</sys:String>
     <sys:String x:Key="Loc.Indent.UseTabs">Indent Using Tabs</sys:String>
@@ -105,6 +106,15 @@
     <sys:String x:Key="Loc.Settings.ShellFileContextMenu">Add "Open with Mnemosyne" to the file context menu</sys:String>
     <sys:String x:Key="Loc.Settings.ShellFolderContextMenu">Add "Open folder with Mnemosyne" to the folder context menu</sys:String>
     <sys:String x:Key="Loc.Settings.Save">Save Settings</sys:String>
+    <sys:String x:Key="Loc.Settings.TerminalShell">Default Terminal Shell</sys:String>
+
+    <sys:String x:Key="Loc.Terminal.Title">TERMINAL</sys:String>
+    <sys:String x:Key="Loc.Terminal.ClosePanel">Close Panel</sys:String>
+    <sys:String x:Key="Loc.Terminal.ProcessExited">The shell process has exited (code {0}).</sys:String>
+    <sys:String x:Key="Loc.Terminal.Unsupported">The integrated terminal requires Windows 10 version 1809 or later.</sys:String>
+    <sys:String x:Key="Loc.Terminal.StartFailed">Cannot start shell "{0}". {1}</sys:String>
+    <sys:String x:Key="Loc.Terminal.Copy">Copy</sys:String>
+    <sys:String x:Key="Loc.Terminal.Paste">Paste</sys:String>
 
     <sys:String x:Key="Loc.Shell.OpenFile">Open with Mnemosyne</sys:String>
     <sys:String x:Key="Loc.Shell.OpenFolder">Open folder with Mnemosyne</sys:String>

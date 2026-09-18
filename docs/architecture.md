@@ -28,6 +28,7 @@ docs/                               # 本文档目录
 | Markdig | Markdown 解析 |
 | UTF.Unknown | 编码自动探测（UDE） |
 | CommunityToolkit.Mvvm | MVVM（源生成器，无反射开销） |
+| XtermSharp | VT 解析与终端屏幕缓冲（集成终端，唯一新增依赖） |
 
 配置序列化用内置 `System.Text.Json`，不引第三方。
 
@@ -40,7 +41,9 @@ src/Mnemosyne/
   ViewModels/                # CommunityToolkit.Mvvm，[ObservableProperty]/[RelayCommand]
   Controls/
     ScintillaHost.cs         # 对 ScintillaNET 的唯一封装点，Views 不直接接触 ScintillaNET 类型
+    TerminalControl.cs       # 终端自绘渲染控件（纯 WPF，无 HWND 空域问题）
   Services/
+    Terminal/                # ConPTY 后端（ConPtyNative P/Invoke、ConPtySession）与终端会话（TerminalSession 接 XtermSharp）
     ConfigService.cs         # settings.json 读写（便携模式：exe 同目录）
     FileService.cs           # 打开/保存/编码检测/分块读取
     SearchService.cs         # 页内搜索 + 文件夹扫描（后台 Task）
@@ -89,6 +92,12 @@ src/Mnemosyne/
 - `FileService` 提供 `IAsyncEnumerable<byte[]>` 分块读取（1MB/块）
 - UI 层逐块 `AppendText`，期间 `ReadOnly=true`、Lexer=container/none，完成后设 Lexer 并 `Colourise`
 - 进度经 `IProgress<int>` 报状态栏，取消经 `CancellationToken`
+
+### 4.7 集成终端
+- 三层结构：`ConPtySession`（ConPTY P/Invoke，零第三方依赖）→ `TerminalSession`（XtermSharp VT 解析/屏幕缓冲）→ `TerminalControl`（纯 WPF 自绘渲染）
+- 底部可折叠面板独占编辑区一行（仿 FindBar 行模式），`Ctrl+\`` 切换，懒加载不影响冷启动
+- scrollback 由渲染层自行实现（XtermSharp 官方无 scrollback），上限 5000 行
+- 基础 shell 定位：不保证全屏交互程序（vim/htop）保真；v1 单会话，隐藏面板保留会话，窗口关闭即终止进程
 
 ## 5. 构建与发布
 

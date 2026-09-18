@@ -30,6 +30,7 @@
     <sys:String x:Key="Loc.Menu.View.WordWrap">自动换行</sys:String>
     <sys:String x:Key="Loc.Menu.View.ShowWhitespace">显示空白字符</sys:String>
     <sys:String x:Key="Loc.Menu.View.MarkdownPreview">Markdown 预览</sys:String>
+    <sys:String x:Key="Loc.Menu.View.Terminal">终端</sys:String>
 
     <sys:String x:Key="Loc.Indent.UseSpaces">使用空格缩进</sys:String>
     <sys:String x:Key="Loc.Indent.UseTabs">使用制表符缩进</sys:String>
@@ -105,6 +106,15 @@
     <sys:String x:Key="Loc.Settings.ShellFileContextMenu">在文件右键菜单添加“用 Mnemosyne 打开”</sys:String>
     <sys:String x:Key="Loc.Settings.ShellFolderContextMenu">在文件夹右键菜单添加“用 Mnemosyne 打开文件夹”</sys:String>
     <sys:String x:Key="Loc.Settings.Save">保存设定</sys:String>
+    <sys:String x:Key="Loc.Settings.TerminalShell">默认终端 Shell</sys:String>
+
+    <sys:String x:Key="Loc.Terminal.Title">终端</sys:String>
+    <sys:String x:Key="Loc.Terminal.ClosePanel">关闭面板</sys:String>
+    <sys:String x:Key="Loc.Terminal.ProcessExited">Shell 进程已退出（代码 {0}）。</sys:String>
+    <sys:String x:Key="Loc.Terminal.Unsupported">集成终端需要 Windows 10 1809 或更高版本。</sys:String>
+    <sys:String x:Key="Loc.Terminal.StartFailed">无法启动 shell“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Terminal.Copy">复制</sys:String>
+    <sys:String x:Key="Loc.Terminal.Paste">粘贴</sys:String>
 
     <sys:String x:Key="Loc.Shell.OpenFile">用 Mnemosyne 打开</sys:String>
     <sys:String x:Key="Loc.Shell.OpenFolder">用 Mnemosyne 打开文件夹</sys:String>

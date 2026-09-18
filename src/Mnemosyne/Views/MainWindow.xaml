@@ -39,6 +39,7 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}" Executed="OpenMarkdownPreviewCommand_Executed" CanExecute="OpenMarkdownPreviewCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.NewFile}" Executed="NewFileCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="OpenSettingsCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.ToggleTerminal}" Executed="ToggleTerminalCommand_Executed" />
     </Window.CommandBindings>
 
     <Grid x:Name="RootGrid">
@@ -92,6 +93,8 @@
                 <Separator />
                 <MenuItem Header="{DynamicResource Loc.Menu.View.MarkdownPreview}"
                           Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}" />
+                <MenuItem Header="{DynamicResource Loc.Menu.View.Terminal}"
+                          Command="{x:Static cmd:AppCommands.ToggleTerminal}" />
             </MenuItem>
                 </Menu>
 
@@ -263,6 +266,8 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition x:Name="TerminalRow" Height="0" />
                 </Grid.RowDefinitions>
 
                 <TabControl x:Name="DocumentTabs"
@@ -321,6 +326,21 @@
                            VerticalAlignment="Center"
                            IsHitTestVisible="False"
                            Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisibility}}" />
+
+                <!-- 终端面板：纯 WPF 自绘无空域问题，与 FindBar 一样独占编辑区一行（不跨侧边栏），
+                     面板懒加载——首次展开才创建视图与会话，不收起进冷启动路径。
+                     行高与 DataContext 由 code-behind 命令式设置：绑定在 DataBind 优先级执行，
+                     可能晚于 Render 阶段的尺寸/渲染事件，导致会话不启动、下拉框丢选中（竞态） -->
+                <GridSplitter Grid.Row="3"
+                              Height="3"
+                              HorizontalAlignment="Stretch"
+                              ResizeDirection="Rows"
+                              ResizeBehavior="PreviousAndNext"
+                              DragCompleted="TerminalSplitter_DragCompleted"
+                              Visibility="{Binding IsTerminalVisible, Converter={StaticResource BoolToVisibility}}" />
+                <views:TerminalPanelView x:Name="TerminalPanel"
+                                         Grid.Row="4"
+                                         Visibility="{Binding IsTerminalVisible, Converter={StaticResource BoolToVisibility}}" />
             </Grid>
         </Grid>
         </DockPanel>

@@ -115,6 +115,15 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private GridLength _sidebarWidth = new(260);
 
+    // 终端面板：首次展开时懒创建（不进冷启动路径）；VSCode 式显隐——隐藏仅收起视图，会话保留
+    [ObservableProperty]
+    private bool _isTerminalVisible;
+
+    // 面板行高由 MainWindow code-behind 命令式设置（规避绑定 DataBind 优先级竞态），这里只记忆上次高度
+    private GridLength _lastTerminalHeight = new(240);
+
+    private TerminalViewModel? _terminal;
+
     // 视图菜单开关：立即应用到所有已打开文档并写回设置持久化
     [ObservableProperty]
     private bool _wordWrap;
@@ -260,6 +269,40 @@ public partial class MainWindowViewModel : ObservableObject
         if (value.Value > 0) _lastSidebarWidth = value;
     }
 
+    // ===== 终端面板 =====
+
+    /// <summary>终端面板 ViewModel，首次展开时才创建</summary>
+    public TerminalViewModel? Terminal => _terminal;
+
+    public void ToggleTerminal()
+    {
+        if (!IsTerminalVisible && _terminal is null)
+        {
+            _terminal = new TerminalViewModel(_localization, _settings, GetTerminalWorkingDirectory);
+            OnPropertyChanged(nameof(Terminal));
+        }
+        IsTerminalVisible = !IsTerminalVisible;
+    }
+
+    /// <summary>展开时应用的行高；上次高度被拖得过扁（放不下工具条+一行终端）时回到默认，避免面板卡死在不可用高度</summary>
+    public GridLength GetTerminalHeightToRestore()
+    {
+        if (_lastTerminalHeight.Value < 120) _lastTerminalHeight = new GridLength(240);
+        return _lastTerminalHeight;
+    }
+
+    /// <summary>分隔条拖动完成后记忆行高（供下次展开恢复）</summary>
+    public void RememberTerminalHeight(GridLength height)
+    {
+        if (height.Value > 0) _lastTerminalHeight = height;
+    }
+
+    // 工作目录：已打开文件夹 > 活动文档目录 > exe 目录
+    private string GetTerminalWorkingDirectory() =>
+        FileTree.RootNode?.FullPath
+        ?? (ActiveDocument?.FilePath is { } path ? Path.GetDirectoryName(path) : null)
+        ?? AppContext.BaseDirectory;
+
     partial void OnWordWrapChanged(bool value)
     {
         foreach (DocumentViewModel doc in Documents) doc.Editor.SetWordWrap(value);
@@ -310,6 +353,7 @@ public partial class MainWindowViewModel : ObservableObject
         _settings.AllowMultipleInstances = settings.AllowMultipleInstances;
         _settings.ShellFileContextMenu = settings.ShellFileContextMenu;
         _settings.ShellFolderContextMenu = settings.ShellFolderContextMenu;
+        _settings.TerminalShell = settings.TerminalShell;
 
         foreach (DocumentViewModel doc in Documents)
         {
@@ -1035,6 +1079,8 @@ public partial class MainWindowViewModel : ObservableObject
     public void OnWindowClosing()
     {
         _sessionDebounce?.Stop();
+        // 窗口关闭即终止 shell 会话，避免遗留孤儿进程
+        _terminal?.CloseSession();
         foreach (DocumentViewModel doc in Documents) doc.FlushStash();
         SaveSession();
     }

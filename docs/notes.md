@@ -57,7 +57,18 @@
 - 单实例：Mutex `Local\Mnemosyne.SingleInstance` + 命名管道转发命令行参数并激活首实例；`AllowMultipleInstances=true` 时完全不创建 SingleInstanceManager；ConfigService.Load 必须先于单实例检查
 - 右键菜单注册表（HKCU，无需管理员）：文件 `Software\Classes\*\shell\Mnemosyne`（`"%1"`）、文件夹 `Directory\shell\Mnemosyne` **和** `Directory\Background\shell\Mnemosyne`（均 `"%V"`）——漏了 Background 键会导致在文件夹窗口空白处右键没有菜单
 
-## 8. 构建 / 发布 / 脚本环境
+## 8. 集成终端
+
+- **`UpdateProcThreadAttribute` 的导出名不带 "List"**（InitializeProcThreadAttributeList 才带），写错会 EntryPointNotFoundException，须用 `EntryPoint=` 显式指定
+- **XtermSharp 内建 scrollback**（`TerminalOptions.Scrollback`，默认 1000，本项目设 5000）：`Buffer.Lines` 为含滚出历史的 CircularList，`YBase`/`YDisp` 定位可视区，`ScrollLines(n)` 响应滚轮——无需渲染层自行实现（官方 README 说缺失已过时）
+- XtermSharp 属性位无公开解码 API（从源码确认）：`bg = attr & 0x1ff`、`fg = (attr>>9) & 0x1ff`、`flags = attr>>18`；颜色值 256=默认、257=反色默认、0–255 查 `Color.DefaultAnsiColors`
+- **ConPTY 子进程 std 句柄继承父进程**：GUI 方式启动正常；若从带输出重定向的终端里启动（如 `dotnet run | ...`），cmd 的 banner/提示符会旁路到父进程管道而不经 ConPTY——CreateProcess 固有语义（微软官方示例同行为）
+- 项目启用 UseWindowsForms 带来全局 `System.Drawing`，且 `Mnemosyne.Services.Terminal` 命名空间遮蔽 `XtermSharp.Terminal`，均需 using 别名消解
+- NuGet 加 XtermSharp 必须显式带版本号（`--version 1.0.0-alpha.10`），裸 `dotnet add` 报"没有可用版本"
+- **WPF 绑定在 DataBind 优先级执行，晚于 Render**：终端面板最初用绑定挂 DataContext 和行高，实测偶发（约一半概率）"面板展开但会话不启动、ComboBox 丢选中"——Render 阶段的尺寸/渲染事件先于绑定求值。修复：DataContext 与行高改由 `ToggleTerminalCommand_Executed` 命令式设置；ComboBox 候选改 XAML 静态项（不用 ItemsSource 绑定，消除与 SelectedItem 的求值顺序竞态）；`DataContextChanged` 里补调一次 `EnsureSession` 兜底
+- ComboBox TwoWay SelectedItem 绑定在项集合刷新瞬间会回推 null，`OnSelectedShellChanged` 需忽略空值并还原，否则选中框被清空
+
+## 9. 构建 / 发布 / 脚本环境
 
 - 根目录 `build.ps1`：默认 Debug 开发构建（`-warnaserror`、`-Run`）；`-Publish` 走 Release + R2R 发布到 `artifacts/publish/`（拷插件 dll 到 plugins/、建 config/ cache/）
 - **PS 5.1 脚本含中文必须 UTF-8 BOM**（无 BOM 按 GBK/ANSI 解析直接语法错误或乱码）；Edit 工具重写会丢 BOM，需重补
@@ -67,7 +78,7 @@
 - PowerShell 访问含 `*` 的注册表路径必须用 `-LiteralPath`，否则按通配符枚举整个 Classes hive 卡死
 - 崩溃日志：`Services/CrashLogger.cs` → `cache/error.log`（1MB 轮转，三全局钩子只记不改崩溃语义）
 
-## 9. 自动化验证环境要点（本机）
+## 10. 自动化验证环境要点（本机）
 
 - 跨进程**绝不能给 SCI_GETTEXTRANGE/SCI_GETSELTEXT 类消息传本进程缓冲区**（写坏目标进程内存致崩溃）；SCI_SETTEXT 同理勿用，文本注入用 SendMessage WM_CHAR 到 Scintilla 原生窗口（类名 `WindowsForms10.Scintilla.*`，非 "Scintilla"）
 - 单实例应用验证前必须 taskkill 清场，否则后续启动直接退出

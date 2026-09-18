@@ -18,6 +18,7 @@ public class AppSettings
     public bool AllowMultipleInstances { get; set; }
     public bool ShellFileContextMenu { get; set; }
     public bool ShellFolderContextMenu { get; set; }
+    public string TerminalShell { get; set; } = "powershell";
 
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }

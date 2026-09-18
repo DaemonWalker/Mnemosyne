@@ -41,6 +41,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Font}" />
@@ -145,7 +146,13 @@
             <TextBlock Text="{DynamicResource Loc.Settings.ShellFolderContextMenu}" TextWrapping="Wrap" />
         </CheckBox>
 
-        <StackPanel Grid.Row="16" Grid.ColumnSpan="2" Orientation="Horizontal"
+        <TextBlock Grid.Row="16" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.TerminalShell}" />
+        <ComboBox Grid.Row="16" Grid.Column="1" Margin="0,4"
+                  Width="140" HorizontalAlignment="Left"
+                  ItemsSource="{Binding TerminalShells}"
+                  SelectedItem="{Binding SelectedTerminalShell, Mode=TwoWay}" />
+
+        <StackPanel Grid.Row="17" Grid.ColumnSpan="2" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button MinWidth="80" Margin="0,0,8,0" IsDefault="True"
                     Content="{DynamicResource Loc.Settings.Save}"

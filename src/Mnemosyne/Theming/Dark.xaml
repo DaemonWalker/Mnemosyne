@@ -50,6 +50,27 @@
     <Color x:Key="Color.Editor.Markdown.List">#FFB5CEA8</Color>
     <Color x:Key="Color.Editor.Markdown.Meta">#FFC586C0</Color>
 
+    <Color x:Key="Color.Terminal.Background">#FF1E1E1E</Color>
+    <Color x:Key="Color.Terminal.Foreground">#FFD4D4D4</Color>
+    <Color x:Key="Color.Terminal.Cursor">#FFAEAFAD</Color>
+    <Color x:Key="Color.Terminal.Selection">#FF264F78</Color>
+    <Color x:Key="Color.Terminal.Palette0">#FF0C0C0C</Color>
+    <Color x:Key="Color.Terminal.Palette1">#FFC50F1F</Color>
+    <Color x:Key="Color.Terminal.Palette2">#FF13A10E</Color>
+    <Color x:Key="Color.Terminal.Palette3">#FFC19C00</Color>
+    <Color x:Key="Color.Terminal.Palette4">#FF0037DA</Color>
+    <Color x:Key="Color.Terminal.Palette5">#FF881798</Color>
+    <Color x:Key="Color.Terminal.Palette6">#FF3A96DD</Color>
+    <Color x:Key="Color.Terminal.Palette7">#FFCCCCCC</Color>
+    <Color x:Key="Color.Terminal.Palette8">#FF767676</Color>
+    <Color x:Key="Color.Terminal.Palette9">#FFE74856</Color>
+    <Color x:Key="Color.Terminal.Palette10">#FF16C60C</Color>
+    <Color x:Key="Color.Terminal.Palette11">#FFF9F1A5</Color>
+    <Color x:Key="Color.Terminal.Palette12">#FF3B78FF</Color>
+    <Color x:Key="Color.Terminal.Palette13">#FFB4009E</Color>
+    <Color x:Key="Color.Terminal.Palette14">#FF61D6D6</Color>
+    <Color x:Key="Color.Terminal.Palette15">#FFF2F2F2</Color>
+
     <SolidColorBrush x:Key="Brush.Window.Background" Color="{StaticResource Color.Window.Background}" />
     <SolidColorBrush x:Key="Brush.Window.Foreground" Color="{StaticResource Color.Window.Foreground}" />
     <SolidColorBrush x:Key="Brush.Control.Background" Color="{StaticResource Color.Control.Background}" />
@@ -73,5 +94,9 @@
     <SolidColorBrush x:Key="Brush.Find.CountError" Color="{StaticResource Color.Editor.Error}" />
     <SolidColorBrush x:Key="Brush.Markdown.Link" Color="{StaticResource Color.Editor.Markdown.Link}" />
     <SolidColorBrush x:Key="Brush.Markdown.Quote" Color="{StaticResource Color.Editor.Markdown.Quote}" />
+    <SolidColorBrush x:Key="Brush.Terminal.Background" Color="{StaticResource Color.Terminal.Background}" />
+    <SolidColorBrush x:Key="Brush.Terminal.Foreground" Color="{StaticResource Color.Terminal.Foreground}" />
+    <SolidColorBrush x:Key="Brush.Terminal.Cursor" Color="{StaticResource Color.Terminal.Cursor}" />
+    <SolidColorBrush x:Key="Brush.Terminal.Selection" Color="{StaticResource Color.Terminal.Selection}" />
 
 </ResourceDictionary>

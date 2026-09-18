@@ -33,6 +33,9 @@ public static class AppCommands
 
     public static RoutedUICommand OpenSettings { get; } = Create(nameof(OpenSettings), Key.OemComma);
 
+    // 终端聚焦时控件自身不吞此键，保证窗口级绑定照常触发切换
+    public static RoutedUICommand ToggleTerminal { get; } = Create(nameof(ToggleTerminal), Key.OemTilde);
+
     // 手势直接挂在命令上：菜单自动显示快捷键文本，窗口注册 CommandBinding 后即全局生效
     private static RoutedUICommand Create(string name, Key key, ModifierKeys extraModifiers = ModifierKeys.None)
     {

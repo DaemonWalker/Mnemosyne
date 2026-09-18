@@ -66,6 +66,7 @@ public partial class SettingsViewModel : ObservableObject
         _allowMultipleInstances = settings.AllowMultipleInstances;
         _shellFileContextMenu = settings.ShellFileContextMenu;
         _shellFolderContextMenu = settings.ShellFolderContextMenu;
+        _selectedTerminalShell = settings.TerminalShell;
     }
 
     public IReadOnlyList<FontOption> FontFamilies { get; }
@@ -128,6 +129,12 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _shellFolderContextMenu;
 
+    [ObservableProperty]
+    private string? _selectedTerminalShell;
+
+    /// <summary>默认终端 shell 候选（显示名即命令名，无需本地化）</summary>
+    public IReadOnlyList<string> TerminalShells { get; } = ["powershell", "pwsh", "cmd"];
+
     /// <summary>自动换行：与主 VM（视图菜单）共用同一属性</summary>
     public bool WordWrap
     {
@@ -160,6 +167,7 @@ public partial class SettingsViewModel : ObservableObject
         snapshot.AllowMultipleInstances = AllowMultipleInstances;
         snapshot.ShellFileContextMenu = ShellFileContextMenu;
         snapshot.ShellFolderContextMenu = ShellFolderContextMenu;
+        snapshot.TerminalShell = SelectedTerminalShell ?? snapshot.TerminalShell;
         _mainViewModel.ApplyAllSettings(snapshot);
         CloseRequested?.Invoke(true);
     }

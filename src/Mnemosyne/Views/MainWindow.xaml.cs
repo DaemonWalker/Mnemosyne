@@ -41,7 +41,11 @@ public partial class MainWindow : Window
             .OfType<RoutedUICommand>()
             .ToList();
 
-        themeService.ThemeChanged += (_, _) => ScintillaHost.ApplyThemeToAll();
+        themeService.ThemeChanged += (_, _) =>
+        {
+            ScintillaHost.ApplyThemeToAll();
+            TerminalControl.ApplyThemeToAll();
+        };
 
         _viewModel.OpenFilePicker = () =>
         {
@@ -618,6 +622,27 @@ public partial class MainWindow : Window
         };
         window.ShowDialog();
     }
+
+    private void ToggleTerminalCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        _viewModel.ToggleTerminal();
+        if (_viewModel.IsTerminalVisible)
+        {
+            // 命令式设置 DataContext 与行高（不用绑定，规避 DataBind 优先级晚于 Render 的竞态）
+            if (!ReferenceEquals(TerminalPanel.DataContext, _viewModel.Terminal))
+                TerminalPanel.DataContext = _viewModel.Terminal;
+            TerminalRow.Height = _viewModel.GetTerminalHeightToRestore();
+            // 面板刚展开时尚未布局完成，焦点延后到输入优先级再设置
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () => TerminalPanel.FocusTerminal());
+        }
+        else
+        {
+            TerminalRow.Height = new GridLength(0);
+        }
+    }
+
+    private void TerminalSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        => _viewModel.RememberTerminalHeight(TerminalRow.Height);
 
     private void ApplyUiFont()
     {

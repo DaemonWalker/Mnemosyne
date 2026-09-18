@@ -1,0 +1,64 @@
+<UserControl x:Class="Mnemosyne.Views.TerminalPanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cmd="clr-namespace:Mnemosyne.Commands"
+             xmlns:controls="clr-namespace:Mnemosyne.Controls"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             DataContextChanged="TerminalPanelView_DataContextChanged">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="{DynamicResource Brush.Control.Background}"
+                BorderBrush="{DynamicResource Brush.Control.Border}"
+                BorderThickness="0,0,0,1">
+            <Grid Margin="8,2">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource Loc.Terminal.Title}"
+                               Foreground="{DynamicResource Brush.Secondary.Foreground}"
+                               FontSize="11"
+                               VerticalAlignment="Center" />
+                    <!-- shell 候选为静态项（无需本地化）：避免 ItemsSource/SelectedItem 绑定求值顺序竞态 -->
+                    <ComboBox Margin="8,0,0,0"
+                              Width="110"
+                              FontSize="11"
+                              VerticalContentAlignment="Center"
+                              SelectedItem="{Binding SelectedShell, Mode=TwoWay}">
+                        <ComboBox.Items>
+                            <sys:String>powershell</sys:String>
+                            <sys:String>pwsh</sys:String>
+                            <sys:String>cmd</sys:String>
+                        </ComboBox.Items>
+                    </ComboBox>
+                </StackPanel>
+                <Button Style="{StaticResource FindBarButtonStyle}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        ToolTip="{DynamicResource Loc.Terminal.ClosePanel}"
+                        Command="{x:Static cmd:AppCommands.ToggleTerminal}"
+                        Content="&#x2715;" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <controls:TerminalControl x:Name="Terminal"
+                                      GridSizeChanged="Terminal_GridSizeChanged" />
+            <Border Background="{DynamicResource Brush.Window.Background}"
+                    Visibility="{Binding ShowOverlay, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{Binding OverlayMessage}"
+                           Foreground="{DynamicResource Brush.Window.Foreground}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Margin="16,0" />
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -448,10 +448,10 @@
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
                         <Popup x:Name="Popup"
                                Placement="Bottom"
-                               AllowsTransparency="True"
+                               AllowsTransparency="False"
                                Focusable="False"
                                IsOpen="{TemplateBinding IsDropDownOpen}"
-                               PopupAnimation="Slide">
+                               PopupAnimation="None">
                             <Border MinWidth="{TemplateBinding ActualWidth}"
                                     MaxHeight="320"
                                     Background="{DynamicResource Brush.Control.Background}"

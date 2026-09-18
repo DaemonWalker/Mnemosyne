@@ -22,6 +22,7 @@
     <PackageReference Include="Markdig" Version="1.3.2" />
     <PackageReference Include="Scintilla5.NET" Version="7.0.0" />
     <PackageReference Include="UTF.Unknown" Version="2.7.0" />
+    <PackageReference Include="XtermSharp" Version="1.0.0-alpha.10" />
   </ItemGroup>
 
   <ItemGroup>
