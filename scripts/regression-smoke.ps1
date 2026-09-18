@@ -1,4 +1,4 @@
-# Mnemosyne regression smoke test against the PUBLISHED package (PS 5.1, ASCII only).
+﻿# Mnemosyne regression smoke test against the PUBLISHED package (PS 5.1, ASCII only).
 # Covers automatable items from requirements.md section 4; modal interactions are excluded
 # and left to manual verification.
 # Usage: scripts/regression-smoke.ps1 [-ExePath artifacts\publish\Mnemosyne.exe]
