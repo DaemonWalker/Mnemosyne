@@ -641,6 +641,14 @@ public partial class MainWindow : Window
         }
     }
 
+    private void NewTerminalTabCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        // 面板隐藏时先展开；展开过程中若已自动补首个 tab（EnsureTab）则不重复新建
+        bool hadTabs = _viewModel.Terminal is { Tabs.Count: > 0 };
+        if (!_viewModel.IsTerminalVisible) ToggleTerminalCommand_Executed(sender, e);
+        if (hadTabs) _viewModel.Terminal?.NewTab();
+    }
+
     private void TerminalSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         => _viewModel.RememberTerminalHeight(TerminalRow.Height);
 

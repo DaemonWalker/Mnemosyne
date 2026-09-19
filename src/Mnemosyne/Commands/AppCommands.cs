@@ -33,8 +33,17 @@ public static class AppCommands
 
     public static RoutedUICommand OpenSettings { get; } = Create(nameof(OpenSettings), Key.OemComma);
 
-    // 终端聚焦时控件自身不吞此键，保证窗口级绑定照常触发切换
-    public static RoutedUICommand ToggleTerminal { get; } = Create(nameof(ToggleTerminal), Key.OemTilde);
+    // 终端聚焦时控件自身不吞这两个键，保证窗口级绑定照常触发切换
+    // VSCode 同款：Ctrl+` 切换终端，Ctrl+J 切换面板
+    public static RoutedUICommand ToggleTerminal { get; } = new(nameof(ToggleTerminal), nameof(ToggleTerminal), typeof(AppCommands),
+        new InputGestureCollection
+        {
+            new KeyGesture(Key.OemTilde, ModifierKeys.Control),
+            new KeyGesture(Key.J, ModifierKeys.Control),
+        });
+
+    // Ctrl+Shift+` 新建终端 tab（VSCode 同款）；OemTilde 同样不被终端控件吞掉
+    public static RoutedUICommand NewTerminalTab { get; } = Create(nameof(NewTerminalTab), Key.OemTilde, ModifierKeys.Shift);
 
     // 手势直接挂在命令上：菜单自动显示快捷键文本，窗口注册 CommandBinding 后即全局生效
     private static RoutedUICommand Create(string name, Key key, ModifierKeys extraModifiers = ModifierKeys.None)

@@ -31,6 +31,7 @@
     <sys:String x:Key="Loc.Menu.View.ShowWhitespace">显示空白字符</sys:String>
     <sys:String x:Key="Loc.Menu.View.MarkdownPreview">Markdown 预览</sys:String>
     <sys:String x:Key="Loc.Menu.View.Terminal">终端</sys:String>
+    <sys:String x:Key="Loc.Menu.View.NewTerminalTab">新建终端</sys:String>
 
     <sys:String x:Key="Loc.Indent.UseSpaces">使用空格缩进</sys:String>
     <sys:String x:Key="Loc.Indent.UseTabs">使用制表符缩进</sys:String>
@@ -110,6 +111,8 @@
 
     <sys:String x:Key="Loc.Terminal.Title">终端</sys:String>
     <sys:String x:Key="Loc.Terminal.ClosePanel">关闭面板</sys:String>
+    <sys:String x:Key="Loc.Terminal.NewTab">新建终端</sys:String>
+    <sys:String x:Key="Loc.Terminal.CloseTab">关闭终端</sys:String>
     <sys:String x:Key="Loc.Terminal.ProcessExited">Shell 进程已退出（代码 {0}）。</sys:String>
     <sys:String x:Key="Loc.Terminal.Unsupported">集成终端需要 Windows 10 1809 或更高版本。</sys:String>
     <sys:String x:Key="Loc.Terminal.StartFailed">无法启动 shell“{0}”。{1}</sys:String>

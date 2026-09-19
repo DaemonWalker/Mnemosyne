@@ -61,35 +61,46 @@ public class TerminalControl : FrameworkElement
             InvalidateVisual();
         };
         lock (_instances) _instances.Add(new WeakReference<TerminalControl>(this));
+        IsVisibleChanged += (_, _) => UpdateCursorTimer();
         ApplyTheme();
     }
 
+    public static readonly DependencyProperty SessionProperty = DependencyProperty.Register(
+        nameof(Session), typeof(TerminalSession), typeof(TerminalControl),
+        new PropertyMetadata(null, OnSessionChanged));
+
+    public static readonly DependencyProperty FontSizeProperty = DependencyProperty.Register(
+        nameof(FontSize), typeof(double), typeof(TerminalControl),
+        new PropertyMetadata(13.0, OnFontSizeChanged));
+
     public TerminalSession? Session
     {
-        get => _session;
-        set
+        get => (TerminalSession?)GetValue(SessionProperty);
+        set => SetValue(SessionProperty, value);
+    }
+
+    private static void OnSessionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = (TerminalControl)d;
+        if (e.OldValue is TerminalSession oldSession)
         {
-            if (ReferenceEquals(_session, value)) return;
-            if (_session is not null)
-            {
-                _session.OutputReceived -= _outputHandler;
-                _session.Exited -= OnSessionExited;
-                _session.Terminal.Scrolled -= OnTerminalScrolled;
-                _session.Terminal.Buffers.Activated -= OnBuffersActivated;
-            }
-            _session = value;
-            if (_session is not null)
-            {
-                TerminalSession captured = _session;
-                _outputHandler = data => OnSessionOutput(captured, data);
-                _session.OutputReceived += _outputHandler;
-                _session.Exited += OnSessionExited;
-                _session.Terminal.Scrolled += OnTerminalScrolled;
-                _session.Terminal.Buffers.Activated += OnBuffersActivated;
-            }
-            _cursorTimer.IsEnabled = value is not null;
-            InvalidateVisual();
+            oldSession.OutputReceived -= control._outputHandler;
+            oldSession.Exited -= control.OnSessionExited;
+            oldSession.Terminal.Scrolled -= control.OnTerminalScrolled;
+            oldSession.Terminal.Buffers.Activated -= control.OnBuffersActivated;
         }
+        control._session = e.NewValue as TerminalSession;
+        if (control._session is not null)
+        {
+            TerminalSession captured = control._session;
+            control._outputHandler = data => control.OnSessionOutput(captured, data);
+            control._session.OutputReceived += control._outputHandler;
+            control._session.Exited += control.OnSessionExited;
+            control._session.Terminal.Scrolled += control.OnTerminalScrolled;
+            control._session.Terminal.Buffers.Activated += control.OnBuffersActivated;
+        }
+        control.UpdateCursorTimer();
+        control.InvalidateVisual();
     }
 
     public int Cols => Math.Max(1, (int)(ActualWidth / _cellWidth));
@@ -99,15 +110,20 @@ public class TerminalControl : FrameworkElement
     /// <summary>终端字号（默认取编辑器字号，由宿主设置）</summary>
     public double FontSize
     {
-        get => _fontSize;
-        set
-        {
-            if (_fontSize == value) return;
-            _fontSize = value;
-            UpdateCellMetrics();
-            InvalidateVisual();
-        }
+        get => (double)GetValue(FontSizeProperty);
+        set => SetValue(FontSizeProperty, value);
     }
+
+    private static void OnFontSizeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = (TerminalControl)d;
+        control._fontSize = (double)e.NewValue;
+        control.UpdateCellMetrics();
+        control.InvalidateVisual();
+    }
+
+    // 隐藏（非激活 tab / 面板收起）时暂停光标闪烁计时器，避免空转
+    private void UpdateCursorTimer() => _cursorTimer.IsEnabled = _session is not null && IsVisible;
 
     public static void ApplyThemeToAll()
     {
@@ -330,8 +346,9 @@ public class TerminalControl : FrameworkElement
         {
             switch (e.Key)
             {
-                // Ctrl+` 不吞，冒泡到窗口命令绑定切换面板
+                // Ctrl+` / Ctrl+J 不吞，冒泡到窗口命令绑定切换面板
                 case Key.OemTilde:
+                case Key.J:
                     return;
                 case Key.C:
                     if (session.Selection.Active && session.Selection.Start != session.Selection.End) CopySelection();

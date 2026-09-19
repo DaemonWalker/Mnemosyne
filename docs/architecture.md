@@ -39,6 +39,7 @@ src/Mnemosyne/
   App.xaml(.cs)              # 启动、单实例、命令行解析、主题/语言初始化
   Views/                     # 窗口与用户控件（XAML + 少量 code-behind）
   ViewModels/                # CommunityToolkit.Mvvm，[ObservableProperty]/[RelayCommand]
+                               终端为容器 + tab 两层：TerminalViewModel 管 tab 集合，TerminalTabViewModel 管单会话
   Controls/
     ScintillaHost.cs         # 对 ScintillaNET 的唯一封装点，Views 不直接接触 ScintillaNET 类型
     TerminalControl.cs       # 终端自绘渲染控件（纯 WPF，无 HWND 空域问题）
@@ -96,8 +97,10 @@ src/Mnemosyne/
 ### 4.7 集成终端
 - 三层结构：`ConPtySession`（ConPTY P/Invoke，零第三方依赖）→ `TerminalSession`（XtermSharp VT 解析/屏幕缓冲）→ `TerminalControl`（纯 WPF 自绘渲染）
 - 底部可折叠面板独占编辑区一行（仿 FindBar 行模式），`Ctrl+\`` 切换，懒加载不影响冷启动
+- 多 tab：`TerminalViewModel` 是 tab 容器（Tabs/ActiveTab/新建/关闭），每个 `TerminalTabViewModel` 持有独立 ConPTY 会话；`Ctrl+Shift+\`` 或 "+" 新建（用下拉框当前选中的 shell，下拉切换不重启已有会话）；关闭最后一个 tab 自动补空白 tab
+- 视图层每个 tab 一个 `TerminalControl` 常驻、仅切 Visibility（同 ScintillaHost 模式），保住各自渲染状态/scrollback；`Session`/`FontSize` 是 DependencyProperty 供 DataTemplate 绑定
 - scrollback 由渲染层自行实现（XtermSharp 官方无 scrollback），上限 5000 行
-- 基础 shell 定位：不保证全屏交互程序（vim/htop）保真；v1 单会话，隐藏面板保留会话，窗口关闭即终止进程
+- 基础 shell 定位：不保证全屏交互程序（vim/htop）保真；隐藏面板保留全部会话，窗口关闭即终止所有进程
 
 ## 5. 构建与发布
 

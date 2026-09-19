@@ -7,6 +7,44 @@
              DataContextChanged="TerminalPanelView_DataContextChanged">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <!-- 终端 tab 按钮：激活态高亮，悬停微亮；内容与关闭按钮在模板内 -->
+        <Style x:Key="TerminalTabButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{DynamicResource Brush.Control.Border}"
+                                BorderThickness="0,0,1,0"
+                                Padding="8,2">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Title}"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource Brush.Secondary.Foreground}" />
+                                <Button Style="{StaticResource TabCloseButtonStyle}"
+                                        Margin="6,0,0,0"
+                                        ToolTip="{DynamicResource Loc.Terminal.CloseTab}"
+                                        Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Brush.Window.Background}" />
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Brush.Control.Background}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -18,13 +56,17 @@
                 Background="{DynamicResource Brush.Control.Background}"
                 BorderBrush="{DynamicResource Brush.Control.Border}"
                 BorderThickness="0,0,0,1">
-            <Grid Margin="8,2">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{DynamicResource Loc.Terminal.Title}"
-                               Foreground="{DynamicResource Brush.Secondary.Foreground}"
-                               FontSize="11"
-                               VerticalAlignment="Center" />
-                    <!-- shell 候选为静态项（无需本地化）：避免 ItemsSource/SelectedItem 绑定求值顺序竞态 -->
+            <DockPanel Margin="4,2">
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Button Style="{StaticResource FindBarButtonStyle}"
+                            VerticalAlignment="Center"
+                            ToolTip="{DynamicResource Loc.Terminal.NewTab}"
+                            Command="{Binding NewTabCommand}"
+                            Content="&#xFF0B;" />
+                    <!-- shell 候选为静态项（无需本地化）：避免 ItemsSource/SelectedItem 绑定求值顺序竞态。
+                         选择只影响之后新建的 tab，不重启现有会话 -->
                     <ComboBox Margin="8,0,0,0"
                               Width="110"
                               FontSize="11"
@@ -36,29 +78,62 @@
                             <sys:String>cmd</sys:String>
                         </ComboBox.Items>
                     </ComboBox>
+                    <Button Style="{StaticResource FindBarButtonStyle}"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Center"
+                            ToolTip="{DynamicResource Loc.Terminal.ClosePanel}"
+                            Command="{x:Static cmd:AppCommands.ToggleTerminal}"
+                            Content="&#x2715;" />
                 </StackPanel>
-                <Button Style="{StaticResource FindBarButtonStyle}"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Center"
-                        ToolTip="{DynamicResource Loc.Terminal.ClosePanel}"
-                        Command="{x:Static cmd:AppCommands.ToggleTerminal}"
-                        Content="&#x2715;" />
-            </Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Disabled"
+                              HorizontalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Tabs}"
+                                  VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource TerminalTabButtonStyle}"
+                                        AutomationProperties.Name="{Binding Title}"
+                                        Command="{Binding DataContext.ActivateTabCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
         </Border>
 
-        <Grid Grid.Row="1">
-            <controls:TerminalControl x:Name="Terminal"
-                                      GridSizeChanged="Terminal_GridSizeChanged" />
-            <Border Background="{DynamicResource Brush.Window.Background}"
-                    Visibility="{Binding ShowOverlay, Converter={StaticResource BoolToVisibility}}">
-                <TextBlock Text="{Binding OverlayMessage}"
-                           Foreground="{DynamicResource Brush.Window.Foreground}"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Margin="16,0" />
-            </Border>
-        </Grid>
+        <!-- 每个 tab 一个 TerminalControl 常驻，仅切换 Visibility：
+             保住各自的渲染状态/scrollback/选区，且隐藏 tab 的会话不被打扰 -->
+        <ItemsControl x:Name="TerminalHosts" Grid.Row="1" ItemsSource="{Binding Tabs}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}">
+                        <controls:TerminalControl Session="{Binding Session}"
+                                                  FontSize="{Binding DataContext.FontSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  GridSizeChanged="Terminal_GridSizeChanged" />
+                        <Border Background="{DynamicResource Brush.Window.Background}"
+                                Visibility="{Binding ShowOverlay, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding OverlayMessage}"
+                                       Foreground="{DynamicResource Brush.Window.Foreground}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Margin="16,0" />
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </Grid>
 </UserControl>

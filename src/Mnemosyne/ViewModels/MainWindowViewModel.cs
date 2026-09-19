@@ -1079,8 +1079,8 @@ public partial class MainWindowViewModel : ObservableObject
     public void OnWindowClosing()
     {
         _sessionDebounce?.Stop();
-        // 窗口关闭即终止 shell 会话，避免遗留孤儿进程
-        _terminal?.CloseSession();
+        // 窗口关闭即终止全部 shell 会话，避免遗留孤儿进程
+        _terminal?.CloseAllSessions();
         foreach (DocumentViewModel doc in Documents) doc.FlushStash();
         SaveSession();
     }

@@ -40,6 +40,7 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.NewFile}" Executed="NewFileCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="OpenSettingsCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.ToggleTerminal}" Executed="ToggleTerminalCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.NewTerminalTab}" Executed="NewTerminalTabCommand_Executed" />
     </Window.CommandBindings>
 
     <Grid x:Name="RootGrid">
@@ -94,7 +95,11 @@
                 <MenuItem Header="{DynamicResource Loc.Menu.View.MarkdownPreview}"
                           Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}" />
                 <MenuItem Header="{DynamicResource Loc.Menu.View.Terminal}"
-                          Command="{x:Static cmd:AppCommands.ToggleTerminal}" />
+                          Command="{x:Static cmd:AppCommands.ToggleTerminal}"
+                          InputGestureText="Ctrl+`" />
+                <MenuItem Header="{DynamicResource Loc.Menu.View.NewTerminalTab}"
+                          Command="{x:Static cmd:AppCommands.NewTerminalTab}"
+                          InputGestureText="Ctrl+Shift+`" />
             </MenuItem>
                 </Menu>
 
