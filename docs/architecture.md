@@ -73,7 +73,7 @@ src/Mnemosyne/
 ### 4.2 ScintillaHost 封装
 - 一个 `ScintillaHost` 用户控件包一个文档的编辑状态；每个 Tab 一个实例
 - 主题切换时遍历所有实例重设 Scintilla 样式颜色
-- 语法高亮：Lexer 名称 ↔ 扩展名映射表集中在 Models 中
+- 语法高亮：Lexer 名称 ↔ 扩展名映射表集中在 Models 中；DataWeave 例外——无 Lexilla 内置 Lexer，用 container lexer + `Services/DataWeaveLexer`（纯文本分词，不依赖 ScintillaNET）在 StyleNeeded 回调上色
 
 ### 4.3 线程模型
 - 文件夹搜索、大文件读取、编码探测：后台 `Task`，通过 `IProgress<T>` 或 `Dispatcher` 回 UI

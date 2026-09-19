@@ -8,9 +8,11 @@
 - 弹窗方法名是 `UsePopup`（非 `UsePopUp`）；已用 `UsePopup(Never)` 关闭内置英文右键菜单，改由 `EditorRightClick` 事件弹本地化 WPF ContextMenu
 - 无 `UndoCollection` 封装，关撤销用 `DirectMessage` 调 `SCI_SETUNDOCOLLECTION(2012)`；无 `Colourise` 只有 `Colorize`
 - `CaretLineVisible` 在 v5 已废弃，当前行高亮用 BackColor alpha=255；`CaretLineBackColorAlpha` 属性已 Obsolete（选中文本时取消当前行高亮是改 UpdateUI 里按选区切 BackColor alpha 0/255）
-- **代码折叠**：fold 属性 + margin1 + AutomaticFold 对 22 种语言生效，但 **Markdown/Batch/Makefile 的 Lexer 实测不支持折叠**（以 Lexilla 5.5.0 为准）；大文件模式关闭折叠
+- **代码折叠**：fold 属性 + margin1 + AutomaticFold 对 37 种语言生效，但 **Markdown/Batch/Makefile 的 Lexer 实测不支持折叠**（以 Lexilla 5.5.0 为准）；大文件模式关闭折叠
 - Lexilla 静态委托在首个控件创建前未初始化，枚举全部 Lexer 前需预热（`ScintillaHost.GetAvailableLexerNames()`）
-- cpp lexer 复用承载 C#/C/C++/Java/JS/TS
+- cpp lexer 复用承载 C#/C/C++/Java/JS/TS，以及 Go/Kotlin/Swift/Objective-C/Groovy/Scala——**Lexilla（5.5.0）没有这 6 种语言的独立 Lexer**（实测 `Lexilla.GetLexerNames()` 确认），靠 cpp + 各自关键字表区分
+- **`Colorize(0, -1)` 在 7.0.0 实测不生效**（GetEndStyled 不前进），全文着色必须传显式长度 `Colorize(0, TextLength)`
+- **DataWeave（.dwl）走 container lexer**（Lexilla 无内置）：`LexerName = "container"` + `StyleNeeded` 回调里用 `Services/DataWeaveLexer` 分词、`StartStyling`/`SetStyling` 上色；从已着色末尾回溯到行首起扫，跨行块注释/未闭合字符串在中间起扫时可能短暂错色，属固有取舍。分词规则参照官方语法 mulesoft/data-weave-tmLanguage
 - 光标在行缩进区内按 Tab 是"缩进整行"（内建行为，验证时注意）
 
 ## 2. WPF / WindowsFormsHost 结构约束

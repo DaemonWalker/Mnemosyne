@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Forms.Integration;
 using ScintillaNET;
 using Mnemosyne.Models;
+using Mnemosyne.Services;
 using WinForms = System.Windows.Forms;
 using SciStyle = ScintillaNET.Style;
 
@@ -99,6 +100,7 @@ public class ScintillaHost : WindowsFormsHost
         {
             if (e.Button == WinForms.MouseButtons.Right) EditorRightClick?.Invoke(this, EventArgs.Empty);
         };
+        _scintilla.StyleNeeded += OnStyleNeeded;
         _scintilla.KeyDown += (_, e) =>
         {            // Ctrl+D（选中下一个相同出现）与 Esc（退回单光标）属编辑内核行为，在此直接处理，
             // 不向上转发；菜单里的 Ctrl+D 命令入口另行调用 SelectNextOccurrence()
@@ -302,8 +304,9 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.ReadOnly = false;
         _chunkedLoading = false;
         // SetLanguage 会重设 Lexer 与配色；显式 Colorize 确保全文着色一次完成
+        // Scintilla5.NET 7.0.0 的 Colorize(0, -1) 实测不生效（endStyled 不前进），必须传显式长度
         SetLanguage(_language);
-        _scintilla.Colorize(0, -1);
+        _scintilla.Colorize(0, _scintilla.TextLength);
         UpdateLineNumberMarginWidth();
     }
 
@@ -400,8 +403,11 @@ public class ScintillaHost : WindowsFormsHost
     public void SetLanguage(LanguageDefinition language)
     {
         _language = language;
-        // LexerName 仅接受 Lexilla 内部名称；空串回退到 null（纯文本）
-        string lexerName = string.IsNullOrEmpty(language.LexerName) ? "null" : language.LexerName;
+        // LexerName 仅接受 Lexilla 内部名称；空串回退到 null（纯文本）。
+        // DataWeave 无 Lexilla 内置 Lexer，用 container lexer 由 DataWeaveLexer 在 StyleNeeded 里上色
+        string lexerName = language.LexerName == DataWeaveLexer.LexerName
+            ? "container"
+            : string.IsNullOrEmpty(language.LexerName) ? "null" : language.LexerName;
         try
         {
             _scintilla.LexerName = lexerName;
@@ -415,6 +421,24 @@ public class ScintillaHost : WindowsFormsHost
         if (!string.IsNullOrEmpty(language.SecondaryKeywords)) _scintilla.SetKeywords(1, language.SecondaryKeywords);
         ConfigureFolding();
         ApplyTheme();
+    }
+
+    /// <summary>
+    /// container lexer 上色入口：从已着色末尾回溯到行首（保证从稳定状态开始扫），分词后逐段 SetStyling。
+    /// 跨行结构（块注释/未闭合字符串）在行首回溯下可能从中间状态起扫，属 container lexer 的固有取舍。
+    /// </summary>
+    private void OnStyleNeeded(object? sender, StyleNeededEventArgs e)
+    {
+        if (_language.LexerName != DataWeaveLexer.LexerName) return;
+        int endPos = e.Position;
+        int startPos = _scintilla.Lines[_scintilla.LineFromPosition(_scintilla.GetEndStyled())].Position;
+        if (endPos <= startPos) return;
+        string text = _scintilla.GetTextRange(startPos, endPos - startPos);
+        _scintilla.StartStyling(startPos);
+        foreach (DataWeaveLexer.StyleSpan span in DataWeaveLexer.Tokenize(text))
+        {
+            _scintilla.SetStyling(span.Length, (int)span.Style);
+        }
     }
 
     /// <summary>
@@ -912,6 +936,102 @@ public class ScintillaHost : WindowsFormsHost
                 Set(13, type);              // SCE_NSIS_STRINGVAR
                 Set(14, number);            // SCE_NSIS_NUMBER
                 Set(9, type, bold: true);   // SCE_NSIS_SECTIONDEF
+                break;
+
+            case "dart":
+                Set(1, comment);            // SCE_DART_COMMENTLINE
+                Set(2, comment);            // SCE_DART_COMMENTLINEDOC
+                Set(3, comment);            // SCE_DART_COMMENTBLOCK
+                Set(4, comment);            // SCE_DART_COMMENTBLOCKDOC
+                Set(5, str);                // SCE_DART_STRING_SQ
+                Set(6, str);                // SCE_DART_STRING_DQ
+                Set(7, str);                // SCE_DART_TRIPLE_STRING_SQ
+                Set(8, str);                // SCE_DART_TRIPLE_STRING_DQ
+                Set(9, str);                // SCE_DART_RAWSTRING_SQ
+                Set(10, str);               // SCE_DART_RAWSTRING_DQ
+                Set(11, str);               // SCE_DART_TRIPLE_RAWSTRING_SQ
+                Set(12, str);               // SCE_DART_TRIPLE_RAWSTRING_DQ
+                Set(13, number);            // SCE_DART_ESCAPECHAR
+                Set(16, fg);                // SCE_DART_OPERATOR
+                Set(17, fg);                // SCE_DART_OPERATOR_STRING
+                Set(20, number);            // SCE_DART_NUMBER
+                Set(22, preprocessor);      // SCE_DART_METADATA
+                Set(23, keyword, bold: true);// SCE_DART_KW_PRIMARY
+                Set(24, type);              // SCE_DART_KW_SECONDARY（第二关键字表放的是内置类型）
+                Set(25, keyword);           // SCE_DART_KW_TERTIARY
+                Set(26, type);              // SCE_DART_KW_TYPE
+                break;
+
+            case "haskell":
+                Set(2, keyword, bold: true);// SCE_HA_KEYWORD
+                Set(3, number);             // SCE_HA_NUMBER
+                Set(4, str);                // SCE_HA_STRING
+                Set(5, str);                // SCE_HA_CHARACTER
+                Set(6, type);               // SCE_HA_CLASS
+                Set(7, type);               // SCE_HA_MODULE
+                Set(8, type);               // SCE_HA_CAPITAL
+                Set(9, type);               // SCE_HA_DATA
+                Set(10, preprocessor);      // SCE_HA_IMPORT
+                Set(11, fg);                // SCE_HA_OPERATOR
+                Set(12, type);              // SCE_HA_INSTANCE
+                Set(13, comment);           // SCE_HA_COMMENTLINE
+                Set(14, comment);           // SCE_HA_COMMENTBLOCK
+                Set(15, comment);           // SCE_HA_COMMENTBLOCK2
+                Set(16, comment);           // SCE_HA_COMMENTBLOCK3
+                Set(17, preprocessor);      // SCE_HA_PRAGMA
+                Set(18, preprocessor);      // SCE_HA_PREPROCESSOR
+                Set(21, comment);           // SCE_HA_LITERATE_COMMENT
+                break;
+
+            case "r":
+                Set(SciStyle.R.Comment, comment);
+                Set(SciStyle.R.KWord, keyword, bold: true);
+                Set(SciStyle.R.BaseKWord, function);
+                Set(SciStyle.R.OtherKWord, function);
+                Set(SciStyle.R.Number, number);
+                Set(SciStyle.R.String, str);
+                Set(7, str);                // SCE_R_STRING2
+                Set(SciStyle.R.Operator, fg);
+                Set(SciStyle.R.Infix, keyword);
+                Set(12, str);               // SCE_R_BACKTICKS
+                Set(13, str);               // SCE_R_RAWSTRING
+                Set(14, str);               // SCE_R_RAWSTRING2
+                Set(15, number);            // SCE_R_ESCAPESEQUENCE
+                break;
+
+            case "coffeescript":
+                Set(1, comment);            // SCE_COFFEESCRIPT_COMMENT
+                Set(2, comment);            // SCE_COFFEESCRIPT_COMMENTLINE
+                Set(3, comment);            // SCE_COFFEESCRIPT_COMMENTDOC
+                Set(22, comment);           // SCE_COFFEESCRIPT_COMMENTBLOCK
+                Set(4, number);             // SCE_COFFEESCRIPT_NUMBER
+                Set(5, keyword, bold: true);// SCE_COFFEESCRIPT_WORD
+                Set(16, type);              // SCE_COFFEESCRIPT_WORD2
+                Set(6, str);                // SCE_COFFEESCRIPT_STRING
+                Set(7, str);                // SCE_COFFEESCRIPT_CHARACTER
+                Set(13, str);               // SCE_COFFEESCRIPT_VERBATIM
+                Set(20, str);               // SCE_COFFEESCRIPT_STRINGRAW
+                Set(21, str);               // SCE_COFFEESCRIPT_TRIPLEVERBATIM
+                Set(14, str);               // SCE_COFFEESCRIPT_REGEX
+                Set(23, str);               // SCE_COFFEESCRIPT_VERBOSE_REGEX
+                Set(9, preprocessor);       // SCE_COFFEESCRIPT_PREPROCESSOR
+                Set(10, fg);                // SCE_COFFEESCRIPT_OPERATOR
+                Set(19, type);              // SCE_COFFEESCRIPT_GLOBALCLASS
+                Set(25, type);              // SCE_COFFEESCRIPT_INSTANCEPROPERTY
+                break;
+
+            case DataWeaveLexer.LexerName:
+                Set((int)DataWeaveLexer.DwStyle.Comment, comment);
+                Set((int)DataWeaveLexer.DwStyle.Keyword, keyword, bold: true);
+                Set((int)DataWeaveLexer.DwStyle.Declaration, keyword, bold: true);
+                Set((int)DataWeaveLexer.DwStyle.String, str);
+                Set((int)DataWeaveLexer.DwStyle.Number, number);
+                Set((int)DataWeaveLexer.DwStyle.Constant, keyword, bold: true);
+                Set((int)DataWeaveLexer.DwStyle.Operator, fg);
+                Set((int)DataWeaveLexer.DwStyle.Arrow, keyword, bold: true);
+                Set((int)DataWeaveLexer.DwStyle.Interpolation, function);
+                Set((int)DataWeaveLexer.DwStyle.Directive, preprocessor, bold: true);
+                Set((int)DataWeaveLexer.DwStyle.Variable, type);
                 break;
         }
     }
