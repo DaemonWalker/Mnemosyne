@@ -32,13 +32,13 @@ try {
         dotnet publish src/Mnemosyne/Mnemosyne.csproj -c $Configuration -r $Runtime --self-contained false -p:PublishReadyToRun=true -o $outDir --nologo
         if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)" }
 
-        Write-Host "==> Copying formatter plugins to publish plugins/ ..."
+        Write-Host "==> Copying plugin dlls to publish plugins/ ..."
         # The main app does not reference plugin projects; dotnet publish never emits them.
         # Plugin csproj build targets copy their dlls into the main app bin dir - reuse that.
         $builtPlugins = Join-Path $root "src/Mnemosyne/bin/$Configuration/net10.0-windows/plugins"
         $publishPlugins = Join-Path $outDir 'plugins'
         New-Item -ItemType Directory -Force -Path $publishPlugins | Out-Null
-        Copy-Item (Join-Path $builtPlugins 'Mnemosyne.Formatters.*.dll') $publishPlugins
+        Copy-Item (Join-Path $builtPlugins 'Mnemosyne.*.dll') $publishPlugins
         # Abstractions is already deployed beside the main exe; plugins/ must not duplicate it.
         Remove-Item (Join-Path $publishPlugins 'Mnemosyne.Plugin.Abstractions.dll') -ErrorAction SilentlyContinue
 

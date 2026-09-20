@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Mnemosyne.Models;
 
 public class AppSettings
@@ -20,5 +22,9 @@ public class AppSettings
     public bool ShellFolderContextMenu { get; set; }
     public string TerminalShell { get; set; } = "powershell";
 
+    /// <summary>插件设置：插件 Id → (设置键 → 值)。键值结构由各插件的 PluginSettingDescriptor 声明。</summary>
+    public Dictionary<string, Dictionary<string, JsonElement>> PluginSettings { get; set; } = new();
+
+    /// <summary>浅克隆：PluginSettings 字典引用共享，保存时整棵替换写回（与设置页批量保存语义一致）。</summary>
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }

@@ -6,7 +6,7 @@ using Mnemosyne.Plugin.Abstractions;
 namespace Mnemosyne.Formatters.Json;
 
 /// <summary>JSON 格式化器：System.Text.Json 严格解析后按 FormatterOptions 缩进美化输出。</summary>
-public sealed class JsonFormatter : ICodeFormatter
+public sealed class JsonFormatter : IMnemosynePlugin, ICodeFormatter
 {
     // 宽松转义：非 ASCII（中文等）保持原字符可读，不转 \uXXXX
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -14,7 +14,19 @@ public sealed class JsonFormatter : ICodeFormatter
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    public string Id => "mnemosyne.formatters.json";
+
     public string DisplayName => "JSON";
+
+    public string Version => "1.0.0";
+
+    public string Description => "JSON 代码格式化";
+
+    public IReadOnlyList<PluginSettingDescriptor> Settings => [];
+
+    public void Initialize(IPluginContext context)
+    {
+    }
 
     public IReadOnlyList<string> LanguageIds => ["json"];
 

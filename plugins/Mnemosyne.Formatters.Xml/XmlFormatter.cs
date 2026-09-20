@@ -6,9 +6,21 @@ using Mnemosyne.Plugin.Abstractions;
 namespace Mnemosyne.Formatters.Xml;
 
 /// <summary>XML 格式化器：XDocument 解析后按 FormatterOptions 缩进美化，保留 XML 声明、注释、CDATA 与处理指令。</summary>
-public sealed class XmlFormatter : ICodeFormatter
+public sealed class XmlFormatter : IMnemosynePlugin, ICodeFormatter
 {
+    public string Id => "mnemosyne.formatters.xml";
+
     public string DisplayName => "XML";
+
+    public string Version => "1.0.0";
+
+    public string Description => "XML 代码格式化";
+
+    public IReadOnlyList<PluginSettingDescriptor> Settings => [];
+
+    public void Initialize(IPluginContext context)
+    {
+    }
 
     public IReadOnlyList<string> LanguageIds => ["xml"];
 

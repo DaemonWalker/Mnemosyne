@@ -35,12 +35,19 @@ public partial class SettingsViewModel : ObservableObject
     private readonly LocalizationService _localization;
     private readonly MainWindowViewModel _mainViewModel;
 
-    public SettingsViewModel(ConfigService configService, LocalizationService localization, MainWindowViewModel mainViewModel)
+    public SettingsViewModel(ConfigService configService, LocalizationService localization, MainWindowViewModel mainViewModel, PluginService pluginService)
     {
         _configService = configService;
         _localization = localization;
         _mainViewModel = mainViewModel;
         AppSettings settings = configService.Settings;
+
+        PluginGroups = pluginService.Plugins
+            .Where(p => p.Settings.Count > 0)
+            .Select(p => new PluginSettingsGroupViewModel(p, p.Settings
+                .Select(d => new PluginSettingItemViewModel(d, configService.GetPluginSetting(p.Id, d.Key, d.DefaultValue)))
+                .ToList()))
+            .ToList();
 
         FontFamilies = Fonts.SystemFontFamilies
             .Select(f => new FontOption(GetFontDisplayName(f), f.Source, IsMonospaceFont(f)))
@@ -70,6 +77,12 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     public IReadOnlyList<FontOption> FontFamilies { get; }
+
+    /// <summary>插件设置分组（仅含声明了设置项的插件；插件扫描是异步的，取决于打开设置窗口的时机）</summary>
+    public IReadOnlyList<PluginSettingsGroupViewModel> PluginGroups { get; }
+
+    /// <summary>是否有插件设置项（控制"插件"分区的可见性）</summary>
+    public bool HasPluginSettings => PluginGroups.Count > 0;
 
     public IReadOnlyList<FontOption> UiFontFamilies { get; }
 
@@ -168,8 +181,26 @@ public partial class SettingsViewModel : ObservableObject
         snapshot.ShellFileContextMenu = ShellFileContextMenu;
         snapshot.ShellFolderContextMenu = ShellFolderContextMenu;
         snapshot.TerminalShell = SelectedTerminalShell ?? snapshot.TerminalShell;
+        ApplyPluginSettings(snapshot);
         _mainViewModel.ApplyAllSettings(snapshot);
         CloseRequested?.Invoke(true);
+    }
+
+    /// <summary>把插件分区的编辑值写入设置快照的 PluginSettings 节（键值由各插件 descriptor 声明）</summary>
+    private void ApplyPluginSettings(AppSettings snapshot)
+    {
+        foreach (PluginSettingsGroupViewModel group in PluginGroups)
+        {
+            if (!snapshot.PluginSettings.TryGetValue(group.PluginId, out Dictionary<string, System.Text.Json.JsonElement>? values))
+            {
+                values = new Dictionary<string, System.Text.Json.JsonElement>();
+                snapshot.PluginSettings[group.PluginId] = values;
+            }
+            foreach (PluginSettingItemViewModel item in group.Items)
+            {
+                values[item.Descriptor.Key] = System.Text.Json.JsonSerializer.SerializeToElement(item.Value);
+            }
+        }
     }
 
     private void RebuildOptions()

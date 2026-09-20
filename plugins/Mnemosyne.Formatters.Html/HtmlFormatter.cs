@@ -7,9 +7,21 @@ namespace Mnemosyne.Formatters.Html;
 /// HTML 格式化器：自实现容错解析（不规则 HTML 不报错），按块级/行内元素规则重新缩进排版。
 /// 任何意外都兜底返回原文（排版失败不应升级为用户可见错误）。
 /// </summary>
-public sealed class HtmlFormatter : ICodeFormatter
+public sealed class HtmlFormatter : IMnemosynePlugin, ICodeFormatter
 {
+    public string Id => "mnemosyne.formatters.html";
+
     public string DisplayName => "HTML";
+
+    public string Version => "1.0.0";
+
+    public string Description => "HTML 代码格式化";
+
+    public IReadOnlyList<PluginSettingDescriptor> Settings => [];
+
+    public void Initialize(IPluginContext context)
+    {
+    }
 
     public IReadOnlyList<string> LanguageIds => ["html"];
 

@@ -1,14 +1,11 @@
 namespace Mnemosyne.Plugin.Abstractions;
 
 /// <summary>
-/// 代码格式化插件契约。主程序扫描 exe 同目录 plugins/ 下的 dll，
-/// 实例化所有实现本接口的公共非抽象类（需要有无参构造函数）。
+/// 代码格式化能力契约。插件类需同时实现 <see cref="IMnemosynePlugin"/>（提供身份与设置），
+/// 主程序扫描 exe 同目录 plugins/ 下的 dll 发现插件后按能力登记。
 /// </summary>
 public interface ICodeFormatter
 {
-    /// <summary>格式化器显示名（用于菜单、错误提示等界面展示）。</summary>
-    string DisplayName { get; }
-
     /// <summary>
     /// 支持的语言标识列表（不区分大小写），如 "json"、"xml"、"html"。
     /// 主程序按当前文档的语言标识匹配格式化器。

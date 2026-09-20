@@ -354,6 +354,7 @@ public partial class MainWindowViewModel : ObservableObject
         _settings.ShellFileContextMenu = settings.ShellFileContextMenu;
         _settings.ShellFolderContextMenu = settings.ShellFolderContextMenu;
         _settings.TerminalShell = settings.TerminalShell;
+        _settings.PluginSettings = settings.PluginSettings;
 
         foreach (DocumentViewModel doc in Documents)
         {
@@ -879,7 +880,7 @@ public partial class MainWindowViewModel : ObservableObject
         catch (Exception ex)
         {
             ShowError?.Invoke(
-                string.Format(_localization.GetString("Loc.Error.Format.Message"), formatter.DisplayName, ex.Message),
+                string.Format(_localization.GetString("Loc.Error.Format.Message"), (formatter as IMnemosynePlugin)?.DisplayName ?? document.Language.FormatterId, ex.Message),
                 _localization.GetString("Loc.Error.Title"));
             return;
         }

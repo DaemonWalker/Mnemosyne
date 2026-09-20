@@ -108,6 +108,7 @@
     <sys:String x:Key="Loc.Settings.ShellFolderContextMenu">在文件夹右键菜单添加“用 Mnemosyne 打开文件夹”</sys:String>
     <sys:String x:Key="Loc.Settings.Save">保存设定</sys:String>
     <sys:String x:Key="Loc.Settings.TerminalShell">默认终端 Shell</sys:String>
+    <sys:String x:Key="Loc.Settings.Plugins">插件</sys:String>
 
     <sys:String x:Key="Loc.Terminal.Title">终端</sys:String>
     <sys:String x:Key="Loc.Terminal.ClosePanel">关闭面板</sys:String>

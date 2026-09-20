@@ -79,15 +79,20 @@ src/Mnemosyne/
 - 文件夹搜索、大文件读取、编码探测：后台 `Task`，通过 `IProgress<T>` 或 `Dispatcher` 回 UI
 - 所有后台任务持有 `CancellationToken`，面板关闭/任务替换时取消旧任务
 
-### 4.4 插件接口（Abstractions 内容）
-- `ICodeFormatter`：`string Format(string input, FormatterOptions options)`，外加元数据属性（显示名、支持的语言标识 json/xml/html）
-- 插件加载：`AssemblyLoadContext` 默认上下文 + `Assembly.LoadFrom`，逐个 try/catch，失败记入日志不中断
+### 4.4 插件平台（Abstractions 内容）
+- 三层模型：`IMnemosynePlugin`（插件身份：Id/DisplayName/Version/Description + `Settings` 声明 + `Initialize(IPluginContext)`）→ 能力接口（当前为 `ICodeFormatter`，一个插件类可实现多个能力接口）→ `PluginSettingDescriptor`（声明式设置 schema，插件不碰 UI）
+- `ICodeFormatter`：`string Format(string input, FormatterOptions options)` + `LanguageIds`
+- `IPluginContext`：宿主注入——`GetSetting(key)` 现读设置（descriptor 默认值回落）、`PluginDataDirectory`（cache/plugins/&lt;Id&gt;/）、`Log`（汇入 plugin.log）
+- 插件加载：`AssemblyLoadContext` 默认上下文 + `Assembly.LoadFrom`，逐个 try/catch，失败记入日志不中断；实例化后调 `Initialize`，再按能力登记，语言标识冲突后到忽略
+- 插件设置：`AppSettings.PluginSettings`（插件 Id → 键 → JsonElement）持久化于 settings.json；设置窗口"插件"分区按 descriptor 类型动态渲染（Bool/String/Int/Enum/Path），保存随"保存设定"批量落盘
 
 ### 4.5 便携模式数据布局（exe 同目录）
-- `config/settings.json`：全部用户设置
+- `config/settings.json`：全部用户设置（含 PluginSettings 节）
 - `config/recent.json`：最近打开列表
 - `cache/hotexit/`：未保存文档暂存（文件名做哈希映射，附元数据 json）
 - `cache/session.json`：上次会话（打开的 Tab、文件夹、活动 Tab）
+- `cache/plugin.log`：插件加载/运行日志
+- `cache/plugins/<插件 Id>/`：插件私有数据目录
 
 ### 4.6 大文件加载
 - `FileService` 提供 `IAsyncEnumerable<byte[]>` 分块读取（1MB/块）

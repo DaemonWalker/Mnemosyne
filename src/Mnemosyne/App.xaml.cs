@@ -63,7 +63,7 @@ public partial class App : Application
 
         FileService = new FileService();
         RecentFilesService = new RecentFilesService();
-        PluginService = new PluginService();
+        PluginService = new PluginService(ConfigService);
         MarkdownRenderer = new MarkdownRenderService(LocalizationService);
         SessionService = new SessionService();
 

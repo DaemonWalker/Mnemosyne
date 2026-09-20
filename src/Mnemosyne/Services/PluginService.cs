@@ -5,21 +5,37 @@ using Mnemosyne.Plugin.Abstractions;
 namespace Mnemosyne.Services;
 
 /// <summary>
-/// 插件发现与加载（architecture.md 4.4）：扫描 exe 同目录 plugins/ 下的 dll，反射实例化 ICodeFormatter。
+/// 插件发现与加载（architecture.md 4.4）：扫描 exe 同目录 plugins/ 下的 dll，反射实例化
+/// IMnemosynePlugin，注入 PluginContext 后按能力接口（ICodeFormatter 等）分别登记。
 /// 单个 dll / 单个类型的任何异常都被隔离并记入 cache/plugin.log，不中断扫描、不影响主程序。
 /// </summary>
 public class PluginService
 {
+    private readonly List<IMnemosynePlugin> _plugins = [];
     private readonly List<ICodeFormatter> _formatters = [];
     private readonly Lock _gate = new();
+    private readonly ConfigService _configService;
     private readonly string _pluginsDir;
     private readonly string _logPath;
     private volatile bool _scanned;
 
-    public PluginService()
+    public PluginService(ConfigService configService)
     {
+        _configService = configService;
         _pluginsDir = Path.Combine(AppContext.BaseDirectory, "plugins");
         _logPath = Path.Combine(AppContext.BaseDirectory, "cache", "plugin.log");
+    }
+
+    /// <summary>已加载的全部插件（设置页等界面展示用；未扫描时为空）</summary>
+    public IReadOnlyList<IMnemosynePlugin> Plugins
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _plugins.ToArray();
+            }
+        }
     }
 
     /// <summary>后台扫描 plugins/ 目录（幂等，重复调用不重复扫描）</summary>
@@ -77,7 +93,7 @@ public class PluginService
             }
             foreach (Type type in types)
             {
-                TryCreateFormatter(type, name);
+                TryCreatePlugin(type, name);
             }
         }
         catch (Exception ex)
@@ -86,32 +102,45 @@ public class PluginService
         }
     }
 
-    private void TryCreateFormatter(Type type, string assemblyName)
+    private void TryCreatePlugin(Type type, string assemblyName)
     {
-        if (!typeof(ICodeFormatter).IsAssignableFrom(type)) return;
+        if (!typeof(IMnemosynePlugin).IsAssignableFrom(type)) return;
         if (type.IsAbstract || type.IsInterface || !(type.IsPublic || type.IsNestedPublic)) return;
         try
         {
-            if (Activator.CreateInstance(type) is ICodeFormatter formatter)
+            if (Activator.CreateInstance(type) is not IMnemosynePlugin plugin) return;
+            PluginContext context = new(plugin, _configService, Log);
+            plugin.Initialize(context);
+            lock (_gate)
             {
-                lock (_gate)
+                if (HasCapabilityConflict(plugin))
                 {
-                    ICodeFormatter? existing = _formatters.FirstOrDefault(f =>
-                        f.LanguageIds.Any(id => formatter.LanguageIds.Any(newId =>
-                            string.Equals(id, newId, StringComparison.OrdinalIgnoreCase))));
-                    if (existing is not null)
-                    {
-                        Log($"插件 {assemblyName} 的 {type.FullName} 与已加载的 {existing.GetType().FullName} 语言标识重复，已忽略");
-                        return;
-                    }
-                    _formatters.Add(formatter);
+                    Log($"插件 {assemblyName} 的 {type.FullName} 语言标识与已加载插件重复，已忽略");
+                    return;
                 }
+                _plugins.Add(plugin);
+                if (plugin is ICodeFormatter formatter) _formatters.Add(formatter);
             }
         }
         catch (Exception ex)
         {
             Log($"实例化插件类型 {type.FullName}（{assemblyName}）失败：{ex}");
         }
+    }
+
+    /// <summary>能力（格式化器）的语言标识与已登记插件重叠即视为冲突，调用方需持有 _gate</summary>
+    private bool HasCapabilityConflict(IMnemosynePlugin plugin)
+    {
+        static bool Overlaps(IReadOnlyList<string> existing, IReadOnlyList<string> incoming) =>
+            existing.Any(id => incoming.Any(newId =>
+                string.Equals(id, newId, StringComparison.OrdinalIgnoreCase)));
+
+        if (plugin is ICodeFormatter formatter
+            && _formatters.Any(f => Overlaps(f.LanguageIds, formatter.LanguageIds)))
+        {
+            return true;
+        }
+        return false;
     }
 
     private void Log(string message)

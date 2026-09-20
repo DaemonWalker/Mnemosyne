@@ -108,6 +108,7 @@
     <sys:String x:Key="Loc.Settings.ShellFolderContextMenu">Add "Open folder with Mnemosyne" to the folder context menu</sys:String>
     <sys:String x:Key="Loc.Settings.Save">Save Settings</sys:String>
     <sys:String x:Key="Loc.Settings.TerminalShell">Default Terminal Shell</sys:String>
+    <sys:String x:Key="Loc.Settings.Plugins">Plugins</sys:String>
 
     <sys:String x:Key="Loc.Terminal.Title">TERMINAL</sys:String>
     <sys:String x:Key="Loc.Terminal.ClosePanel">Close Panel</sys:String>

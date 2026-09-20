@@ -19,6 +19,7 @@ public partial class MainWindow : Window
 {
     private readonly LocalizationService _localization;
     private readonly ConfigService _configService;
+    private readonly PluginService _pluginService;
     private readonly MainWindowViewModel _viewModel;
     private readonly IReadOnlyList<RoutedUICommand> _appCommands;
 
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _localization = localization;
         _configService = configService;
+        _pluginService = pluginService;
         _viewModel = new MainWindowViewModel(fileService, localization, configService, themeService, recentFiles, pluginService, markdownRenderer, sessionService);
         DataContext = _viewModel;
         _viewModel.ApplyUiFontSettings = ApplyUiFont;
@@ -614,7 +616,7 @@ public partial class MainWindow : Window
     private void OpenSettingsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         // 模态对话框：每次打开新建实例，保存才生效，取消/Esc 放弃全部修改
-        var window = new SettingsWindow(new SettingsViewModel(_configService, _localization, _viewModel))
+        var window = new SettingsWindow(new SettingsViewModel(_configService, _localization, _viewModel, _pluginService))
         {
             Owner = this,
             FontFamily = FontFamily,
