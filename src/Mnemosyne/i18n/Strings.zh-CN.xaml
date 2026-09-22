@@ -66,6 +66,14 @@
     <sys:String x:Key="Loc.Error.SearchFolder.Message">搜索文件夹“{0}”时出错。{1}</sys:String>
 
     <sys:String x:Key="Loc.Editor.Empty">拖放文件到此处，或按 Ctrl+O 打开文件</sys:String>
+    <sys:String x:Key="Loc.Editor.Undo">撤销</sys:String>
+    <sys:String x:Key="Loc.Editor.Redo">重做</sys:String>
+    <sys:String x:Key="Loc.Editor.Cut">剪切</sys:String>
+    <sys:String x:Key="Loc.Editor.Copy">复制</sys:String>
+    <sys:String x:Key="Loc.Editor.Paste">粘贴</sys:String>
+    <sys:String x:Key="Loc.Editor.SelectAll">全选</sys:String>
+    <sys:String x:Key="Loc.Editor.CollapseAll">全部折叠</sys:String>
+    <sys:String x:Key="Loc.Editor.ExpandAll">全部展开</sys:String>
 
     <sys:String x:Key="Loc.Tab.Untitled">未命名</sys:String>
 

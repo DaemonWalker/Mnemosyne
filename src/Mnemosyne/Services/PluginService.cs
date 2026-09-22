@@ -1,18 +1,32 @@
 using System.IO;
 using System.Reflection;
+using Mnemosyne.Models;
 using Mnemosyne.Plugin.Abstractions;
 
 namespace Mnemosyne.Services;
 
 /// <summary>
 /// 插件发现与加载（architecture.md 4.4）：扫描 exe 同目录 plugins/ 下的 dll，反射实例化
-/// IMnemosynePlugin，注入 PluginContext 后按能力接口（ICodeFormatter 等）分别登记。
-/// 单个 dll / 单个类型的任何异常都被隔离并记入 cache/plugin.log，不中断扫描、不影响主程序。
+/// IMnemosynePlugin，注入 PluginContext 后按能力接口（ICodeFormatter / ILanguageContribution /
+/// ICustomLexer / IThemeContribution）分别登记。扫描结束后把语言与自定义词法器一次性推入
+/// LanguageRegistry / CustomLexerRegistry。单个 dll / 单个类型的任何异常都被隔离并记入
+/// cache/plugin.log，不中断扫描、不影响主程序。
 /// </summary>
 public class PluginService
 {
     private readonly List<IMnemosynePlugin> _plugins = [];
     private readonly List<ICodeFormatter> _formatters = [];
+    private readonly List<LanguageDefinition> _languages = [];
+    private readonly List<ICustomLexer> _customLexers = [];
+    private readonly List<RegisteredTheme> _themes = [];
+    private readonly HashSet<string> _claimedExtensions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _claimedFileNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _claimedLexerNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _claimedThemeNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ThemeService.DarkThemeName,
+        ThemeService.LightThemeName,
+    };
     private readonly Lock _gate = new();
     private readonly ConfigService _configService;
     private readonly string _pluginsDir;
@@ -34,6 +48,18 @@ public class PluginService
             lock (_gate)
             {
                 return _plugins.ToArray();
+            }
+        }
+    }
+
+    /// <summary>已登记的插件主题（xaml 为绝对路径；未扫描时为空）</summary>
+    public IReadOnlyList<RegisteredTheme> Themes
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _themes.ToArray();
             }
         }
     }
@@ -69,6 +95,20 @@ public class PluginService
         {
             Log($"扫描插件目录失败：{ex}");
         }
+
+        // 全部 dll 扫完后一次性发布语言与词法器注册表（读侧为无锁快照）
+        List<LanguageDefinition> languages;
+        List<ICustomLexer> lexers;
+        lock (_gate)
+        {
+            languages = [.. _languages];
+            lexers = [.. _customLexers];
+        }
+        foreach (ICustomLexer lexer in lexers)
+        {
+            CustomLexerRegistry.Register(lexer);
+        }
+        LanguageRegistry.RegisterLanguages(languages);
         _scanned = true;
     }
 
@@ -91,9 +131,10 @@ public class PluginService
                 types = ex.Types.OfType<Type>().ToArray();
                 Log($"插件 {name} 存在无法解析的类型：{ex.LoaderExceptions.FirstOrDefault()?.Message}");
             }
+            string pluginDir = Path.GetDirectoryName(path)!;
             foreach (Type type in types)
             {
-                TryCreatePlugin(type, name);
+                TryCreatePlugin(type, name, pluginDir);
             }
         }
         catch (Exception ex)
@@ -102,7 +143,7 @@ public class PluginService
         }
     }
 
-    private void TryCreatePlugin(Type type, string assemblyName)
+    private void TryCreatePlugin(Type type, string assemblyName, string pluginDir)
     {
         if (!typeof(IMnemosynePlugin).IsAssignableFrom(type)) return;
         if (type.IsAbstract || type.IsInterface || !(type.IsPublic || type.IsNestedPublic)) return;
@@ -120,6 +161,13 @@ public class PluginService
                 }
                 _plugins.Add(plugin);
                 if (plugin is ICodeFormatter formatter) _formatters.Add(formatter);
+                if (plugin is ICustomLexer lexer)
+                {
+                    _customLexers.Add(lexer);
+                    _claimedLexerNames.Add(lexer.Name);
+                }
+                if (plugin is ILanguageContribution contribution) RegisterLanguages(contribution, assemblyName);
+                if (plugin is IThemeContribution themes) RegisterThemes(themes, pluginDir, assemblyName);
             }
         }
         catch (Exception ex)
@@ -128,7 +176,52 @@ public class PluginService
         }
     }
 
-    /// <summary>能力（格式化器）的语言标识与已登记插件重叠即视为冲突，调用方需持有 _gate</summary>
+    /// <summary>
+    /// 逐条登记插件语言：扩展名/精确文件名与已注册者冲突的条目跳过并记日志（不连累其余条目），
+    /// 调用方需持有 _gate
+    /// </summary>
+    private void RegisterLanguages(ILanguageContribution contribution, string assemblyName)
+    {
+        foreach (PluginLanguageDefinition lang in contribution.Languages)
+        {
+            if (lang.Extensions.Any(_claimedExtensions.Contains)
+                || lang.FileNames.Any(_claimedFileNames.Contains))
+            {
+                Log($"插件 {assemblyName} 的语言 {lang.DisplayName} 扩展名/文件名与已注册语言重复，已忽略该条目");
+                continue;
+            }
+            foreach (string ext in lang.Extensions) _claimedExtensions.Add(ext);
+            foreach (string name in lang.FileNames) _claimedFileNames.Add(name);
+            _languages.Add(new LanguageDefinition(
+                lang.DisplayName,
+                lang.LexerName,
+                lang.Extensions,
+                lang.Keywords,
+                lang.SecondaryKeywords,
+                lang.FormatterId,
+                lang.SupportsFolding,
+                lang.FileNames));
+        }
+    }
+
+    /// <summary>登记插件主题（xaml 相对路径按插件 dll 目录解析为绝对路径），调用方需持有 _gate</summary>
+    private void RegisterThemes(IThemeContribution contribution, string pluginDir, string assemblyName)
+    {
+        foreach (PluginThemeDefinition theme in contribution.Themes)
+        {
+            if (!_claimedThemeNames.Add(theme.Name))
+            {
+                Log($"插件 {assemblyName} 的主题 {theme.Name} 与内置主题或已注册主题重名，已忽略");
+                continue;
+            }
+            _themes.Add(new RegisteredTheme(
+                theme.Name,
+                theme.DisplayName,
+                Path.GetFullPath(Path.Combine(pluginDir, theme.XamlPath))));
+        }
+    }
+
+    /// <summary>能力（格式化器/自定义词法器）的标识与已登记插件重叠即视为冲突，调用方需持有 _gate</summary>
     private bool HasCapabilityConflict(IMnemosynePlugin plugin)
     {
         static bool Overlaps(IReadOnlyList<string> existing, IReadOnlyList<string> incoming) =>
@@ -137,6 +230,10 @@ public class PluginService
 
         if (plugin is ICodeFormatter formatter
             && _formatters.Any(f => Overlaps(f.LanguageIds, formatter.LanguageIds)))
+        {
+            return true;
+        }
+        if (plugin is ICustomLexer lexer && _claimedLexerNames.Contains(lexer.Name))
         {
             return true;
         }

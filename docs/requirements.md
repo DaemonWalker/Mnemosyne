@@ -45,10 +45,11 @@
 - **不做文件夹级替换**
 - 结果按文件分组，显示匹配行上下文，双击跳转到对应位置并高亮
 
-### 4.4 格式化插件
-- 接口（如 `ICodeFormatter`）+ 反射加载 `plugins/` 目录
-- 内置 JSON、XML、HTML 三个格式化器，以插件形式实现
-- 菜单/右键入口：格式化文档
+### 4.4 插件机制
+- 约定接口（`IMnemosynePlugin` + 能力接口）+ 反射加载 `plugins/` 目录
+- 能力三类：**格式化**（`ICodeFormatter`）、**语言/词法器**（`ILanguageContribution` / `ICustomLexer`）、**主题**（`IThemeContribution`，资源字典 xaml 随插件 dll 分发）
+- 内置 JSON、XML、HTML 格式化器、全部语言定义（含 DataWeave 自研词法器）、Solarized Dark 主题，均以插件形式实现
+- 菜单/右键入口：格式化文档；语言按文件名/扩展名自动匹配 + 语言选择器；主题在设置页切换
 
 ### 4.5 设置
 - 设置窗口：默认字体、字号、主题、界面语言、缩进（Tab/空格与宽度）、大文件阈值等

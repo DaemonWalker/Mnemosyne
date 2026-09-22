@@ -82,9 +82,21 @@ public partial class App : Application
         MainWindow window = new(ConfigService, ThemeService, LocalizationService, FileService, RecentFilesService, PluginService, MarkdownRenderer, SessionService);
         MainWindow = window;
         window.Show();
-        // 插件扫描与会话恢复都放窗口显示后异步进行，不拖慢冷启动（architecture.md 4.1）
-        _ = PluginService.ScanAsync();
-        _ = window.RestoreSessionAsync();
+        // 插件扫描与会话恢复都放窗口显示后异步进行，不拖慢冷启动（architecture.md 4.1）。
+        // 语言与主题由插件提供：须先扫描登记再恢复会话，否则恢复的文件按纯文本打开、
+        // 插件主题因未注册回退 Dark；扫描仅反射加载几个小 dll，毫秒级
+        _ = InitializeAsync(window);
+    }
+
+    private async Task InitializeAsync(MainWindow window)
+    {
+        await PluginService.ScanAsync();
+        // 扫描后回到 UI 线程：登记插件主题并重放一次主题设置，命中插件主题时触发 ThemeChanged 重刷
+        ThemeService.RegisterPluginThemes(PluginService.Themes);
+        ThemeService.ApplyTheme(ConfigService.Settings.Theme);
+        // 语言注册表就绪后再消费命令行路径、再恢复会话，否则这些文件会按纯文本打开
+        window.OpenPendingPaths();
+        await window.RestoreSessionAsync();
     }
 
     protected override void OnExit(ExitEventArgs e)

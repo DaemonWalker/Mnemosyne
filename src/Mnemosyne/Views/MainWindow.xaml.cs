@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly LocalizationService _localization;
     private readonly ConfigService _configService;
     private readonly PluginService _pluginService;
+    private readonly ThemeService _themeService;
     private readonly MainWindowViewModel _viewModel;
     private readonly IReadOnlyList<RoutedUICommand> _appCommands;
 
@@ -32,6 +33,7 @@ public partial class MainWindow : Window
         _localization = localization;
         _configService = configService;
         _pluginService = pluginService;
+        _themeService = themeService;
         _viewModel = new MainWindowViewModel(fileService, localization, configService, themeService, recentFiles, pluginService, markdownRenderer, sessionService);
         DataContext = _viewModel;
         _viewModel.ApplyUiFontSettings = ApplyUiFont;
@@ -162,7 +164,7 @@ public partial class MainWindow : Window
             if (e.PropertyName == nameof(MainWindowViewModel.ActiveDocument)) UpdateEditorVisibility();
         };
 
-        Loaded += (_, _) => OpenPendingPaths();
+        // 命令行路径不由 Loaded 消费：语言由插件提供，须等 App 完成插件扫描后再打开（InitializeAsync 驱动）
         // 热退出：进程退出不提示保存（需求 4.9），只兜底暂存脏文档并落盘会话
         Closing += (_, _) => _viewModel.OnWindowClosing();
     }
@@ -595,15 +597,37 @@ public partial class MainWindow : Window
     // 编辑器内右键（Scintilla 内置英文菜单已在 ScintillaHost 关闭，改用本地化 WPF 菜单）
     private void OnEditorRightClick(object? sender, EventArgs e)
     {
+        if (sender is not ScintillaHost editor) return;
+
         var menu = new ContextMenu { Style = (Style)FindResource("PopupContextMenuStyle") };
-        var item = new MenuItem
+
+        void AddItem(string key, bool enabled, Action action)
         {
-            Style = (Style)FindResource("PopupMenuItemStyle"),
-            Header = _localization.GetString("Loc.Menu.Edit.FormatDocument"),
-            IsEnabled = _viewModel.CanFormatActiveDocument,
-        };
-        item.Click += (_, _) => _ = _viewModel.FormatActiveDocumentAsync();
-        menu.Items.Add(item);
+            var item = new MenuItem
+            {
+                Style = (Style)FindResource("PopupMenuItemStyle"),
+                Header = _localization.GetString(key),
+                IsEnabled = enabled,
+            };
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+        }
+
+        AddItem("Loc.Editor.Undo", editor.CanUndo, editor.Undo);
+        AddItem("Loc.Editor.Redo", editor.CanRedo, editor.Redo);
+        menu.Items.Add(new Separator());
+        AddItem("Loc.Editor.Cut", !editor.IsReadOnly && editor.HasSelection, editor.Cut);
+        AddItem("Loc.Editor.Copy", editor.HasSelection, editor.Copy);
+        AddItem("Loc.Editor.Paste", editor.CanPaste, editor.Paste);
+        menu.Items.Add(new Separator());
+        AddItem("Loc.Editor.SelectAll", true, editor.SelectAll);
+        menu.Items.Add(new Separator());
+        AddItem("Loc.Editor.CollapseAll", editor.FoldingEnabled, editor.FoldAll);
+        AddItem("Loc.Editor.ExpandAll", editor.FoldingEnabled, editor.UnfoldAll);
+        menu.Items.Add(new Separator());
+        AddItem("Loc.Menu.Edit.FormatDocument", _viewModel.CanFormatActiveDocument,
+            () => _ = _viewModel.FormatActiveDocumentAsync());
+
         menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
         menu.IsOpen = true;
     }
@@ -616,7 +640,7 @@ public partial class MainWindow : Window
     private void OpenSettingsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         // 模态对话框：每次打开新建实例，保存才生效，取消/Esc 放弃全部修改
-        var window = new SettingsWindow(new SettingsViewModel(_configService, _localization, _viewModel, _pluginService))
+        var window = new SettingsWindow(new SettingsViewModel(_configService, _localization, _viewModel, _pluginService, _themeService))
         {
             Owner = this,
             FontFamily = FontFamily,

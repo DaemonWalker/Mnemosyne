@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Forms.Integration;
 using ScintillaNET;
 using Mnemosyne.Models;
+using Mnemosyne.Plugin.Abstractions;
 using Mnemosyne.Services;
 using WinForms = System.Windows.Forms;
 using SciStyle = ScintillaNET.Style;
@@ -184,6 +185,7 @@ public class ScintillaHost : WindowsFormsHost
     public void SetCaret(int position)
     {
         position = Math.Clamp(position, 0, _scintilla.TextLength);
+        _scintilla.Lines[_scintilla.LineFromPosition(position)].EnsureVisible();
         _scintilla.SetEmptySelection(position);
         _scintilla.ScrollCaret();
     }
@@ -232,6 +234,8 @@ public class ScintillaHost : WindowsFormsHost
     /// <summary>选中字符区间并滚动到可见（caret 落在匹配末尾，供下一次"下一个"导航定位）</summary>
     public void SelectRange(int start, int length)
     {
+        // 目标行可能被折叠隐藏，先展开包住它的折叠，否则 caret 落在不可见行上视图不移动
+        _scintilla.Lines[_scintilla.LineFromPosition(start)].EnsureVisible();
         _scintilla.SetSelection(start + length, start);
         _scintilla.ScrollCaret();
     }
@@ -323,6 +327,34 @@ public class ScintillaHost : WindowsFormsHost
     public void SetViewWhitespace(bool visible) =>
         _scintilla.ViewWhitespace = visible ? WhitespaceMode.VisibleAlways : WhitespaceMode.Invisible;
 
+    // ===== 右键菜单用的编辑与折叠操作 =====
+    public bool CanUndo => _scintilla.CanUndo;
+
+    public bool CanRedo => _scintilla.CanRedo;
+
+    public bool HasSelection => _scintilla.SelectedText.Length > 0;
+
+    public bool CanPaste => !IsReadOnly && _scintilla.CanPaste;
+
+    public void Undo() => _scintilla.Undo();
+
+    public void Redo() => _scintilla.Redo();
+
+    public void Cut() => _scintilla.Cut();
+
+    public void Copy() => _scintilla.Copy();
+
+    public void Paste() => _scintilla.Paste();
+
+    public void SelectAll() => _scintilla.SelectAll();
+
+    /// <summary>当前是否启用了代码折叠（与 ConfigureFolding 的启用条件一致：语言支持且非大文件模式）</summary>
+    public bool FoldingEnabled => _language.SupportsFolding && !_largeFileMode;
+
+    public void FoldAll() => _scintilla.FoldAll(FoldAction.Contract);
+
+    public void UnfoldAll() => _scintilla.FoldAll(FoldAction.Expand);
+
     /// <summary>
     /// Ctrl+D：主选择为空时选中光标所在词；否则按大小写敏感查找选中文本的下一个出现并加为附加选择，
     /// 选择恰好覆盖一个词时按全词匹配。到达文末后绕回开头（与 Sublime 一致）。
@@ -361,6 +393,7 @@ public class ScintillaHost : WindowsFormsHost
         int found = Search(text, lastEnd, _scintilla.TextLength);
         if (found < 0) found = Search(text, 0, firstStart);
         if (found < 0) return;
+        _scintilla.Lines[_scintilla.LineFromPosition(found)].EnsureVisible();
         _scintilla.AddSelection(found + text.Length, found);
         _scintilla.ScrollCaret();
     }
@@ -403,19 +436,26 @@ public class ScintillaHost : WindowsFormsHost
     public void SetLanguage(LanguageDefinition language)
     {
         _language = language;
-        // LexerName 仅接受 Lexilla 内部名称；空串回退到 null（纯文本）。
-        // DataWeave 无 Lexilla 内置 Lexer，用 container lexer 由 DataWeaveLexer 在 StyleNeeded 里上色
-        string lexerName = language.LexerName == DataWeaveLexer.LexerName
-            ? "container"
-            : string.IsNullOrEmpty(language.LexerName) ? "null" : language.LexerName;
-        try
+        if (CustomLexerRegistry.TryGet(language.LexerName, out _))
         {
-            _scintilla.LexerName = lexerName;
-            if (_scintilla.LexerName != lexerName) _scintilla.LexerName = "null";
+            // 插件自定义词法器走 container lexer：Lexilla 没有名为 "container" 的 Lexer
+            //（CreateLexer 返回空、LexerName 赋值抛异常），须直接 SCI_SETILEXER(4033) 传空指针
+            // 设 SCLEX_CONTAINER，由 OnStyleNeeded 分词上色
+            _scintilla.DirectMessage(4033, IntPtr.Zero, IntPtr.Zero);
         }
-        catch (Exception)
+        else
         {
-            _scintilla.LexerName = "null";
+            // LexerName 仅接受 Lexilla 内部名称；空串回退到 null（纯文本）
+            string lexerName = string.IsNullOrEmpty(language.LexerName) ? "null" : language.LexerName;
+            try
+            {
+                _scintilla.LexerName = lexerName;
+                if (_scintilla.LexerName != lexerName) _scintilla.LexerName = "null";
+            }
+            catch (Exception)
+            {
+                _scintilla.LexerName = "null";
+            }
         }
         if (!string.IsNullOrEmpty(language.Keywords)) _scintilla.SetKeywords(0, language.Keywords);
         if (!string.IsNullOrEmpty(language.SecondaryKeywords)) _scintilla.SetKeywords(1, language.SecondaryKeywords);
@@ -429,15 +469,17 @@ public class ScintillaHost : WindowsFormsHost
     /// </summary>
     private void OnStyleNeeded(object? sender, StyleNeededEventArgs e)
     {
-        if (_language.LexerName != DataWeaveLexer.LexerName) return;
+        if (!CustomLexerRegistry.TryGet(_language.LexerName, out ICustomLexer? lexer)) return;
         int endPos = e.Position;
         int startPos = _scintilla.Lines[_scintilla.LineFromPosition(_scintilla.GetEndStyled())].Position;
         if (endPos <= startPos) return;
         string text = _scintilla.GetTextRange(startPos, endPos - startPos);
+        int maxStyle = lexer.Styles.Count - 1;
         _scintilla.StartStyling(startPos);
-        foreach (DataWeaveLexer.StyleSpan span in DataWeaveLexer.Tokenize(text))
+        foreach (LexerStyleSpan span in lexer.Tokenize(text))
         {
-            _scintilla.SetStyling(span.Length, (int)span.Style);
+            // 插件给出的样式下标越界时钳到样式表末尾，避免把垃圾值传给 Scintilla
+            _scintilla.SetStyling(span.Length, Math.Min(span.Style, maxStyle));
         }
     }
 
@@ -1020,19 +1062,16 @@ public class ScintillaHost : WindowsFormsHost
                 Set(25, type);              // SCE_COFFEESCRIPT_INSTANCEPROPERTY
                 break;
 
-            case DataWeaveLexer.LexerName:
-                Set((int)DataWeaveLexer.DwStyle.Comment, comment);
-                Set((int)DataWeaveLexer.DwStyle.Keyword, keyword, bold: true);
-                Set((int)DataWeaveLexer.DwStyle.Declaration, keyword, bold: true);
-                Set((int)DataWeaveLexer.DwStyle.String, str);
-                Set((int)DataWeaveLexer.DwStyle.Number, number);
-                Set((int)DataWeaveLexer.DwStyle.Constant, keyword, bold: true);
-                Set((int)DataWeaveLexer.DwStyle.Operator, fg);
-                Set((int)DataWeaveLexer.DwStyle.Arrow, keyword, bold: true);
-                Set((int)DataWeaveLexer.DwStyle.Interpolation, function);
-                Set((int)DataWeaveLexer.DwStyle.Directive, preprocessor, bold: true);
-                Set((int)DataWeaveLexer.DwStyle.Variable, type);
-                break;
+        }
+
+        // 插件自定义词法器（container lexer）：按样式表逐项映射语义到主题色
+        if (CustomLexerRegistry.TryGet(_language.LexerName, out ICustomLexer? customLexer))
+        {
+            for (int i = 0; i < customLexer.Styles.Count; i++)
+            {
+                LexerStyle style = customLexer.Styles[i];
+                Set(i, EditorColor(CustomLexerRegistry.ThemeKey(style.Semantic)), style.Bold);
+            }
         }
     }
 

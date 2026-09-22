@@ -12,7 +12,7 @@
 - Lexilla 静态委托在首个控件创建前未初始化，枚举全部 Lexer 前需预热（`ScintillaHost.GetAvailableLexerNames()`）
 - cpp lexer 复用承载 C#/C/C++/Java/JS/TS，以及 Go/Kotlin/Swift/Objective-C/Groovy/Scala——**Lexilla（5.5.0）没有这 6 种语言的独立 Lexer**（实测 `Lexilla.GetLexerNames()` 确认），靠 cpp + 各自关键字表区分
 - **`Colorize(0, -1)` 在 7.0.0 实测不生效**（GetEndStyled 不前进），全文着色必须传显式长度 `Colorize(0, TextLength)`
-- **DataWeave（.dwl）走 container lexer**（Lexilla 无内置）：`LexerName = "container"` + `StyleNeeded` 回调里用 `Services/DataWeaveLexer` 分词、`StartStyling`/`SetStyling` 上色；从已着色末尾回溯到行首起扫，跨行块注释/未闭合字符串在中间起扫时可能短暂错色，属固有取舍。分词规则参照官方语法 mulesoft/data-weave-tmLanguage
+- **DataWeave（.dwl）走 container lexer**（Lexilla 无内置）：container lexer **不能用 `LexerName = "container"` 设置**——Scintilla5.NET 7.0 的 LexerName 走 Lexilla.CreateLexer，无此名会抛异常被兜底成 null lexer，高亮静默失效（曾长期未被发现，冒烟未覆盖 .dwl）。正确做法是 `DirectMessage(SCI_SETILEXER=4033, 0, 0)` 传空指针。分词器已外迁为插件（`plugins/Mnemosyne.Languages.DataWeave`，实现 ICustomLexer），宿主经 CustomLexerRegistry 通用化处理任何插件词法器。StyleNeeded 回调里分词、`StartStyling`/`SetStyling` 上色；从已着色末尾回溯到行首起扫，跨行块注释/未闭合字符串在中间起扫时可能短暂错色，属固有取舍。分词规则参照官方语法 mulesoft/data-weave-tmLanguage
 - 光标在行缩进区内按 Tab 是"缩进整行"（内建行为，验证时注意）
 
 ## 2. WPF / WindowsFormsHost 结构约束
@@ -51,8 +51,12 @@
 ## 6. 插件系统
 
 - 约定：Format 返回行尾符为 `\n`，由主程序按文档行尾符归一化；只有 Format 成功才替换原文
-- netstandard2.0 插件：无 Span/char 重载 EndsWith、无 record struct（IsExternalInit）；JSON 插件引 System.Text.Json 8.0.5 仅编译用，运行时由主程序 net10 高版本承载，dll 不拷出
+- netstandard2.0 插件：无 Span/char 重载 EndsWith、无 record struct（IsExternalInit）、string 无 Range 索引器（用 Substring）；JSON 插件引 System.Text.Json 8.0.5 仅编译用，运行时由主程序 net10 高版本承载，dll 不拷出
 - XML 声明须手工按原文 version/encoding/standalone 重写（XmlWriter 走 StringBuilder 会把 encoding 写成 utf-16）
+- 能力接口现有四种：ICodeFormatter / ILanguageContribution / ICustomLexer / IThemeContribution；冲突规则——格式化器语言标识与词法器名冲突整个插件忽略，语言扩展名/文件名与主题名冲突只跳过冲突条目，均记 plugin.log
+- 语言全由插件贡献：宿主 LanguageRegistry 只剩 Plain Text，扫描结束一次性 RegisterLanguages（快照整体替换，读侧无锁）；**启动必须先 ScanAsync 再 RestoreSessionAsync**，否则恢复的文件按纯文本打开
+- 自定义词法器走 container lexer：插件声明 Styles（语义 + Bold），Tokenize 产出（Length, 样式下标）；宿主按语义映射 Color.Editor.* 主题色，样式下标越界钳到样式表末尾
+- 主题插件：xaml 资源字典随 dll 放 plugins/，宿主 file URI 加载并先压入 Dark 字典兜底缺键（否则 EditorColor 缺键返回 Magenta）；**Brush.* 在字典内 StaticResource 解析，主题包必须自带 Brush 定义**（以 Dark.xaml 全文为模板）；发布时 build.ps1 会一并拷 plugins/*.xaml
 
 ## 7. 单实例与壳集成
 

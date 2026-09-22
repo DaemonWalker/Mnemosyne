@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Mnemosyne.Themes.Solarized</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 插件不随主程序引用，构建后由下方 Target 拷贝到主程序输出 plugins/ 目录 -->
+    <ProjectReference Include="..\..\src\Mnemosyne.Plugin.Abstractions\Mnemosyne.Plugin.Abstractions.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="CopyPluginToAppOutput" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\..\src\Mnemosyne\bin\$(Configuration)\net10.0-windows\plugins" SkipUnchangedFiles="true" />
+    <!-- 主题资源字典随 dll 一起分发（PluginThemeDefinition.XamlPath 相对插件 dll 目录解析） -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\SolarizedDark.xaml" DestinationFolder="$(MSBuildProjectDirectory)\..\..\src\Mnemosyne\bin\$(Configuration)\net10.0-windows\plugins" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

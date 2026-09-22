@@ -31,6 +31,7 @@ public partial class SearchPanelViewModel : ObservableObject
     private bool _truncated;
     private bool _cancelled;
     private bool _patternInvalid;
+    private bool _restoringOptions;
 
     public SearchPanelViewModel(FileService fileService, LocalizationService localization, Func<string?> folderRootProvider)
     {
@@ -94,17 +95,95 @@ public partial class SearchPanelViewModel : ObservableObject
     public bool ShowNoResultsHint => HasFolder && HasSearched && !IsSearching
         && !string.IsNullOrEmpty(SearchText) && ResultFiles.Count == 0 && !_patternInvalid;
 
-    partial void OnSearchTextChanged(string value) => RunSearchSoon(immediate: false);
+    partial void OnSearchTextChanged(string value)
+    {
+        if (!_restoringOptions) RunSearchSoon(immediate: false);
+    }
 
-    partial void OnMatchCaseChanged(bool value) => RunSearchSoon(immediate: true);
+    partial void OnMatchCaseChanged(bool value)
+    {
+        if (!_restoringOptions) RunSearchSoon(immediate: true);
+    }
 
-    partial void OnWholeWordChanged(bool value) => RunSearchSoon(immediate: true);
+    partial void OnWholeWordChanged(bool value)
+    {
+        if (!_restoringOptions) RunSearchSoon(immediate: true);
+    }
 
-    partial void OnUseRegexChanged(bool value) => RunSearchSoon(immediate: true);
+    partial void OnUseRegexChanged(bool value)
+    {
+        if (!_restoringOptions) RunSearchSoon(immediate: true);
+    }
 
-    partial void OnIncludePatternChanged(string value) => RunSearchSoon(immediate: false);
+    partial void OnIncludePatternChanged(string value)
+    {
+        if (!_restoringOptions) RunSearchSoon(immediate: false);
+    }
 
-    partial void OnExcludePatternChanged(string value) => RunSearchSoon(immediate: false);
+    partial void OnExcludePatternChanged(string value)
+    {
+        if (!_restoringOptions) RunSearchSoon(immediate: false);
+    }
+
+    /// <summary>当前搜索条件快照（供按文件夹持久化）</summary>
+    public FolderSearchOptions CaptureOptions() => new()
+    {
+        Query = SearchText,
+        MatchCase = MatchCase,
+        WholeWord = WholeWord,
+        UseRegex = UseRegex,
+        IncludePatterns = IncludePattern,
+        ExcludePatterns = ExcludePattern,
+    };
+
+    /// <summary>清空搜索条件与结果（切换到无历史条件的文件夹时由 MainWindowViewModel 调用）</summary>
+    public void ClearOptions()
+    {
+        _restoringOptions = true;
+        try
+        {
+            SearchText = "";
+            MatchCase = false;
+            WholeWord = false;
+            UseRegex = false;
+            IncludePattern = "";
+            ExcludePattern = "";
+        }
+        finally
+        {
+            _restoringOptions = false;
+        }
+        _cancellation?.Cancel();
+        ResultFiles.Clear();
+        HasSearched = false;
+        IsSearching = false;
+        UpdateStatusText();
+        UpdateStateFlags();
+    }
+
+    /// <summary>还原持久化的搜索条件（打开文件夹时由 MainWindowViewModel 调用）；逐字段赋值不触发重搜，还原完成后按当前条件搜索一次</summary>
+    public void RestoreOptions(FolderSearchOptions options)
+    {
+        _restoringOptions = true;
+        try
+        {
+            SearchText = options.Query;
+            MatchCase = options.MatchCase;
+            WholeWord = options.WholeWord;
+            UseRegex = options.UseRegex;
+            IncludePattern = options.IncludePatterns;
+            ExcludePattern = options.ExcludePatterns;
+        }
+        finally
+        {
+            _restoringOptions = false;
+        }
+        UpdateStateFlags();
+        if (!string.IsNullOrEmpty(SearchText))
+        {
+            _ = RunSearchAsync();
+        }
+    }
 
     /// <summary>文件夹打开/关闭时由 MainWindowViewModel 调用：刷新提示态，文件夹没了就取消搜索并清空</summary>
     public void RefreshFolderState()

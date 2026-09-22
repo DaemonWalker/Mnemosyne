@@ -34,12 +34,14 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ConfigService _configService;
     private readonly LocalizationService _localization;
     private readonly MainWindowViewModel _mainViewModel;
+    private readonly ThemeService _themeService;
 
-    public SettingsViewModel(ConfigService configService, LocalizationService localization, MainWindowViewModel mainViewModel, PluginService pluginService)
+    public SettingsViewModel(ConfigService configService, LocalizationService localization, MainWindowViewModel mainViewModel, PluginService pluginService, ThemeService themeService)
     {
         _configService = configService;
         _localization = localization;
         _mainViewModel = mainViewModel;
+        _themeService = themeService;
         AppSettings settings = configService.Settings;
 
         PluginGroups = pluginService.Plugins
@@ -205,11 +207,15 @@ public partial class SettingsViewModel : ObservableObject
 
     private void RebuildOptions()
     {
-        Themes =
-        [
-            new NamedOption(ThemeService.DarkThemeName, _localization.GetString("Loc.Settings.Theme.Dark")),
-            new NamedOption(ThemeService.LightThemeName, _localization.GetString("Loc.Settings.Theme.Light")),
-        ];
+        // 内置主题沿用本地化显示名；插件主题用其声明的 DisplayName（插件扫描异步，列表反映开窗那一刻）
+        Themes = _themeService.AvailableThemes
+            .Select(t => new NamedOption(t.Name, t.Name switch
+            {
+                ThemeService.DarkThemeName => _localization.GetString("Loc.Settings.Theme.Dark"),
+                ThemeService.LightThemeName => _localization.GetString("Loc.Settings.Theme.Light"),
+                _ => t.DisplayName,
+            }))
+            .ToArray();
         Languages =
         [
             new NamedOption(LocalizationService.ChineseLanguage, _localization.GetString("Loc.Settings.Language.Chinese")),

@@ -9,16 +9,19 @@ Mnemosyne.sln
 src/
   Mnemosyne/                        # WPF 主程序（net10.0-windows）
   Mnemosyne.Plugin.Abstractions/    # 插件接口（netstandard2.0，插件与主程序共同引用）
-plugins/                            # 内置格式化插件，构建输出到主程序 plugins/ 目录
-  Mnemosyne.Formatters.Json/
+plugins/                            # 内置插件，构建输出到主程序 plugins/ 目录
+  Mnemosyne.Formatters.Json/        # 格式化能力（ICodeFormatter）
   Mnemosyne.Formatters.Xml/
   Mnemosyne.Formatters.Html/
+  Mnemosyne.Languages.Core/         # 语言能力（ILanguageContribution）：Lexilla 系语言定义
+  Mnemosyne.Languages.DataWeave/    # 语言能力 + 自定义词法器（ICustomLexer）
+  Mnemosyne.Themes.Solarized/       # 主题能力（IThemeContribution）+ 随 dll 的 xaml 资源字典
 docs/                               # 本文档目录
 ```
 
 - `Mnemosyne.Plugin.Abstractions` 用 netstandard2.0，保证第三方插件可用任意 .NET 版本编写
-- 三个内置格式化器引用 Abstractions，**不引用主程序**，模拟真实插件
-- 主程序通过反射加载插件，**不直接引用**插件项目（构建事件拷贝 dll 到输出目录 `plugins/` 即可）
+- 内置插件引用 Abstractions，**不引用主程序**，模拟真实插件
+- 主程序通过反射加载插件，**不直接引用**插件项目（构建事件拷贝 dll 到输出目录 `plugins/` 即可；主题插件另拷 xaml 资源字典）
 
 ## 2. NuGet 依赖
 
@@ -48,12 +51,14 @@ src/Mnemosyne/
     ConfigService.cs         # settings.json 读写（便携模式：exe 同目录）
     FileService.cs           # 打开/保存/编码检测/分块读取
     SearchService.cs         # 页内搜索 + 文件夹扫描（后台 Task）
-    PluginService.cs         # 插件发现与加载，单个插件异常不影响主程序
+    PluginService.cs         # 插件发现与加载，按能力登记（格式化/语言/词法器/主题），单个插件异常不影响主程序
+    CustomLexerRegistry.cs   # 插件自定义词法器注册表 + 语义→主题色映射
     SessionService.cs        # 热退出缓存 + 会话恢复
     RecentFilesService.cs    # 最近打开列表
-    ThemeService.cs          # 深/浅主题资源字典切换
+    ThemeService.cs          # 主题资源字典切换（内置 Dark/Light + 插件主题，缺键回退 Dark）
     LocalizationService.cs   # 中英文资源切换
-  Models/                    # 纯数据类型（Document、SearchResult、AppSettings 等）
+  Models/                    # 纯数据类型（Document、SearchResult、AppSettings 等）；
+                               LanguageRegistry 为动态注册表：内置仅 Plain Text，具体语言由插件扫描后登记
   Theming/                   # Dark.xaml / Light.xaml 资源字典
   i18n/                      # zh-CN / en 资源
   plugins/                   # 输出目录，插件 dll 放这里
@@ -73,24 +78,29 @@ src/Mnemosyne/
 ### 4.2 ScintillaHost 封装
 - 一个 `ScintillaHost` 用户控件包一个文档的编辑状态；每个 Tab 一个实例
 - 主题切换时遍历所有实例重设 Scintilla 样式颜色
-- 语法高亮：Lexer 名称 ↔ 扩展名映射表集中在 Models 中；DataWeave 例外——无 Lexilla 内置 Lexer，用 container lexer + `Services/DataWeaveLexer`（纯文本分词，不依赖 ScintillaNET）在 StyleNeeded 回调上色
+- 语法高亮：语言定义全部由插件贡献（ILanguageContribution），Lexer 名称 ↔ 扩展名/文件名映射集中在 LanguageRegistry 动态注册表；插件自定义词法器（ICustomLexer，如 DataWeave）用 container lexer 在 StyleNeeded 回调里分词上色，样式按语义映射到主题色
 
 ### 4.3 线程模型
 - 文件夹搜索、大文件读取、编码探测：后台 `Task`，通过 `IProgress<T>` 或 `Dispatcher` 回 UI
 - 所有后台任务持有 `CancellationToken`，面板关闭/任务替换时取消旧任务
 
 ### 4.4 插件平台（Abstractions 内容）
-- 三层模型：`IMnemosynePlugin`（插件身份：Id/DisplayName/Version/Description + `Settings` 声明 + `Initialize(IPluginContext)`）→ 能力接口（当前为 `ICodeFormatter`，一个插件类可实现多个能力接口）→ `PluginSettingDescriptor`（声明式设置 schema，插件不碰 UI）
-- `ICodeFormatter`：`string Format(string input, FormatterOptions options)` + `LanguageIds`
+- 三层模型：`IMnemosynePlugin`（插件身份：Id/DisplayName/Version/Description + `Settings` 声明 + `Initialize(IPluginContext)`）→ 能力接口（一个插件类可实现多个能力接口）→ `PluginSettingDescriptor`（声明式设置 schema，插件不碰 UI）
+- 能力接口：
+  - `ICodeFormatter`：`string Format(string input, FormatterOptions options)` + `LanguageIds`
+  - `ILanguageContribution`：语言定义列表（显示名、Lexer 名、扩展名、精确文件名、关键字表、FormatterId、折叠支持）
+  - `ICustomLexer`：自定义词法器（`Name` + `Styles` 语义样式表 + `Tokenize(text) → LexerStyleSpan[]`），语言的 LexerName 引用它即走 container lexer
+  - `IThemeContribution`：主题列表（Name/DisplayName/相对 dll 的 xaml 路径），宿主以 file URI 加载并以 Dark 字典垫底兜底缺键
 - `IPluginContext`：宿主注入——`GetSetting(key)` 现读设置（descriptor 默认值回落）、`PluginDataDirectory`（cache/plugins/&lt;Id&gt;/）、`Log`（汇入 plugin.log）
-- 插件加载：`AssemblyLoadContext` 默认上下文 + `Assembly.LoadFrom`，逐个 try/catch，失败记入日志不中断；实例化后调 `Initialize`，再按能力登记，语言标识冲突后到忽略
+- 插件加载：`AssemblyLoadContext` 默认上下文 + `Assembly.LoadFrom`，逐个 try/catch，失败记入日志不中断；实例化后调 `Initialize`，再按能力登记。冲突规则：格式化器语言标识/词法器名 → 后到插件整体忽略；语言的扩展名/文件名、主题名 → 仅跳过冲突条目，均记日志
+- 语言/词法器在扫描结束后一次性推入 LanguageRegistry/CustomLexerRegistry（读侧无锁快照）；启动顺序为先扫描再恢复会话，保证恢复的文件拿到语言高亮
 - 插件设置：`AppSettings.PluginSettings`（插件 Id → 键 → JsonElement）持久化于 settings.json；设置窗口"插件"分区按 descriptor 类型动态渲染（Bool/String/Int/Enum/Path），保存随"保存设定"批量落盘
 
 ### 4.5 便携模式数据布局（exe 同目录）
 - `config/settings.json`：全部用户设置（含 PluginSettings 节）
 - `config/recent.json`：最近打开列表
 - `cache/hotexit/`：未保存文档暂存（文件名做哈希映射，附元数据 json）
-- `cache/session.json`：上次会话（打开的 Tab、文件夹、活动 Tab）
+- `cache/session.json`：上次会话（打开的 Tab、文件夹、活动 Tab、各文件夹的全局搜索条件）
 - `cache/plugin.log`：插件加载/运行日志
 - `cache/plugins/<插件 Id>/`：插件私有数据目录
 

@@ -27,6 +27,10 @@ public partial class MainWindowViewModel : ObservableObject
     private GridLength _lastSidebarWidth = new(260);
     private bool _restoringSession;
     private DispatcherTimer? _sessionDebounce;
+    // 各文件夹最近一次的全局搜索条件（规范化全路径为键），随会话持久化到 cache/session.json
+    private readonly Dictionary<string, FolderSearchOptions> _folderSearchStates = new(StringComparer.OrdinalIgnoreCase);
+    // 搜索面板当前内容所属的文件夹根（文件夹切换时把面板条件归属回旧文件夹）
+    private string? _lastSearchFolderRoot;
     private readonly HashSet<DocumentViewModel> _externalPrompting = [];
     // 正在打开中的路径（异步加载期间去重），防止同一文件从文件夹/查找等入口并发打开出重复 Tab
     private readonly Dictionary<string, Task<DocumentViewModel?>> _openingDocuments = new(StringComparer.OrdinalIgnoreCase);
@@ -42,6 +46,15 @@ public partial class MainWindowViewModel : ObservableObject
         _pluginService = pluginService;
         _markdownRenderer = markdownRenderer;
         _sessionService = sessionService;
+        // 各文件夹的搜索条件随会话持久化；构造时即载入内存字典——命令行打开文件夹先于 RestoreSessionAsync
+        // 触发 SaveSession，若届时字典为空会把磁盘上其他文件夹的条目整体覆盖丢失
+        if (_sessionService.LoadSession()?.FolderSearches is { } savedSearches)
+        {
+            foreach (KeyValuePair<string, FolderSearchOptions> pair in savedSearches)
+            {
+                _folderSearchStates[pair.Key] = pair.Value;
+            }
+        }
         _settings = configService.Settings;
         _wordWrap = _settings.WordWrap;
         _showWhitespace = _settings.ShowWhitespace;
@@ -56,10 +69,40 @@ public partial class MainWindowViewModel : ObservableObject
         {
             if (e.PropertyName == nameof(FileTreeViewModel.RootNode))
             {
+                // 面板里的条件归属旧文件夹：搜过就记忆，清空过就移除条目
+                if (_lastSearchFolderRoot is not null)
+                {
+                    if (SearchPanel.HasSearched) _folderSearchStates[_lastSearchFolderRoot] = SearchPanel.CaptureOptions();
+                    else _folderSearchStates.Remove(_lastSearchFolderRoot);
+                }
+                string? newRoot = FileTree.RootNode?.FullPath;
+                _lastSearchFolderRoot = newRoot;
                 SearchPanel.RefreshFolderState();
+                // 再次打开该文件夹时还原上次的全局搜索条件；无历史条件的文件夹给一块干净的面板
+                if (newRoot is not null && _folderSearchStates.TryGetValue(newRoot, out FolderSearchOptions? searchOptions))
+                {
+                    SearchPanel.RestoreOptions(searchOptions);
+                }
+                else if (newRoot is not null)
+                {
+                    SearchPanel.ClearOptions();
+                }
                 UpdateDocumentDisplayPaths();
                 SaveSession();
                 UpdateWindowTitle();
+            }
+        };
+        // 搜索条件变化经防抖落入会话，按文件夹记忆
+        SearchPanel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(SearchPanelViewModel.SearchText)
+                or nameof(SearchPanelViewModel.MatchCase)
+                or nameof(SearchPanelViewModel.WholeWord)
+                or nameof(SearchPanelViewModel.UseRegex)
+                or nameof(SearchPanelViewModel.IncludePattern)
+                or nameof(SearchPanelViewModel.ExcludePattern))
+            {
+                ScheduleSessionSave();
             }
         };
         Documents.CollectionChanged += OnDocumentsChanged;
@@ -979,6 +1022,14 @@ public partial class MainWindowViewModel : ObservableObject
     {
         // Markdown 预览 Tab 不进会话（启动时不恢复预览，用户可重新打开）
         List<DocumentViewModel> tabs = Documents.Where(d => d is not MarkdownPreviewViewModel).ToList();
+        string? openFolder = FileTree.RootNode?.FullPath;
+        if (openFolder is not null)
+        {
+            // 只记忆真正执行过搜索的条件（HasSearched 保证查询非空）；
+            // 用户清空条件（HasSearched 复位）或从未搜索的文件夹不留条目
+            if (SearchPanel.HasSearched) _folderSearchStates[openFolder] = SearchPanel.CaptureOptions();
+            else _folderSearchStates.Remove(openFolder);
+        }
         return new SessionState
         {
             Tabs = tabs.Select(d => new SessionTab
@@ -989,7 +1040,8 @@ public partial class MainWindowViewModel : ObservableObject
                 CaretPosition = d.Editor.CaretPosition,
             }).ToList(),
             ActiveTabIndex = ActiveDocument is not null ? tabs.IndexOf(ActiveDocument) : -1,
-            OpenFolder = FileTree.RootNode?.FullPath,
+            OpenFolder = openFolder,
+            FolderSearches = new Dictionary<string, FolderSearchOptions>(_folderSearchStates),
         };
     }
 

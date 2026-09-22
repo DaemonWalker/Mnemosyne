@@ -1,6 +1,6 @@
 namespace Mnemosyne.Models;
 
-/// <summary>上次会话状态（cache/session.json）：打开的 Tab、活动 Tab、打开的文件夹</summary>
+/// <summary>上次会话状态（cache/session.json）：打开的 Tab、活动 Tab、打开的文件夹、各文件夹的全局搜索条件</summary>
 public class SessionState
 {
     public List<SessionTab> Tabs { get; set; } = [];
@@ -10,6 +10,9 @@ public class SessionState
 
     /// <summary>侧边栏打开的文件夹；null 表示未打开</summary>
     public string? OpenFolder { get; set; }
+
+    /// <summary>各文件夹（规范化全路径为键）最近一次全局搜索的条件，再次打开该文件夹时还原</summary>
+    public Dictionary<string, FolderSearchOptions> FolderSearches { get; set; } = [];
 }
 
 public class SessionTab

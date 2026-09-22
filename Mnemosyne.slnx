@@ -3,6 +3,9 @@
     <Project Path="plugins/Mnemosyne.Formatters.Html/Mnemosyne.Formatters.Html.csproj" />
     <Project Path="plugins/Mnemosyne.Formatters.Json/Mnemosyne.Formatters.Json.csproj" />
     <Project Path="plugins/Mnemosyne.Formatters.Xml/Mnemosyne.Formatters.Xml.csproj" />
+    <Project Path="plugins/Mnemosyne.Languages.Core/Mnemosyne.Languages.Core.csproj" />
+    <Project Path="plugins/Mnemosyne.Languages.DataWeave/Mnemosyne.Languages.DataWeave.csproj" />
+    <Project Path="plugins/Mnemosyne.Themes.Solarized/Mnemosyne.Themes.Solarized.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Mnemosyne.Plugin.Abstractions/Mnemosyne.Plugin.Abstractions.csproj" />

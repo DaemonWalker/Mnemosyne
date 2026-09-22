@@ -39,6 +39,8 @@ try {
         $publishPlugins = Join-Path $outDir 'plugins'
         New-Item -ItemType Directory -Force -Path $publishPlugins | Out-Null
         Copy-Item (Join-Path $builtPlugins 'Mnemosyne.*.dll') $publishPlugins
+        # Theme plugins ship loose xaml resource dictionaries next to their dll.
+        Copy-Item (Join-Path $builtPlugins '*.xaml') $publishPlugins -ErrorAction SilentlyContinue
         # Abstractions is already deployed beside the main exe; plugins/ must not duplicate it.
         Remove-Item (Join-Path $publishPlugins 'Mnemosyne.Plugin.Abstractions.dll') -ErrorAction SilentlyContinue
 

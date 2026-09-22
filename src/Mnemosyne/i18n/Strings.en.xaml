@@ -66,6 +66,14 @@
     <sys:String x:Key="Loc.Error.SearchFolder.Message">Error searching folder "{0}". {1}</sys:String>
 
     <sys:String x:Key="Loc.Editor.Empty">Drop files here, or press Ctrl+O to open a file</sys:String>
+    <sys:String x:Key="Loc.Editor.Undo">Undo</sys:String>
+    <sys:String x:Key="Loc.Editor.Redo">Redo</sys:String>
+    <sys:String x:Key="Loc.Editor.Cut">Cut</sys:String>
+    <sys:String x:Key="Loc.Editor.Copy">Copy</sys:String>
+    <sys:String x:Key="Loc.Editor.Paste">Paste</sys:String>
+    <sys:String x:Key="Loc.Editor.SelectAll">Select All</sys:String>
+    <sys:String x:Key="Loc.Editor.CollapseAll">Collapse All</sys:String>
+    <sys:String x:Key="Loc.Editor.ExpandAll">Expand All</sys:String>
 
     <sys:String x:Key="Loc.Tab.Untitled">Untitled</sys:String>
 

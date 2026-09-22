@@ -11,15 +11,15 @@
 - **打开**：单文件 / 文件夹（侧边栏文件树）/ 拖拽 / 命令行，单实例转发，最近打开列表，可选 Windows 右键菜单集成
 - **编辑**：多光标（Ctrl+点击、Alt+拖拽列选择、Ctrl+D）、缩进自动检测、CRLF/LF 显示与转换、自动换行、空白字符可视化、代码折叠
 - **搜索**：页内查找替换（大小写 / 全字 / 正则，可组合）；文件夹内全文搜索（glob 包含/排除、后台按需扫描、可取消、结果增量显示）
-- **语法高亮**：Scintilla 全部 Lexer + 自研 DataWeave 词法器（Lexilla 未覆盖），按扩展名自动匹配，弹窗搜索切换语言
+- **语法高亮**：语言定义全部由插件提供——Scintilla 全部 Lexer + 自研 DataWeave 词法器（Lexilla 未覆盖），按扩展名/文件名自动匹配，弹窗搜索切换语言
 - **编码**：UTF-8 优先 + BOM + UDE 自动探测（GBK 等），状态栏手动切换重载
 - **Markdown**：编辑高亮 + 预览新 Tab（Markdig → WPF 原生渲染，不用 WebView2），保存后自动刷新
-- **格式化插件**：约定接口 + 反射加载 `plugins/` 目录，内置 JSON / XML / HTML 格式化器
-- **插件平台**：插件 = 身份（IMnemosynePlugin）+ 声明式设置（进设置页"插件"分区）+ 能力接口（当前为代码格式化）
+- **插件平台**：约定接口 + 反射加载 `plugins/` 目录；插件 = 身份（IMnemosynePlugin）+ 声明式设置（进设置页"插件"分区）+ 能力接口（格式化 / 语言与自定义词法器 / 主题）
+- **内置插件**：JSON / XML / HTML 格式化器、全部语言定义（含 DataWeave 词法器）、Solarized Dark 主题
 - **集成终端**：底部可折叠面板（Ctrl+`），ConPTY 后端 + 自绘渲染，默认 PowerShell 可在设置中切换 cmd/pwsh，配色跟随主题
 - **大文件**：超阈值（默认 50MB 可调）进入分块边读边显模式，带进度与取消
 - **热退出**：退出不提示保存，未保存修改暂存本地，重启自动恢复；会话记住 Tab / 文件夹 / 光标；外部修改提示重载
-- **主题与语言**：深 / 浅双主题，中 / 英双语界面，设置中即时切换
+- **主题与语言**：深 / 浅双主题 + 主题插件（如内置 Solarized Dark），中 / 英双语界面，设置中即时切换
 
 明确不做：连体字、Minimap、分栏、文件夹级替换、后台索引、定时自动保存、网络更新、命令面板、打印、拼写检查、宏、Git；终端内搜索 / 超链接点击 / 会话持久化亦不做。
 
@@ -55,7 +55,7 @@ plugins/               # 插件 dll（放这里即被加载）
 ```
 src/Mnemosyne/                      # WPF 主程序
 src/Mnemosyne.Plugin.Abstractions/  # 插件接口（netstandard2.0）
-plugins/                            # 内置格式化器（Json / Xml / Html）
+plugins/                            # 内置插件（格式化 Json/Xml/Html、语言 Core/DataWeave、主题 Solarized）
 docs/                               # 需求 / 架构 / 代码规范 / 实现笔记
 scripts/                            # 回归冒烟、冷启动测量、图标生成
 build.ps1                           # 一键构建 / 发布

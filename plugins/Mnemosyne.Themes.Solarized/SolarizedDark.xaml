@@ -1,0 +1,106 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Solarized Dark（Ethan Schoonover 调色板）。键集合与内置 Dark.xaml 全量一致：
+         主程序加载插件主题时以 Dark 垫底兜底缺键，但 Brush.* 在字典内 StaticResource 解析，
+         须自带 Brush 定义才能改变画刷颜色（以 Dark.xaml 全文为模板改色）。 -->
+
+    <Color x:Key="Color.Window.Background">#FF002B36</Color>
+    <Color x:Key="Color.Window.Foreground">#FF839496</Color>
+    <Color x:Key="Color.Control.Background">#FF073642</Color>
+    <Color x:Key="Color.Control.Border">#FF0E4453</Color>
+    <Color x:Key="Color.Accent">#FF268BD2</Color>
+    <Color x:Key="Color.Secondary.Foreground">#FF586E75</Color>
+    <Color x:Key="Color.ActivityBar.Background">#FF073642</Color>
+    <Color x:Key="Color.ActivityBar.Foreground">#FF657B83</Color>
+    <Color x:Key="Color.ActivityBar.ActiveForeground">#FF93A1A1</Color>
+    <Color x:Key="Color.Hover.Background">#FF0E4453</Color>
+    <Color x:Key="Color.Sidebar.Background">#FF073642</Color>
+    <Color x:Key="Color.Sidebar.Selection">#FF134B5C</Color>
+    <Color x:Key="Color.TabBar.Background">#FF073642</Color>
+    <Color x:Key="Color.TitleBar.Background">#FF073642</Color>
+    <Color x:Key="Color.CaptionButton.CloseHover">#FFDC322F</Color>
+    <Color x:Key="Color.StatusBar.Foreground">#FFFDF6E3</Color>
+    <Color x:Key="Color.ScrollBar.Thumb">#FF586E75</Color>
+    <Color x:Key="Color.ScrollBar.ThumbHover">#FF657B83</Color>
+    <Color x:Key="Color.ScrollBar.ThumbPressed">#FF6C7B84</Color>
+
+    <Color x:Key="Color.Editor.Background">#FF002B36</Color>
+    <Color x:Key="Color.Editor.Foreground">#FF839496</Color>
+    <Color x:Key="Color.Editor.LineNumber">#FF586E75</Color>
+    <Color x:Key="Color.Editor.CaretLine">#FF073642</Color>
+    <Color x:Key="Color.Editor.FoldMargin">#FF002B36</Color>
+    <Color x:Key="Color.Editor.FoldMarker">#FF586E75</Color>
+    <Color x:Key="Color.Editor.Selection">#FF134B5C</Color>
+    <Color x:Key="Color.Editor.IndentGuide">#FF0E4453</Color>
+    <Color x:Key="Color.Editor.Caret">#FF93A1A1</Color>
+    <Color x:Key="Color.Editor.Whitespace">#FF0E4453</Color>
+    <Color x:Key="Color.Editor.Keyword">#FF859900</Color>
+    <Color x:Key="Color.Editor.Comment">#FF586E75</Color>
+    <Color x:Key="Color.Editor.String">#FF2AA198</Color>
+    <Color x:Key="Color.Editor.Number">#FFD33682</Color>
+    <Color x:Key="Color.Editor.Preprocessor">#FFCB4B16</Color>
+    <Color x:Key="Color.Editor.Type">#FFB58900</Color>
+    <Color x:Key="Color.Editor.Function">#FF268BD2</Color>
+    <Color x:Key="Color.Editor.Tag">#FF268BD2</Color>
+    <Color x:Key="Color.Editor.Attribute">#FF93A1A1</Color>
+    <Color x:Key="Color.Editor.Error">#FFDC322F</Color>
+    <Color x:Key="Color.Editor.FindMatch">#FFB58900</Color>
+    <Color x:Key="Color.Editor.FindMatchCurrent">#FFCB4B16</Color>
+    <Color x:Key="Color.Editor.Markdown.Header">#FF268BD2</Color>
+    <Color x:Key="Color.Editor.Markdown.Code">#FF2AA198</Color>
+    <Color x:Key="Color.Editor.Markdown.Quote">#FF586E75</Color>
+    <Color x:Key="Color.Editor.Markdown.Link">#FF268BD2</Color>
+    <Color x:Key="Color.Editor.Markdown.List">#FFD33682</Color>
+    <Color x:Key="Color.Editor.Markdown.Meta">#FFCB4B16</Color>
+
+    <Color x:Key="Color.Terminal.Background">#FF002B36</Color>
+    <Color x:Key="Color.Terminal.Foreground">#FF839496</Color>
+    <Color x:Key="Color.Terminal.Cursor">#FF93A1A1</Color>
+    <Color x:Key="Color.Terminal.Selection">#FF073642</Color>
+    <Color x:Key="Color.Terminal.Palette0">#FF073642</Color>
+    <Color x:Key="Color.Terminal.Palette1">#FFDC322F</Color>
+    <Color x:Key="Color.Terminal.Palette2">#FF859900</Color>
+    <Color x:Key="Color.Terminal.Palette3">#FFB58900</Color>
+    <Color x:Key="Color.Terminal.Palette4">#FF268BD2</Color>
+    <Color x:Key="Color.Terminal.Palette5">#FFD33682</Color>
+    <Color x:Key="Color.Terminal.Palette6">#FF2AA198</Color>
+    <Color x:Key="Color.Terminal.Palette7">#FFEEE8D5</Color>
+    <Color x:Key="Color.Terminal.Palette8">#FF002B36</Color>
+    <Color x:Key="Color.Terminal.Palette9">#FFCB4B16</Color>
+    <Color x:Key="Color.Terminal.Palette10">#FF586E75</Color>
+    <Color x:Key="Color.Terminal.Palette11">#FF657B83</Color>
+    <Color x:Key="Color.Terminal.Palette12">#FF839496</Color>
+    <Color x:Key="Color.Terminal.Palette13">#FF6C71C4</Color>
+    <Color x:Key="Color.Terminal.Palette14">#FF93A1A1</Color>
+    <Color x:Key="Color.Terminal.Palette15">#FFFDF6E3</Color>
+
+    <SolidColorBrush x:Key="Brush.Window.Background" Color="{StaticResource Color.Window.Background}" />
+    <SolidColorBrush x:Key="Brush.Window.Foreground" Color="{StaticResource Color.Window.Foreground}" />
+    <SolidColorBrush x:Key="Brush.Control.Background" Color="{StaticResource Color.Control.Background}" />
+    <SolidColorBrush x:Key="Brush.Control.Border" Color="{StaticResource Color.Control.Border}" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Color.Accent}" />
+    <SolidColorBrush x:Key="Brush.Secondary.Foreground" Color="{StaticResource Color.Secondary.Foreground}" />
+    <SolidColorBrush x:Key="Brush.ActivityBar.Background" Color="{StaticResource Color.ActivityBar.Background}" />
+    <SolidColorBrush x:Key="Brush.ActivityBar.Foreground" Color="{StaticResource Color.ActivityBar.Foreground}" />
+    <SolidColorBrush x:Key="Brush.ActivityBar.ActiveForeground" Color="{StaticResource Color.ActivityBar.ActiveForeground}" />
+    <SolidColorBrush x:Key="Brush.Hover.Background" Color="{StaticResource Color.Hover.Background}" />
+    <SolidColorBrush x:Key="Brush.Sidebar.Background" Color="{StaticResource Color.Sidebar.Background}" />
+    <SolidColorBrush x:Key="Brush.Sidebar.Selection" Color="{StaticResource Color.Sidebar.Selection}" />
+    <SolidColorBrush x:Key="Brush.TabBar.Background" Color="{StaticResource Color.TabBar.Background}" />
+    <SolidColorBrush x:Key="Brush.TitleBar.Background" Color="{StaticResource Color.TitleBar.Background}" />
+    <SolidColorBrush x:Key="Brush.CaptionButton.CloseHover" Color="{StaticResource Color.CaptionButton.CloseHover}" />
+    <SolidColorBrush x:Key="Brush.StatusBar.Background" Color="{StaticResource Color.Accent}" />
+    <SolidColorBrush x:Key="Brush.StatusBar.Foreground" Color="{StaticResource Color.StatusBar.Foreground}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.Thumb" Color="{StaticResource Color.ScrollBar.Thumb}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.ThumbHover" Color="{StaticResource Color.ScrollBar.ThumbHover}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.ThumbPressed" Color="{StaticResource Color.ScrollBar.ThumbPressed}" />
+    <SolidColorBrush x:Key="Brush.Find.CountError" Color="{StaticResource Color.Editor.Error}" />
+    <SolidColorBrush x:Key="Brush.Markdown.Link" Color="{StaticResource Color.Editor.Markdown.Link}" />
+    <SolidColorBrush x:Key="Brush.Markdown.Quote" Color="{StaticResource Color.Editor.Markdown.Quote}" />
+    <SolidColorBrush x:Key="Brush.Terminal.Background" Color="{StaticResource Color.Terminal.Background}" />
+    <SolidColorBrush x:Key="Brush.Terminal.Foreground" Color="{StaticResource Color.Terminal.Foreground}" />
+    <SolidColorBrush x:Key="Brush.Terminal.Cursor" Color="{StaticResource Color.Terminal.Cursor}" />
+    <SolidColorBrush x:Key="Brush.Terminal.Selection" Color="{StaticResource Color.Terminal.Selection}" />
+
+</ResourceDictionary>
