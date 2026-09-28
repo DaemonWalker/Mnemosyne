@@ -37,6 +37,8 @@
         <CommandBinding Command="{x:Static cmd:AppCommands.CloseTab}" Executed="CloseTabCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" Executed="SelectNextOccurrenceCommand_Executed" CanExecute="SaveCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.FormatDocument}" Executed="FormatDocumentCommand_Executed" CanExecute="FormatDocumentCommand_CanExecute" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.PasteAsMarkdown}" Executed="PasteAsMarkdownCommand_Executed" CanExecute="PasteAsMarkdownCommand_CanExecute" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.PastePlainText}" Executed="PastePlainTextCommand_Executed" CanExecute="PasteAsMarkdownCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenMarkdownPreview}" Executed="OpenMarkdownPreviewCommand_Executed" CanExecute="OpenMarkdownPreviewCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.NewFile}" Executed="NewFileCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenSettings}" Executed="OpenSettingsCommand_Executed" />
@@ -83,6 +85,8 @@
                 <Separator />
                 <MenuItem Header="{DynamicResource Loc.Menu.Edit.SelectNextOccurrence}" Command="{x:Static cmd:AppCommands.SelectNextOccurrence}" />
                 <Separator />
+                <MenuItem Header="{DynamicResource Loc.Menu.Edit.PastePlainText}" Command="{x:Static cmd:AppCommands.PastePlainText}" />
+                <MenuItem Header="{DynamicResource Loc.Menu.Edit.PasteAsMarkdown}" Command="{x:Static cmd:AppCommands.PasteAsMarkdown}" />
                 <MenuItem Header="{DynamicResource Loc.Menu.Edit.FormatDocument}" Command="{x:Static cmd:AppCommands.FormatDocument}" />
             </MenuItem>
             <MenuItem Header="{DynamicResource Loc.Menu.View}">

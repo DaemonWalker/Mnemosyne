@@ -78,6 +78,7 @@ public partial class SettingsViewModel : ObservableObject
         _shellFileContextMenu = settings.ShellFileContextMenu;
         _shellFolderContextMenu = settings.ShellFolderContextMenu;
         _selectedTerminalShell = settings.TerminalShell;
+        _autoConvertHtmlPaste = settings.AutoConvertHtmlPaste;
     }
 
     public IReadOnlyList<FontOption> FontFamilies { get; }
@@ -155,6 +156,9 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string? _selectedTerminalShell;
 
+    [ObservableProperty]
+    private bool _autoConvertHtmlPaste;
+
     /// <summary>默认终端 shell 候选（显示名即命令名，无需本地化）</summary>
     public IReadOnlyList<string> TerminalShells { get; } = ["powershell", "pwsh", "cmd"];
 
@@ -193,6 +197,7 @@ public partial class SettingsViewModel : ObservableObject
         snapshot.ShellFileContextMenu = ShellFileContextMenu;
         snapshot.ShellFolderContextMenu = ShellFolderContextMenu;
         snapshot.TerminalShell = SelectedTerminalShell ?? snapshot.TerminalShell;
+        snapshot.AutoConvertHtmlPaste = AutoConvertHtmlPaste;
         ApplyPluginSettings(snapshot);
         _mainViewModel.ApplyAllSettings(snapshot);
         CloseRequested?.Invoke(true);

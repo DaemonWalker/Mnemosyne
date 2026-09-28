@@ -25,6 +25,8 @@
     <sys:String x:Key="Loc.Menu.Edit.Replace">_Replace</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SearchInFolder">Find in F_older</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SelectNextOccurrence">Select _Next Occurrence</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.PasteAsMarkdown">_Paste as Markdown</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.PastePlainText">Paste plain _text</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.FormatDocument">For_mat Document</sys:String>
     <sys:String x:Key="Loc.Menu.View">_View</sys:String>
     <sys:String x:Key="Loc.Menu.View.WordWrap">Word Wrap</sys:String>
@@ -71,6 +73,8 @@
     <sys:String x:Key="Loc.Editor.Cut">Cut</sys:String>
     <sys:String x:Key="Loc.Editor.Copy">Copy</sys:String>
     <sys:String x:Key="Loc.Editor.Paste">Paste</sys:String>
+    <sys:String x:Key="Loc.Editor.PasteAsMarkdown">Paste as Markdown</sys:String>
+    <sys:String x:Key="Loc.Editor.PastePlainText">Paste plain text</sys:String>
     <sys:String x:Key="Loc.Editor.SelectAll">Select All</sys:String>
     <sys:String x:Key="Loc.Editor.CollapseAll">Collapse All</sys:String>
     <sys:String x:Key="Loc.Editor.ExpandAll">Expand All</sys:String>
@@ -108,6 +112,7 @@
     <sys:String x:Key="Loc.Settings.ShowWhitespace">Show Whitespace</sys:String>
     <sys:String x:Key="Loc.Settings.SelectionHighlightMatchCase">Selection highlight: match case</sys:String>
     <sys:String x:Key="Loc.Settings.SelectionHighlightWholeWord">Selection highlight: whole word</sys:String>
+    <sys:String x:Key="Loc.Settings.AutoConvertHtmlPaste">Auto-convert pasted web content in Markdown documents</sys:String>
     <sys:String x:Key="Loc.Settings.HideDotFiles">Hide files and folders starting with .</sys:String>
     <sys:String x:Key="Loc.Settings.HideHiddenFiles">Hide files and folders with the hidden attribute</sys:String>
     <sys:String x:Key="Loc.Settings.UiFont">UI Font</sys:String>

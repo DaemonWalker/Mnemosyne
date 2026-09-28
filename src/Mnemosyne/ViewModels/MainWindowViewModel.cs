@@ -399,6 +399,7 @@ public partial class MainWindowViewModel : ObservableObject
         _settings.ShellFileContextMenu = settings.ShellFileContextMenu;
         _settings.ShellFolderContextMenu = settings.ShellFolderContextMenu;
         _settings.TerminalShell = settings.TerminalShell;
+        _settings.AutoConvertHtmlPaste = settings.AutoConvertHtmlPaste;
         _settings.PluginSettings = settings.PluginSettings;
 
         foreach (DocumentViewModel doc in Documents)

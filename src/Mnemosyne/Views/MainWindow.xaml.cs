@@ -222,6 +222,18 @@ public partial class MainWindow : Window
     // WinForms 子控件聚焦时 WPF 收不到快捷键，ScintillaHost 转发按键后在此匹配 AppCommands 手势
     private void OnEditorKeyDown(object? sender, WinForms.KeyEventArgs e)
     {
+        // 自动转换：设置开启且当前是 Markdown 文档时，普通 Ctrl+V 拦截含 HTML 的剪贴板
+        if (e.Control && !e.Shift && !e.Alt && e.KeyCode == WinForms.Keys.V
+            && sender is ScintillaHost host
+            && _viewModel.ActiveDocument is { } active
+            && ReferenceEquals(host, active.Editor)
+            && ShouldAutoConvertPaste(active)
+            && TryPasteHtmlAsMarkdown(host))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (!e.Control && !e.Alt) return;
         Key key = KeyInterop.KeyFromVirtualKey((int)e.KeyCode);
         ModifierKeys modifiers = ModifierKeys.None;
@@ -670,6 +682,41 @@ public partial class MainWindow : Window
         e.CanExecute = _viewModel.CanFormatActiveDocument;
     }
 
+    private void PasteAsMarkdownCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        DocumentViewModel? document = _viewModel.ActiveDocument;
+        if (document == null || document.Editor.IsReadOnly) return;
+        // 剪贴板无 HTML 时回退普通粘贴，保证命令始终可用
+        if (!TryPasteHtmlAsMarkdown(document.Editor)) document.Editor.Paste();
+    }
+
+    private void PasteAsMarkdownCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _viewModel.ActiveDocument is { } document && document.Editor.CanPaste;
+    }
+
+    // Scintilla 原生粘贴本就只取纯文本，此命令的意义是在自动转换开启时提供旁路
+    private void PastePlainTextCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        DocumentViewModel? document = _viewModel.ActiveDocument;
+        if (document == null || document.Editor.IsReadOnly) return;
+        document.Editor.Paste();
+    }
+
+    private bool ShouldAutoConvertPaste(DocumentViewModel document) =>
+        _configService.Settings.AutoConvertHtmlPaste
+        && string.Equals(document.Language.DisplayName, "Markdown", StringComparison.OrdinalIgnoreCase);
+
+    private bool TryPasteHtmlAsMarkdown(ScintillaHost editor)
+    {
+        IDataObject? data = Clipboard.GetDataObject();
+        if (data == null) return false;
+        string? html = HtmlFragmentReader.TryGetHtmlFragment(data);
+        if (html == null) return false;
+        editor.PasteConvertedText(HtmlToMarkdownConverter.Convert(html));
+        return true;
+    }
+
     // 编辑器内右键（Scintilla 内置英文菜单已在 ScintillaHost 关闭，改用本地化 WPF 菜单）
     private void OnEditorRightClick(object? sender, EventArgs e)
     {
@@ -694,7 +741,18 @@ public partial class MainWindow : Window
         menu.Items.Add(new Separator());
         AddItem("Loc.Editor.Cut", !editor.IsReadOnly && editor.HasSelection, editor.Cut);
         AddItem("Loc.Editor.Copy", editor.HasSelection, editor.Copy);
-        AddItem("Loc.Editor.Paste", editor.CanPaste, editor.Paste);
+        AddItem("Loc.Editor.Paste", editor.CanPaste, () =>
+        {
+            // 与 Ctrl+V 行为一致：Markdown 文档且设置开启时优先转换粘贴
+            DocumentViewModel? active = _viewModel.ActiveDocument;
+            if (active == null || !ShouldAutoConvertPaste(active) || !TryPasteHtmlAsMarkdown(editor))
+                editor.Paste();
+        });
+        AddItem("Loc.Editor.PasteAsMarkdown", editor.CanPaste, () =>
+        {
+            if (!TryPasteHtmlAsMarkdown(editor)) editor.Paste();
+        });
+        AddItem("Loc.Editor.PastePlainText", editor.CanPaste, editor.Paste);
         menu.Items.Add(new Separator());
         AddItem("Loc.Editor.SelectAll", true, editor.SelectAll);
         menu.Items.Add(new Separator());

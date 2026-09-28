@@ -23,6 +23,7 @@ public class AppSettings
     public bool ShellFileContextMenu { get; set; }
     public bool ShellFolderContextMenu { get; set; }
     public string TerminalShell { get; set; } = "powershell";
+    public bool AutoConvertHtmlPaste { get; set; } = true;
 
     /// <summary>插件设置：插件 Id → (设置键 → 值)。键值结构由各插件的 PluginSettingDescriptor 声明。</summary>
     public Dictionary<string, Dictionary<string, JsonElement>> PluginSettings { get; set; } = new();

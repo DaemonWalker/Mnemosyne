@@ -25,6 +25,8 @@
     <sys:String x:Key="Loc.Menu.Edit.Replace">替换(_R)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SearchInFolder">在文件夹中查找(_I)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.SelectNextOccurrence">选中下一个匹配项(_D)</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.PasteAsMarkdown">以 Markdown 粘贴(_P)</sys:String>
+    <sys:String x:Key="Loc.Menu.Edit.PastePlainText">纯文本粘贴(_T)</sys:String>
     <sys:String x:Key="Loc.Menu.Edit.FormatDocument">格式化文档(_M)</sys:String>
     <sys:String x:Key="Loc.Menu.View">视图(_V)</sys:String>
     <sys:String x:Key="Loc.Menu.View.WordWrap">自动换行</sys:String>
@@ -71,6 +73,8 @@
     <sys:String x:Key="Loc.Editor.Cut">剪切</sys:String>
     <sys:String x:Key="Loc.Editor.Copy">复制</sys:String>
     <sys:String x:Key="Loc.Editor.Paste">粘贴</sys:String>
+    <sys:String x:Key="Loc.Editor.PasteAsMarkdown">以 Markdown 粘贴</sys:String>
+    <sys:String x:Key="Loc.Editor.PastePlainText">纯文本粘贴</sys:String>
     <sys:String x:Key="Loc.Editor.SelectAll">全选</sys:String>
     <sys:String x:Key="Loc.Editor.CollapseAll">全部折叠</sys:String>
     <sys:String x:Key="Loc.Editor.ExpandAll">全部展开</sys:String>
@@ -108,6 +112,7 @@
     <sys:String x:Key="Loc.Settings.ShowWhitespace">显示空白字符</sys:String>
     <sys:String x:Key="Loc.Settings.SelectionHighlightMatchCase">选中内容高亮：区分大小写</sys:String>
     <sys:String x:Key="Loc.Settings.SelectionHighlightWholeWord">选中内容高亮：全字匹配</sys:String>
+    <sys:String x:Key="Loc.Settings.AutoConvertHtmlPaste">在 Markdown 文档中粘贴网页内容时自动转换</sys:String>
     <sys:String x:Key="Loc.Settings.HideDotFiles">隐藏以 . 开头的文件和文件夹</sys:String>
     <sys:String x:Key="Loc.Settings.HideHiddenFiles">隐藏具有隐藏属性的文件和文件夹</sys:String>
     <sys:String x:Key="Loc.Settings.UiFont">界面字体</sys:String>

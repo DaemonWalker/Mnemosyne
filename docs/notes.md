@@ -90,3 +90,14 @@
 - 单实例应用验证前必须 taskkill 清场，否则后续启动直接退出
 - keybd_event 注入在本环境常被吞；模态对话框自动化被禁止，相关弹窗靠人工点验
 - 锁屏 Backstop 窗口存在时：SendMessage 注入 WPF 元素无效，真实输入（SetCursorPos+mouse_event）可用但需重试；截图用 PrintWindow(PW_RENDERFULLCONTENT)，CopyFromScreen 在全屏游戏占用时截不到
+
+## 11. HTML 粘贴转换（以 Markdown 粘贴）
+
+- CF_HTML 的 `StartFragment`/`EndFragment` 是 **UTF-8 字节偏移**（从数据起始处计），须编码成字节数组再截取，直接按字符 Substring 会错位（`HtmlFragmentReader.ExtractFragment`）
+- 粘贴钩子只能加在宿主：普通 Ctrl+V 由 Scintilla 原生处理，拦截点在 `MainWindow.OnEditorKeyDown`（EditorKeyDown 桥接，匹配 AppCommands 手势之前），`e.Handled=true` 经 ScintillaHost 转 `SuppressKeyPress` 阻止原生粘贴
+- 转换器（`HtmlToMarkdownConverter`）是零依赖迷你 DOM，故意不走插件、不引解析库（便携/冷启动约束）；容错约定与格式化器一致：任何意外不抛异常，兜底退化为去标签纯文本
+- **`pre` 不按原文消费**：网页复制的代码块常带 `<span>`/`<code>` 着色标签，按正常元素解析后由 CollectRawText 拼接文本；空白保留靠渲染端不折叠实现（解析期文本节点已解码实体，拼接端不得二次解码）
+- Markdown 预览不渲染 `HtmlInline`（`MarkdownRenderService.AppendInline` 无该 case），故表格单元格内换行降级为空格而非 `<br>`；同理单元格内 `|` 须转义为 `\|`
+- colspan 展开为"首列内容 + 空单元格"，rowspan 忽略（pipe table 表达力的固有取舍）；首行恒作表头（Markdig pipe table 语法要求）
+- 列表项内用 tight 渲染（块间单换行）避免松散列表；嵌套列表续行按标记宽度缩进
+- `ReplaceSelection` 天然是单条撤销记录，转换粘贴可一次 Ctrl+Z 整体撤销

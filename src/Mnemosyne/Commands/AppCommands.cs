@@ -27,7 +27,17 @@ public static class AppCommands
 
     public static RoutedUICommand SelectNextOccurrence { get; } = Create(nameof(SelectNextOccurrence), Key.D);
 
-    public static RoutedUICommand OpenMarkdownPreview { get; } = Create(nameof(OpenMarkdownPreview), Key.V, ModifierKeys.Shift);
+    // 无快捷键（曾用 Ctrl+Shift+V，已让给纯文本粘贴）：仅视图菜单入口
+    public static RoutedUICommand OpenMarkdownPreview { get; } =
+        new(nameof(OpenMarkdownPreview), nameof(OpenMarkdownPreview), typeof(AppCommands));
+
+    // 无快捷键：Markdown 文档中普通 Ctrl+V 已默认转换粘贴（AutoConvertHtmlPaste），
+    // 此命令保留菜单入口，供非 Markdown 文档显式使用
+    public static RoutedUICommand PasteAsMarkdown { get; } =
+        new(nameof(PasteAsMarkdown), nameof(PasteAsMarkdown), typeof(AppCommands));
+
+    // Ctrl+Shift+V：强制纯文本粘贴（绕过 HTML→Markdown 自动转换）
+    public static RoutedUICommand PastePlainText { get; } = Create(nameof(PastePlainText), Key.V, ModifierKeys.Shift);
 
     // 无快捷键：仅菜单/编辑器右键入口（需求 4.11 未为其定义快捷键）
     public static RoutedUICommand FormatDocument { get; } =

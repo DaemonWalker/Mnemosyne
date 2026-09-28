@@ -428,6 +428,13 @@ public class ScintillaHost : WindowsFormsHost
 
     public void Paste() => _scintilla.Paste();
 
+    /// <summary>在光标处插入转换后的文本（替换当前选区）；ReplaceSelection 天然是单条撤销记录</summary>
+    public void PasteConvertedText(string text)
+    {
+        if (IsReadOnly) return;
+        _scintilla.ReplaceSelection(text);
+    }
+
     public void SelectAll() => _scintilla.SelectAll();
 
     /// <summary>当前是否启用了代码折叠（与 ConfigureFolding 的启用条件一致：语言支持且非大文件模式）</summary>

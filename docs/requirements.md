@@ -79,7 +79,8 @@
 - 界面语言：中文/英文，资源文件实现，设置中切换
 
 ### 4.11 编辑体验
-- 快捷键体系：Ctrl+N 新建、Ctrl+O 打开文件、Ctrl+Shift+O 打开文件夹、Ctrl+P 快速打开文件、Ctrl+S 保存、Ctrl+F 搜索、Ctrl+H 替换、Ctrl+Shift+F 文件夹搜索、Ctrl+W 关 Tab、Ctrl+D 选中下一个相同词、Ctrl+, 设置
+- 快捷键体系：Ctrl+N 新建、Ctrl+O 打开文件、Ctrl+Shift+O 打开文件夹、Ctrl+P 快速打开文件、Ctrl+S 保存、Ctrl+F 搜索、Ctrl+H 替换、Ctrl+Shift+F 文件夹搜索、Ctrl+W 关 Tab、Ctrl+D 选中下一个相同词、Ctrl+Shift+V 纯文本粘贴、Ctrl+, 设置
+- **HTML 粘贴转换**：Markdown 文档中普通 Ctrl+V 默认将剪贴板 HTML（网页复制）转为 Markdown 插入（可在设置中关闭）；Ctrl+Shift+V 强制纯文本粘贴旁路。覆盖表格（pipe table）、标题、有序/无序/任务列表、引用、代码块、加粗/斜体/删除线/行内代码、链接、图片引用；剪贴板无 HTML 时行为不变。非 Markdown 文档可用编辑菜单/右键菜单「以 Markdown 粘贴」显式转换。宿主内置实现（HtmlFragmentReader + HtmlToMarkdownConverter），不走插件、不引第三方解析库
 - Ctrl+P 快速打开文件（仿 VSCode）：模态弹窗按文件名/路径子串过滤；已打开文件夹时按需扫描全文件夹（复用文件夹搜索的排除规则，可取消、结果会话内缓存），未打开文件夹时列已打开 Tab 与最近文件
 - Tab：拖拽排序、中键关闭、右键菜单（关闭其他/关闭右侧/在资源管理器中打开）、空白处双击新建临时 Tab
 - 行尾符 CRLF/LF 显示与转换
