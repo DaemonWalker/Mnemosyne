@@ -34,6 +34,16 @@ public partial class FilePanelView : UserControl
         ((TreeViewItem)sender).IsSelected = true;
     }
 
+    private void FileTree_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.F2 || ViewModel is not { } vm) return;
+        if (FileTree.SelectedItem is FileTreeNodeViewModel node && vm.BeginRenameCommand.CanExecute(node))
+        {
+            vm.BeginRenameCommand.Execute(node);
+            e.Handled = true;
+        }
+    }
+
     // 节点右键菜单（e.Handled 阻止冒泡到空白区域菜单）
     private void TreeItem_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {

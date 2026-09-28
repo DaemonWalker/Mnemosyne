@@ -171,7 +171,8 @@
                       BorderThickness="0"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       SelectedItemChanged="FileTree_SelectedItemChanged"
-                      ContextMenuOpening="FileTree_ContextMenuOpening" />
+                      ContextMenuOpening="FileTree_ContextMenuOpening"
+                      PreviewKeyDown="FileTree_PreviewKeyDown" />
         </Grid>
     </Grid>
 </UserControl>

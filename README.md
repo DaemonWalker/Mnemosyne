@@ -66,6 +66,7 @@ build.ps1                           # 一键构建 / 发布
 | 快捷键 | 功能 |
 |---|---|
 | Ctrl+N / Ctrl+O / Ctrl+Shift+O | 新建 / 打开文件 / 打开文件夹 |
+| Ctrl+P | 快速打开文件（按文件名/路径过滤） |
 | Ctrl+S / Ctrl+Shift+S | 保存 / 另存为 |
 | Ctrl+F / Ctrl+H / Ctrl+Shift+F | 页内搜索 / 替换 / 文件夹搜索 |
 | Ctrl+W | 关闭 Tab |

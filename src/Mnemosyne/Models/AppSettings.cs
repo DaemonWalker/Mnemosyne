@@ -13,6 +13,8 @@ public class AppSettings
     public int LargeFileThresholdMB { get; set; } = 50;
     public bool WordWrap { get; set; }
     public bool ShowWhitespace { get; set; }
+    public bool SelectionHighlightMatchCase { get; set; } = true;
+    public bool SelectionHighlightWholeWord { get; set; } = true;
     public bool HideDotFiles { get; set; } = true;
     public bool HideHiddenFiles { get; set; } = true;
     public string UiFontFamily { get; set; } = "";

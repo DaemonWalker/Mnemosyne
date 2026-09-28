@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Automation;
@@ -348,9 +349,17 @@ public partial class MainWindow : Window
         }
     }
 
-    // ===== Tab 交互：中键关闭 / 右键菜单 / 拖拽排序 =====
+    // ===== Tab 交互：中键关闭 / 右键菜单 / 拖拽排序 / 空白处双击新建 =====
     private System.Windows.Point _tabDragStart;
     private DocumentViewModel? _tabDragCandidate;
+
+    // 双击落在 TabItem 上（含头部与关闭按钮）时不触发；只有 Tab 栏空白区域才新建临时 Tab
+    private void DocumentTabs_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (FindAncestor<TabItem>(e.OriginalSource as DependencyObject) is not null) return;
+        _viewModel.NewFileCommand.Execute(null);
+        e.Handled = true;
+    }
 
     private static T? FindAncestor<T>(DependencyObject? source) where T : DependencyObject
     {
@@ -479,6 +488,73 @@ public partial class MainWindow : Window
     private void OpenFolderCommand_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         _viewModel.OpenFolderCommand.Execute(null);
+    }
+
+    private CancellationTokenSource? _quickOpenScanCancellation;
+
+    private void QuickOpenCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        // 必须模态：WPF 浮层遮不住 WindowsFormsHost（Scintilla）空域
+        var window = new QuickOpenWindow { Owner = this };
+        // 文件夹扫描未完成前先给"已打开 Tab + 最近文件"的兜底列表，扫描完成后替换为全量结果
+        window.SetItems(BuildQuickOpenFallbackItems());
+        string? root = _viewModel.FileTree.RootNode?.FullPath;
+        if (root is not null)
+        {
+            _ = PopulateQuickOpenAsync(window, root);
+        }
+        if (window.ShowDialog() == true && window.SelectedFilePath is { } path)
+        {
+            // 已打开的同路径 Tab 在 OpenDocumentAsync 内去重并直接激活
+            _ = _viewModel.OpenDocumentAsync(path);
+        }
+    }
+
+    private async Task PopulateQuickOpenAsync(QuickOpenWindow window, string root)
+    {
+        _quickOpenScanCancellation?.Cancel();
+        _quickOpenScanCancellation?.Dispose();
+        var cancellation = new CancellationTokenSource();
+        _quickOpenScanCancellation = cancellation;
+        // 关窗即取消在途扫描；弹窗模态，同一时间至多一个在途
+        window.Closed += (_, _) => cancellation.Cancel();
+        try
+        {
+            IReadOnlyList<QuickOpenFile> files = await QuickOpenService.GetFilesAsync(root, _configService.Settings, cancellation.Token);
+            if (!cancellation.IsCancellationRequested) window.SetItems(files);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            if (cancellation.IsCancellationRequested) return;
+            _viewModel.ShowError?.Invoke(
+                string.Format(_localization.GetString("Loc.Error.QuickOpenScan.Message"), root, ex.Message),
+                _localization.GetString("Loc.Error.Title"));
+        }
+    }
+
+    /// <summary>未打开文件夹时的数据源（也是文件夹模式扫描完成前的兜底列表）：已打开 Tab + 最近文件，去重且过滤已不存在的磁盘文件</summary>
+    private List<QuickOpenFile> BuildQuickOpenFallbackItems()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var items = new List<QuickOpenFile>();
+        foreach (DocumentViewModel doc in _viewModel.Documents)
+        {
+            if (doc.FilePath is { } path && seen.Add(path))
+            {
+                items.Add(new QuickOpenFile(path, doc.RelativePath ?? path));
+            }
+        }
+        foreach (RecentEntry entry in _viewModel.RecentFiles.RecentFiles)
+        {
+            if (seen.Add(entry.FullPath) && File.Exists(entry.FullPath))
+            {
+                items.Add(new QuickOpenFile(entry.FullPath, entry.FullPath));
+            }
+        }
+        return items;
     }
 
     // 最近打开子菜单每次展开时重建，保证内容与顺序最新；表头用 TextBlock 避免文件名中的下划线被当作快捷键标记

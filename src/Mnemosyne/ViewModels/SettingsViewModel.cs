@@ -70,6 +70,8 @@ public partial class SettingsViewModel : ObservableObject
         _largeFileThresholdMB = settings.LargeFileThresholdMB;
         _hideDotFiles = settings.HideDotFiles;
         _hideHiddenFiles = settings.HideHiddenFiles;
+        _selectionHighlightMatchCase = settings.SelectionHighlightMatchCase;
+        _selectionHighlightWholeWord = settings.SelectionHighlightWholeWord;
         _selectedUiFontFamily = settings.UiFontFamily;
         _uiFontSize = settings.UiFontSize;
         _allowMultipleInstances = settings.AllowMultipleInstances;
@@ -130,6 +132,12 @@ public partial class SettingsViewModel : ObservableObject
     private bool _hideHiddenFiles;
 
     [ObservableProperty]
+    private bool _selectionHighlightMatchCase;
+
+    [ObservableProperty]
+    private bool _selectionHighlightWholeWord;
+
+    [ObservableProperty]
     private string? _selectedUiFontFamily;
 
     [ObservableProperty]
@@ -177,6 +185,8 @@ public partial class SettingsViewModel : ObservableObject
         snapshot.LargeFileThresholdMB = Math.Clamp(LargeFileThresholdMB, 1, 4096);
         snapshot.HideDotFiles = HideDotFiles;
         snapshot.HideHiddenFiles = HideHiddenFiles;
+        snapshot.SelectionHighlightMatchCase = SelectionHighlightMatchCase;
+        snapshot.SelectionHighlightWholeWord = SelectionHighlightWholeWord;
         snapshot.UiFontFamily = SelectedUiFontFamily ?? "";
         snapshot.UiFontSize = Math.Clamp(UiFontSize, 8, 32);
         snapshot.AllowMultipleInstances = AllowMultipleInstances;

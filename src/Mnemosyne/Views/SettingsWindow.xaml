@@ -79,6 +79,9 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Style="{StaticResource SettingsLabelStyle}" Text="{DynamicResource Loc.Settings.Font}" />
@@ -188,6 +191,14 @@
                           Width="140" HorizontalAlignment="Left"
                           ItemsSource="{Binding TerminalShells}"
                           SelectedItem="{Binding SelectedTerminalShell, Mode=TwoWay}" />
+
+                <CheckBox Grid.Row="17" Grid.Column="1" Margin="0,6,0,2"
+                          Content="{DynamicResource Loc.Settings.SelectionHighlightMatchCase}"
+                          IsChecked="{Binding SelectionHighlightMatchCase, Mode=TwoWay}" />
+
+                <CheckBox Grid.Row="18" Grid.Column="1" Margin="0,2"
+                          Content="{DynamicResource Loc.Settings.SelectionHighlightWholeWord}"
+                          IsChecked="{Binding SelectionHighlightWholeWord, Mode=TwoWay}" />
             </Grid>
 
             <!-- 插件设置分区：按各插件声明的 schema 动态渲染；无插件设置项时整体隐藏 -->

@@ -200,7 +200,7 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
             return;
         }
         string? parentDir = Path.GetDirectoryName(node.FullPath);
-        if (parentDir is null || !ValidateNewName(parentDir, newName)) return;
+        if (parentDir is null || !ValidateNewName(parentDir, newName, node.Name)) return;
         string targetPath = Path.Combine(parentDir, newName);
         try
         {
@@ -269,13 +269,15 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
         return FindNode(Path.GetDirectoryName(node.FullPath));
     }
 
-    private bool ValidateNewName(string parentDir, string name)
+    private bool ValidateNewName(string parentDir, string name, string? existingName = null)
     {
         if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || name.Contains(Path.DirectorySeparatorChar) || name.Contains(Path.AltDirectorySeparatorChar))
         {
             ReportError("Loc.Error.InvalidName.Message", name, _localization.GetString("Loc.Error.InvalidName.Detail"));
             return false;
         }
+        // 仅改大小写的重命名会被大小写不敏感的 Exists 误判为已存在（命中节点自身），跳过该检查交给 Move 处理
+        if (existingName is not null && string.Equals(name, existingName, StringComparison.OrdinalIgnoreCase)) return true;
         string target = Path.Combine(parentDir, name);
         if (File.Exists(target) || Directory.Exists(target))
         {

@@ -106,6 +106,8 @@
     <sys:String x:Key="Loc.Settings.LargeFileThreshold">Large File Threshold (MB)</sys:String>
     <sys:String x:Key="Loc.Settings.WordWrap">Word Wrap</sys:String>
     <sys:String x:Key="Loc.Settings.ShowWhitespace">Show Whitespace</sys:String>
+    <sys:String x:Key="Loc.Settings.SelectionHighlightMatchCase">Selection highlight: match case</sys:String>
+    <sys:String x:Key="Loc.Settings.SelectionHighlightWholeWord">Selection highlight: whole word</sys:String>
     <sys:String x:Key="Loc.Settings.HideDotFiles">Hide files and folders starting with .</sys:String>
     <sys:String x:Key="Loc.Settings.HideHiddenFiles">Hide files and folders with the hidden attribute</sys:String>
     <sys:String x:Key="Loc.Settings.UiFont">UI Font</sys:String>
@@ -149,6 +151,7 @@
     <sys:String x:Key="Loc.Error.RenameEntry.Message">Cannot rename "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.DeleteEntry.Message">Cannot delete "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.Reveal.Message">Cannot reveal "{0}" in File Explorer. {1}</sys:String>
+    <sys:String x:Key="Loc.Error.QuickOpenScan.Message">Cannot scan folder "{0}". {1}</sys:String>
     <sys:String x:Key="Loc.Error.InvalidName.Message">The name "{0}" is invalid. {1}</sys:String>
     <sys:String x:Key="Loc.Error.InvalidName.Detail">Names cannot contain characters such as \ / : * ? " &lt; &gt; |</sys:String>
     <sys:String x:Key="Loc.Error.EntryExists.Message">Cannot use the name "{0}". {1}</sys:String>
@@ -158,6 +161,9 @@
 
     <sys:String x:Key="Loc.LanguagePicker.Title">Select Language Mode</sys:String>
     <sys:String x:Key="Loc.LanguagePicker.Filter">Type to filter languages...</sys:String>
+
+    <sys:String x:Key="Loc.QuickOpen.Title">Quick Open File</sys:String>
+    <sys:String x:Key="Loc.QuickOpen.Filter">Type a file name or path to filter...</sys:String>
 
     <sys:String x:Key="Loc.Find.MatchCase">Match Case</sys:String>
     <sys:String x:Key="Loc.Find.WholeWord">Match Whole Word</sys:String>

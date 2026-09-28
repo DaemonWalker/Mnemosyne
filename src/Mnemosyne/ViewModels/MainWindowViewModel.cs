@@ -391,6 +391,8 @@ public partial class MainWindowViewModel : ObservableObject
         _settings.LargeFileThresholdMB = settings.LargeFileThresholdMB;
         _settings.HideDotFiles = settings.HideDotFiles;
         _settings.HideHiddenFiles = settings.HideHiddenFiles;
+        _settings.SelectionHighlightMatchCase = settings.SelectionHighlightMatchCase;
+        _settings.SelectionHighlightWholeWord = settings.SelectionHighlightWholeWord;
         _settings.UiFontFamily = settings.UiFontFamily;
         _settings.UiFontSize = settings.UiFontSize;
         _settings.AllowMultipleInstances = settings.AllowMultipleInstances;
@@ -403,6 +405,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             doc.Editor.ApplyFont(settings.FontFamily, settings.FontSize);
             doc.SetIndentation(settings.IndentUseTabs, settings.IndentWidth);
+            doc.Editor.SetSelectionHighlightOptions(settings.SelectionHighlightMatchCase, settings.SelectionHighlightWholeWord);
             if (doc is MarkdownPreviewViewModel preview) preview.RefreshFonts();
         }
         _themeService.ApplyTheme(settings.Theme);

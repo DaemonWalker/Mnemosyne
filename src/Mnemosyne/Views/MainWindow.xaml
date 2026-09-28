@@ -28,6 +28,7 @@
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenFile}" Executed="OpenFileCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.OpenFolder}" Executed="OpenFolderCommand_Executed" />
+        <CommandBinding Command="{x:Static cmd:AppCommands.QuickOpen}" Executed="QuickOpenCommand_Executed" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Save}" Executed="SaveCommand_Executed" CanExecute="SaveLikeCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.SaveAs}" Executed="SaveAsCommand_Executed" CanExecute="SaveLikeCommand_CanExecute" />
         <CommandBinding Command="{x:Static cmd:AppCommands.Find}" Executed="FindCommand_Executed" CanExecute="SaveCommand_CanExecute" />
@@ -281,6 +282,7 @@
                             AllowDrop="True"
                             PreviewMouseDown="DocumentTabs_PreviewMouseDown"
                             PreviewMouseLeftButtonDown="DocumentTabs_PreviewMouseLeftButtonDown"
+                            MouseDoubleClick="DocumentTabs_MouseDoubleClick"
                             MouseMove="DocumentTabs_MouseMove"
                             DragOver="DocumentTabs_DragOver"
                             Drop="DocumentTabs_Drop"

@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Windows;
 using System.Windows.Forms.Integration;
+using System.Windows.Threading;
 using ScintillaNET;
 using Mnemosyne.Models;
 using Mnemosyne.Plugin.Abstractions;
@@ -20,17 +21,25 @@ public class ScintillaHost : WindowsFormsHost
     private const int FoldingMargin = 1;
     private const int FoldingMarginWidth = 16;
 
-    // 0-7 留给 Lexer 语法错误等用途，搜索高亮用 8/9（当前匹配叠加在全部匹配之上）
+    // 0-7 留给 Lexer 语法错误等用途，搜索高亮用 8/9（当前匹配叠加在全部匹配之上），选中高亮用 10
     private const int MatchIndicator = 8;
     private const int CurrentMatchIndicator = 9;
+    private const int SelectionHighlightIndicator = 10;
+
+    // 选中高亮：选区长度上限（超出视为普通选择不高亮）与选区变化后的防抖间隔
+    private const int SelectionHighlightMaxLength = 200;
+    private static readonly TimeSpan SelectionHighlightDelay = TimeSpan.FromMilliseconds(200);
 
     private static readonly List<WeakReference<ScintillaHost>> _instances = [];
 
     private readonly Scintilla _scintilla;
+    private readonly DispatcherTimer _selectionHighlightDebounce;
     private string _fontFamily = "Consolas";
     private double _fontSize = 13;
     private LanguageDefinition _language = LanguageRegistry.PlainText;
     private Color? _caretLineColor;
+    private bool _selectionHighlightMatchCase = true;
+    private bool _selectionHighlightWholeWord = true;
 
     /// <summary>内容或保存点变化（读取 IsDirty 获得最新状态）</summary>
     public event EventHandler? DirtyChanged;
@@ -94,6 +103,7 @@ public class ScintillaHost : WindowsFormsHost
             if (e.Change.HasFlag(UpdateChange.Selection)) UpdateCaretLineHighlight();
             if (e.Change.HasFlag(UpdateChange.Selection) || e.Change.HasFlag(UpdateChange.Content))
             {
+                ScheduleSelectionHighlight();
                 CaretPositionChanged?.Invoke(this, EventArgs.Empty);
             }
         };
@@ -121,6 +131,13 @@ public class ScintillaHost : WindowsFormsHost
             }
             EditorKeyDown?.Invoke(this, e);
             if (e.Handled) e.SuppressKeyPress = true;
+        };
+
+        _selectionHighlightDebounce = new DispatcherTimer { Interval = SelectionHighlightDelay };
+        _selectionHighlightDebounce.Tick += (_, _) =>
+        {
+            _selectionHighlightDebounce.Stop();
+            UpdateSelectionHighlight();
         };
 
         lock (_instances) _instances.Add(new WeakReference<ScintillaHost>(this));
@@ -228,6 +245,71 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.IndicatorCurrent = MatchIndicator;
         _scintilla.IndicatorClearRange(0, _scintilla.TextLength);
         _scintilla.IndicatorCurrent = CurrentMatchIndicator;
+        _scintilla.IndicatorClearRange(0, _scintilla.TextLength);
+    }
+
+    /// <summary>设置选中高亮的匹配规则（区分大小写/全字匹配），变更后立即重算当前文档高亮</summary>
+    public void SetSelectionHighlightOptions(bool matchCase, bool wholeWord)
+    {
+        _selectionHighlightMatchCase = matchCase;
+        _selectionHighlightWholeWord = wholeWord;
+        UpdateSelectionHighlight();
+    }
+
+    /// <summary>选区或内容变化后防抖重算选中高亮（VSCode 式，约 200ms）</summary>
+    private void ScheduleSelectionHighlight()
+    {
+        _selectionHighlightDebounce.Stop();
+        _selectionHighlightDebounce.Start();
+    }
+
+    /// <summary>
+    /// VSCode 式选中高亮：主选区非空、单行且长度 ≤ 200 时，用 indicator 10 高亮其余相同内容
+    /// （不含选区本身），否则清除。与搜索高亮（8/9 号）互不干扰。匹配数上限复用
+    /// SearchService.MaxMatches 防大文档失控；全字匹配走 Scintilla 的 WholeWord 标志，
+    /// 其默认词字符集（ASCII 字母/数字/下划线）与 SearchService 的全字边界判定一致。
+    /// </summary>
+    private void UpdateSelectionHighlight()
+    {
+        TextRange selection = SelectionRange;
+        bool eligible = !_chunkedLoading
+            && selection.Length > 0
+            && selection.Length <= SelectionHighlightMaxLength
+            && _scintilla.LineFromPosition(selection.Start) == _scintilla.LineFromPosition(selection.Start + selection.Length);
+        if (!eligible)
+        {
+            ClearSelectionHighlights();
+            return;
+        }
+
+        string text = _scintilla.GetTextRange(selection.Start, selection.Length);
+        SearchFlags flags = SearchFlags.None;
+        if (_selectionHighlightMatchCase) flags |= SearchFlags.MatchCase;
+        if (_selectionHighlightWholeWord) flags |= SearchFlags.WholeWord;
+        _scintilla.SearchFlags = flags;
+
+        ClearSelectionHighlights();
+        _scintilla.IndicatorCurrent = SelectionHighlightIndicator;
+        int textLength = _scintilla.TextLength;
+        int searchStart = 0;
+        int count = 0;
+        while (searchStart + text.Length <= textLength)
+        {
+            _scintilla.SetTargetRange(searchStart, textLength);
+            int found = _scintilla.SearchInTarget(text);
+            if (found < 0) break;
+            if (found != selection.Start)
+            {
+                _scintilla.IndicatorFillRange(found, text.Length);
+                if (++count >= SearchService.MaxMatches) break;
+            }
+            searchStart = found + text.Length;
+        }
+    }
+
+    private void ClearSelectionHighlights()
+    {
+        _scintilla.IndicatorCurrent = SelectionHighlightIndicator;
         _scintilla.IndicatorClearRange(0, _scintilla.TextLength);
     }
 
@@ -584,6 +666,12 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.Indicators[CurrentMatchIndicator].Alpha = 160;
         _scintilla.Indicators[CurrentMatchIndicator].OutlineAlpha = 255;
         _scintilla.Indicators[CurrentMatchIndicator].Under = true;
+
+        // 选中高亮：RoundBox + 独立主题色，与查找结果的 StraightBox 橙色明确区分
+        _scintilla.Indicators[SelectionHighlightIndicator].Style = IndicatorStyle.RoundBox;
+        _scintilla.Indicators[SelectionHighlightIndicator].ForeColor = EditorColor("SelectionMatch");
+        _scintilla.Indicators[SelectionHighlightIndicator].Alpha = 60;
+        _scintilla.Indicators[SelectionHighlightIndicator].Under = true;
 
         ApplyLexerStyles();
         UpdateLineNumberMarginWidth();

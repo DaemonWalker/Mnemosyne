@@ -76,7 +76,8 @@ public partial class DocumentViewModel : ObservableObject
     private DispatcherTimer? _stashDebounce;
     private FileSystemWatcher? _externalWatcher;
     private DateTime? _lastWriteUtc;
-    private bool _suppressExternalEvent;
+    // 外部事件抑制标记：FileSystemWatcher 事件在线程池触发，须用 Interlocked 原子消费
+    private int _suppressExternalEvent;
 
     public DocumentViewModel(FileService fileService, LocalizationService localization, AppSettings settings, SessionService sessionService)
     {
@@ -92,6 +93,7 @@ public partial class DocumentViewModel : ObservableObject
         Editor.SetIndentation(settings.IndentUseTabs, settings.IndentWidth);
         Editor.SetWordWrap(settings.WordWrap);
         Editor.SetViewWhitespace(settings.ShowWhitespace);
+        Editor.SetSelectionHighlightOptions(settings.SelectionHighlightMatchCase, settings.SelectionHighlightWholeWord);
         Editor.DirtyChanged += (_, _) =>
         {
             IsDirty = Editor.IsDirty;
@@ -221,8 +223,12 @@ public partial class DocumentViewModel : ObservableObject
 
     public async Task SaveAsync(string path, CancellationToken cancellationToken = default)
     {
-        // 自己的写入也会触发 FileSystemWatcher，置抑制标记让首个事件被消费掉
-        _suppressExternalEvent = true;
+        // 自己的写入也会触发 FileSystemWatcher（FileMode.Create 分段写会产生多个 Changed 事件）。
+        // 写入前把 mtime 基准推到当前时刻：NTFS 延迟更新 mtime（句柄关闭才落盘），写入窗口内事件读到的
+        // mtime 仍是旧值，必然 ≤ 基准被过滤；关闭后才送达的事件由抑制标记原子消费一个，
+        // 其余由写完后的 RefreshExternalTimestamp 兜底
+        Interlocked.Exchange(ref _suppressExternalEvent, 1);
+        _lastWriteUtc = DateTime.UtcNow;
         await _fileService.WriteAsync(path, Editor.Text, CurrentEncoding, cancellationToken);
         FilePath = path;
         Title = Path.GetFileName(path);
@@ -415,9 +421,8 @@ public partial class DocumentViewModel : ObservableObject
 
     private void NotifyExternalEvent()
     {
-        if (_suppressExternalEvent)
+        if (Interlocked.Exchange(ref _suppressExternalEvent, 0) != 0)
         {
-            _suppressExternalEvent = false;
             RefreshExternalTimestamp();
             return;
         }

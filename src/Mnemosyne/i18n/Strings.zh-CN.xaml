@@ -106,6 +106,8 @@
     <sys:String x:Key="Loc.Settings.LargeFileThreshold">大文件阈值 (MB)</sys:String>
     <sys:String x:Key="Loc.Settings.WordWrap">自动换行</sys:String>
     <sys:String x:Key="Loc.Settings.ShowWhitespace">显示空白字符</sys:String>
+    <sys:String x:Key="Loc.Settings.SelectionHighlightMatchCase">选中内容高亮：区分大小写</sys:String>
+    <sys:String x:Key="Loc.Settings.SelectionHighlightWholeWord">选中内容高亮：全字匹配</sys:String>
     <sys:String x:Key="Loc.Settings.HideDotFiles">隐藏以 . 开头的文件和文件夹</sys:String>
     <sys:String x:Key="Loc.Settings.HideHiddenFiles">隐藏具有隐藏属性的文件和文件夹</sys:String>
     <sys:String x:Key="Loc.Settings.UiFont">界面字体</sys:String>
@@ -149,6 +151,7 @@
     <sys:String x:Key="Loc.Error.RenameEntry.Message">无法重命名“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.DeleteEntry.Message">无法删除“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.Reveal.Message">无法在资源管理器中打开“{0}”。{1}</sys:String>
+    <sys:String x:Key="Loc.Error.QuickOpenScan.Message">无法扫描文件夹“{0}”。{1}</sys:String>
     <sys:String x:Key="Loc.Error.InvalidName.Message">名称“{0}”无效。{1}</sys:String>
     <sys:String x:Key="Loc.Error.InvalidName.Detail">名称不能包含 \ / : * ? " &lt; &gt; | 等字符</sys:String>
     <sys:String x:Key="Loc.Error.EntryExists.Message">无法使用名称“{0}”。{1}</sys:String>
@@ -158,6 +161,9 @@
 
     <sys:String x:Key="Loc.LanguagePicker.Title">选择语言模式</sys:String>
     <sys:String x:Key="Loc.LanguagePicker.Filter">输入以筛选语言…</sys:String>
+
+    <sys:String x:Key="Loc.QuickOpen.Title">快速打开文件</sys:String>
+    <sys:String x:Key="Loc.QuickOpen.Filter">输入文件名或路径以筛选…</sys:String>
 
     <sys:String x:Key="Loc.Find.MatchCase">区分大小写</sys:String>
     <sys:String x:Key="Loc.Find.WholeWord">全字匹配</sys:String>

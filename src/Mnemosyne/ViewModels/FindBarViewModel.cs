@@ -10,11 +10,13 @@ namespace Mnemosyne.ViewModels;
 /// 编辑器顶部浮层搜索/替换条。窗口级单例，跟随活动文档工作：切换 Tab 时清除旧文档高亮、
 /// 在新文档上重搜（关键字与选项跨 Tab 保留，与 VSCode 一致）。
 /// 匹配计算放后台线程（带版本号丢弃过期结果），高亮与选中回 UI 线程应用。
+/// 输入停止 500ms 后自动跳转到当前匹配（独立防抖计时器，只改 Scintilla 选区，不抢搜索框焦点）。
 /// </summary>
 public partial class FindBarViewModel : ObservableObject
 {
     private readonly LocalizationService _localization;
     private readonly DispatcherTimer _debounce;
+    private readonly DispatcherTimer _jumpDebounce;
 
     private DocumentViewModel? _document;
     private List<SearchMatch> _matches = [];
@@ -22,6 +24,8 @@ public partial class FindBarViewModel : ObservableObject
     private bool _truncated;
     private bool _patternInvalid;
     private int _searchVersion;
+    private int _appliedVersion;
+    private bool _jumpPending;
 
     public FindBarViewModel(LocalizationService localization)
     {
@@ -31,6 +35,12 @@ public partial class FindBarViewModel : ObservableObject
         {
             _debounce.Stop();
             _ = RunSearchAsync();
+        };
+        _jumpDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        _jumpDebounce.Tick += (_, _) =>
+        {
+            _jumpDebounce.Stop();
+            TryJumpToCurrent();
         };
         _localization.LanguageChanged += (_, _) => UpdateCountDisplay();
     }
@@ -66,13 +76,29 @@ public partial class FindBarViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCountError;
 
-    partial void OnSearchTextChanged(string value) => RunSearchSoon(immediate: false);
+    partial void OnSearchTextChanged(string value)
+    {
+        RequestJump();
+        RunSearchSoon(immediate: false);
+    }
 
-    partial void OnMatchCaseChanged(bool value) => RunSearchSoon(immediate: true);
+    partial void OnMatchCaseChanged(bool value)
+    {
+        RequestJump();
+        RunSearchSoon(immediate: true);
+    }
 
-    partial void OnWholeWordChanged(bool value) => RunSearchSoon(immediate: true);
+    partial void OnWholeWordChanged(bool value)
+    {
+        RequestJump();
+        RunSearchSoon(immediate: true);
+    }
 
-    partial void OnUseRegexChanged(bool value) => RunSearchSoon(immediate: true);
+    partial void OnUseRegexChanged(bool value)
+    {
+        RequestJump();
+        RunSearchSoon(immediate: true);
+    }
 
     /// <summary>活动文档切换入口（MainWindowViewModel 在 ActiveDocument 变化时调用）</summary>
     public void AttachDocument(DocumentViewModel? document)
@@ -209,6 +235,23 @@ public partial class FindBarViewModel : ObservableObject
         }
     }
 
+    private void RequestJump()
+    {
+        if (!IsVisible) return;
+        _jumpPending = true;
+        _jumpDebounce.Stop();
+        _jumpDebounce.Start();
+    }
+
+    private void TryJumpToCurrent()
+    {
+        if (!_jumpPending) return;
+        // 最新一次搜索还没应用结果（250ms 防抖未触发或后台在跑），等 RunSearchAsync 应用后再跳，避免用旧匹配跳转
+        if (_debounce.IsEnabled || _appliedVersion != _searchVersion) return;
+        _jumpPending = false;
+        ApplyHighlights(selectCurrent: true);
+    }
+
     private async Task RunSearchAsync()
     {
         int version = ++_searchVersion;
@@ -231,10 +274,12 @@ public partial class FindBarViewModel : ObservableObject
         _matches = [.. result.Matches];
         _truncated = result.Truncated;
         _patternInvalid = result.InvalidPattern;
+        _appliedVersion = version;
 
         if (result.InvalidPattern || _matches.Count == 0)
         {
             _currentIndex = -1;
+            _jumpPending = false;
             document.Editor.ClearSearchHighlights();
         }
         else
@@ -245,6 +290,8 @@ public partial class FindBarViewModel : ObservableObject
             _currentIndex = FirstMatchAtOrAfter(anchor);
             if (_currentIndex < 0) _currentIndex = 0;
             ApplyHighlights(selectCurrent: false);
+            // 搜索耗时超过跳转防抖时，到这里结果才就绪，补执行滞留的跳转
+            TryJumpToCurrent();
         }
         UpdateCountDisplay();
     }
@@ -335,6 +382,8 @@ public partial class FindBarViewModel : ObservableObject
     private void ResetMatches()
     {
         _searchVersion++;
+        _jumpDebounce.Stop();
+        _jumpPending = false;
         _matches = [];
         _currentIndex = -1;
         _truncated = false;

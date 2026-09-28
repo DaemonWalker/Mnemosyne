@@ -43,6 +43,7 @@
     <Color x:Key="Color.Editor.Error">#FFF44747</Color>
     <Color x:Key="Color.Editor.FindMatch">#FFEA5C00</Color>
     <Color x:Key="Color.Editor.FindMatchCurrent">#FFEA5C00</Color>
+    <Color x:Key="Color.Editor.SelectionMatch">#FF3A96DD</Color>
     <Color x:Key="Color.Editor.Markdown.Header">#FF569CD6</Color>
     <Color x:Key="Color.Editor.Markdown.Code">#FFCE9178</Color>
     <Color x:Key="Color.Editor.Markdown.Quote">#FF6A9955</Color>

@@ -11,6 +11,8 @@ public static class AppCommands
 
     public static RoutedUICommand OpenFolder { get; } = Create(nameof(OpenFolder), Key.O, ModifierKeys.Shift);
 
+    public static RoutedUICommand QuickOpen { get; } = Create(nameof(QuickOpen), Key.P);
+
     public static RoutedUICommand Save { get; } = Create(nameof(Save), Key.S);
 
     public static RoutedUICommand SaveAs { get; } = Create(nameof(SaveAs), Key.S, ModifierKeys.Shift);
