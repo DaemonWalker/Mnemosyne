@@ -72,6 +72,7 @@
 
         <Style x:Key="FileTreeItemStyle" TargetType="TreeViewItem">
             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
             <Setter Property="Padding" Value="0" />
             <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeItem_PreviewMouseRightButtonDown" />
             <EventSetter Event="ContextMenuOpening" Handler="TreeItem_ContextMenuOpening" />
@@ -144,8 +145,39 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Text="{DynamicResource Loc.SideBar.Files.Title}"
-                   Style="{StaticResource SidebarTitleStyle}" />
+        <Grid>
+            <TextBlock Text="{DynamicResource Loc.SideBar.Files.Title}"
+                       Style="{StaticResource SidebarTitleStyle}" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Margin="0,6,8,2">
+                <Button Style="{StaticResource FindBarButtonStyle}"
+                        ToolTip="{DynamicResource Loc.SideBar.Files.CollapseAll}"
+                        AutomationProperties.AutomationId="FileTreeCollapseAllButton"
+                        Command="{Binding CollapseAllCommand}">
+                    <Path Width="13" Height="13"
+                          Stretch="Uniform"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="1.3"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M2,7 L8,1.5 L14,7 M2,14 L8,8.5 L14,14" />
+                </Button>
+                <Button Style="{StaticResource FindBarButtonStyle}"
+                        ToolTip="{DynamicResource Loc.SideBar.Files.RevealActiveFile}"
+                        AutomationProperties.AutomationId="FileTreeRevealActiveFileButton"
+                        Command="{Binding RevealActiveFileCommand}">
+                    <Path Width="13" Height="13"
+                          Stretch="Uniform"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="1.3"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M8,8 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0 M8,0.5 V3.5 M8,12.5 V15.5 M0.5,8 H3.5 M12.5,8 H15.5" />
+                </Button>
+            </StackPanel>
+        </Grid>
         <Grid Grid.Row="1">
             <TextBlock Text="{DynamicResource Loc.SideBar.Files.Empty}"
                        Foreground="{DynamicResource Brush.Secondary.Foreground}"

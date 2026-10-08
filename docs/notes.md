@@ -46,7 +46,7 @@
 - 三选项统一走 .NET Regex（字面量模式 Regex.Escape；Multiline 让 ^/$ 按行边界）
 - **全字匹配不用 `\b`**：词字符限定 ASCII 字母数字下划线，中文字符非词字符故中文词前后总是边界（"中文没有词边界"语义）
 - 文件夹搜索按行匹配，不支持跨行正则（与结果展示模型一致）
-- glob 匹配见 `Services/GlobMatcher.cs`（VSCode 风格）；默认排除 .git/bin/obj/node_modules，跳过 ReparsePoint 防目录循环；二进制嗅探=头部 NUL 字节（带 BOM 的 UTF-16/32 豁免）
+- glob 匹配见 `Services/GlobMatcher.cs`（VSCode 风格）；默认排除 .git/bin/obj/node_modules，跳过 ReparsePoint 防目录循环；二进制嗅探=头部 NUL 字节（带 BOM 的 UTF-16/32 豁免），实现位于 `FileService.LooksBinary`，搜索跳过重判与打开前的二进制占位保护共用
 
 ## 6. 插件系统
 

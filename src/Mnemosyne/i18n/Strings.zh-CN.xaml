@@ -49,6 +49,8 @@
     <sys:String x:Key="Loc.SideBar.Files.Title">资源管理器</sys:String>
     <sys:String x:Key="Loc.SideBar.Files.Empty">尚未打开文件夹</sys:String>
     <sys:String x:Key="Loc.SideBar.Files.CloseFolder">关闭文件夹</sys:String>
+    <sys:String x:Key="Loc.SideBar.Files.CollapseAll">全部折叠</sys:String>
+    <sys:String x:Key="Loc.SideBar.Files.RevealActiveFile">定位当前文件</sys:String>
     <sys:String x:Key="Loc.Tree.NewFile">新建文件</sys:String>
     <sys:String x:Key="Loc.Tree.NewFolder">新建文件夹</sys:String>
     <sys:String x:Key="Loc.Tree.Rename">重命名</sys:String>
@@ -68,6 +70,9 @@
     <sys:String x:Key="Loc.Error.SearchFolder.Message">搜索文件夹“{0}”时出错。{1}</sys:String>
 
     <sys:String x:Key="Loc.Editor.Empty">拖放文件到此处，或按 Ctrl+O 打开文件</sys:String>
+    <sys:String x:Key="Loc.Binary.Placeholder.Message">此文件疑似二进制文件，为避免卡顿未加载内容。</sys:String>
+    <sys:String x:Key="Loc.Binary.Placeholder.Open">仍然打开</sys:String>
+    <sys:String x:Key="Loc.Binary.Placeholder.Close">关闭标签页</sys:String>
     <sys:String x:Key="Loc.Editor.Undo">撤销</sys:String>
     <sys:String x:Key="Loc.Editor.Redo">重做</sys:String>
     <sys:String x:Key="Loc.Editor.Cut">剪切</sys:String>

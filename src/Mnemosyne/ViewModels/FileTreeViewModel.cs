@@ -51,6 +51,12 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
     /// <summary>单击文件节点时请求打开到 Tab（参数为完整路径）</summary>
     public Action<string>? OpenFileRequested { get; set; }
 
+    /// <summary>当前活动文档的文件路径（未保存的新建文档为 null），由宿主注入，供 Reveal 命令使用</summary>
+    public Func<string?>? ActiveFilePathProvider { get; set; }
+
+    /// <summary>Reveal 命中节点后通知 View 滚动定位</summary>
+    public event Action<FileTreeNodeViewModel>? NodeRevealRequested;
+
     public void OpenFolder(string path)
     {
         string fullPath;
@@ -120,8 +126,78 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
     public void ActivateNode(FileTreeNodeViewModel node)
     {
         if (node.IsDummy || node.IsPlaceholder || node.IsDirectory) return;
+        // Reveal 定位的选中节点正是当前活动文档，跳过重复激活
+        if (ActiveFilePathProvider?.Invoke() is { } activePath && PathEquals(activePath, node.FullPath)) return;
         OpenFileRequested?.Invoke(node.FullPath);
     }
+
+    [RelayCommand]
+    private void CollapseAll()
+    {
+        if (RootNode is not { } root) return;
+        CollapseRecursive(root);
+    }
+
+    // 未加载的哨兵目录天然收起，只处理已加载子树
+    private static void CollapseRecursive(FileTreeNodeViewModel node)
+    {
+        node.IsExpanded = false;
+        foreach (FileTreeNodeViewModel child in node.Children)
+        {
+            if (child.IsDirectory && !child.HasDummyChild) CollapseRecursive(child);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRevealActiveFile))]
+    private void RevealActiveFile()
+    {
+        if (ActiveFilePathProvider?.Invoke() is { } path) RevealFile(path);
+    }
+
+    private bool CanRevealActiveFile() =>
+        ActiveFilePathProvider?.Invoke() is { } path && IsUnderRoot(path);
+
+    /// <summary>把指定路径定位到文件树：逐级加载并展开祖先目录，选中目标节点并通知 View 滚动。找不到时静默返回</summary>
+    public void RevealFile(string path)
+    {
+        if (RootNode is not { } root || !IsUnderRoot(path)) return;
+        string target = NormalizePath(path);
+        FileTreeNodeViewModel current = root;
+        while (current.IsDirectory && !PathEquals(current.FullPath, target))
+        {
+            EnsureChildrenLoaded(current);
+            current.IsExpanded = true;
+            FileTreeNodeViewModel? next = current.Children.FirstOrDefault(c =>
+                PathEquals(c.FullPath, target) || (c.IsDirectory && IsUnderDirectory(c.FullPath, target)));
+            // 目标可能被隐藏文件设置过滤掉，或已从磁盘删除
+            if (next is null) return;
+            current = next;
+        }
+        ClearSelection(root);
+        current.IsSelected = true;
+        NodeRevealRequested?.Invoke(current);
+    }
+
+    private static void ClearSelection(FileTreeNodeViewModel node)
+    {
+        node.IsSelected = false;
+        foreach (FileTreeNodeViewModel child in node.Children) ClearSelection(child);
+    }
+
+    private bool IsUnderRoot(string path) =>
+        RootNode is { } root && (PathEquals(root.FullPath, path) || IsUnderDirectory(root.FullPath, path));
+
+    private static bool IsUnderDirectory(string directory, string path)
+    {
+        string dir = NormalizePath(directory);
+        string target = NormalizePath(path);
+        return target.Length > dir.Length
+            && target.StartsWith(dir, StringComparison.OrdinalIgnoreCase)
+            && (target[dir.Length] == Path.DirectorySeparatorChar || target[dir.Length] == Path.AltDirectorySeparatorChar);
+    }
+
+    private static bool PathEquals(string a, string b) =>
+        string.Equals(NormalizePath(a), NormalizePath(b), StringComparison.OrdinalIgnoreCase);
 
     [RelayCommand]
     private void BeginCreateFile(FileTreeNodeViewModel? node) => BeginCreate(node, isDirectory: false);

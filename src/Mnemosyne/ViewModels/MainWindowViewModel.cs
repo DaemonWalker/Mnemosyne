@@ -61,6 +61,10 @@ public partial class MainWindowViewModel : ObservableObject
         RecentFiles = recentFiles;
         FileTree = new FileTreeViewModel(localization, _settings);
         FileTree.OpenFileRequested = path => _ = OpenDocumentAsync(path);
+        // 预览 Tab 定位到其源文档；新建未保存的文档 FilePath 为 null，Reveal 命令随之禁用
+        FileTree.ActiveFilePathProvider = () => ActiveDocument is MarkdownPreviewViewModel preview
+            ? preview.Source.FilePath
+            : ActiveDocument?.FilePath;
         FindBar = new FindBarViewModel(localization);
         SearchPanel = new SearchPanelViewModel(fileService, localization, () => FileTree.RootNode?.FullPath);
         SearchPanel.OpenMatchRequested = location => _ = OpenSearchMatchAsync(location);
@@ -90,6 +94,7 @@ public partial class MainWindowViewModel : ObservableObject
                 UpdateDocumentDisplayPaths();
                 SaveSession();
                 UpdateWindowTitle();
+                FileTree.RevealActiveFileCommand.NotifyCanExecuteChanged();
             }
         };
         // 搜索条件变化经防抖落入会话，按文件夹记忆
@@ -259,11 +264,14 @@ public partial class MainWindowViewModel : ObservableObject
         FindBar.AttachDocument(value is MarkdownPreviewViewModel ? null : value);
         SaveSession();
         UpdateWindowTitle();
+        FileTree.RevealActiveFileCommand.NotifyCanExecuteChanged();
     }
 
     private void OnActiveDocumentPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(DocumentViewModel.DisplayTitle)) UpdateWindowTitle();
+        // 另存为/首次保存后路径从无到有，Reveal 命令可用性跟随刷新
+        else if (e.PropertyName == nameof(DocumentViewModel.FilePath)) FileTree.RevealActiveFileCommand.NotifyCanExecuteChanged();
     }
 
     private void UpdateWindowTitle()
@@ -631,20 +639,29 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         var document = new DocumentViewModel(_fileService, _localization, _settings, _sessionService);
-
-        // 8.1 阈值判断：超过设置阈值进入大文件模式（边读边显示 + 进度条 + 可取消）
         long fileSize = new FileInfo(fullPath).Length;
-        if (fileSize > (long)_settings.LargeFileThresholdMB * 1024 * 1024)
-        {
-            Documents.Add(document);
-            ActiveDocument = document;
-            _ = LoadLargeDocumentAsync(document, fullPath, forcedEncoding: null);
-            return document;
-        }
 
         try
         {
-            await document.LoadFromFileAsync(fullPath);
+            // 二进制保护：疑似二进制文件直接解码+SetText 会卡 UI 且显示乱码，先出占位页由用户确认
+            if (await _fileService.IsBinaryFileAsync(fullPath))
+            {
+                document.MarkAsBinaryPlaceholder(fullPath, fileSize);
+                Documents.Add(document);
+                ActiveDocument = document;
+                return document;
+            }
+
+            // 8.1 阈值判断：超过设置阈值进入大文件模式（边读边显示 + 进度条 + 可取消）
+            if (fileSize > (long)_settings.LargeFileThresholdMB * 1024 * 1024)
+            {
+                Documents.Add(document);
+                ActiveDocument = document;
+                await LoadDocumentContentAsync(document, fullPath, fileSize);
+                return document;
+            }
+
+            await LoadDocumentContentAsync(document, fullPath, fileSize);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {
@@ -655,6 +672,34 @@ public partial class MainWindowViewModel : ObservableObject
         Documents.Add(document);
         ActiveDocument = document;
         return document;
+    }
+
+    /// <summary>按大小分派加载：超阈值进大文件模式（后台分块读，立即返回），否则一次性读入</summary>
+    private Task LoadDocumentContentAsync(DocumentViewModel document, string fullPath, long fileSize)
+    {
+        if (fileSize > (long)_settings.LargeFileThresholdMB * 1024 * 1024)
+        {
+            _ = LoadLargeDocumentAsync(document, fullPath, forcedEncoding: null);
+            return Task.CompletedTask;
+        }
+        return document.LoadFromFileAsync(fullPath);
+    }
+
+    /// <summary>二进制占位页"仍然打开"：换页回编辑器后按正常流程加载；IO 失败报错并关掉该 Tab</summary>
+    [RelayCommand]
+    private async Task ConfirmOpenBinaryAsync(DocumentViewModel? document)
+    {
+        if (document?.FilePath is not { } fullPath) return;
+        document.IsBinaryPending = false;
+        try
+        {
+            await LoadDocumentContentAsync(document, fullPath, new FileInfo(fullPath).Length);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            ReportError("Loc.Error.OpenFile.Message", fullPath, ex.Message);
+            await CloseDocumentAsync(document);
+        }
     }
 
     /// <summary>大文件加载驱动：进度上报状态栏；取消后询问关闭 Tab 或保留已加载部分；并发大文件经门闸串行</summary>
@@ -760,6 +805,9 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>保存文档；无路径或强制另存时弹保存对话框。返回是否真的保存成功。</summary>
     public async Task<bool> SaveDocumentAsync(DocumentViewModel document, bool forcePicker)
     {
+        // 二进制占位文档尚未加载内容，编辑器为空，保存会用空内容覆盖原文件，直接拒绝
+        if (document.IsBinaryPending) return false;
+
         string? path = forcePicker ? null : document.FilePath;
 
         // 截断文档（大文件加载被取消后只保留了部分内容）直接保存会用不完整内容覆盖原文件，

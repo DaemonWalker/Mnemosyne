@@ -37,6 +37,9 @@ public partial class FileTreeNodeViewModel : ObservableObject
     private bool _isExpanded;
 
     [ObservableProperty]
+    private bool _isSelected;
+
+    [ObservableProperty]
     private bool _isEditing;
 
     [ObservableProperty]

@@ -128,12 +128,35 @@ public partial class MainWindow : Window
             MessageBox.Show(this, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
         _viewModel.FindBar.FocusEditorRequested = () => _viewModel.ActiveDocument?.Editor.FocusEditor();
 
+        // 每个 Tab 的编辑器内容：ScintillaHost + 按键/右键转发（二进制占位文档确认后才创建，故抽成局部函数复用）
+        UIElement CreateEditorContent(DocumentViewModel doc)
+        {
+            doc.Editor.EditorKeyDown += OnEditorKeyDown;
+            doc.Editor.EditorRightClick += OnEditorRightClick;
+            return doc.Editor;
+        }
+
+        // 二进制占位页确认打开后：占位视图换成真正的编辑器内容
+        void OnDocumentPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(DocumentViewModel.IsBinaryPending)) return;
+            if (sender is not DocumentViewModel d || d.IsBinaryPending) return;
+            if (!_tabContents.TryGetValue(d, out UIElement? old)) return;
+            EditorHostGrid.Children.Remove(old);
+            UIElement content = CreateEditorContent(d);
+            content.Visibility = Visibility.Collapsed;
+            _tabContents[d] = content;
+            EditorHostGrid.Children.Add(content);
+            UpdateEditorVisibility();
+        }
+
         _viewModel.Documents.CollectionChanged += (_, e) =>
         {
             if (e.OldItems is not null)
             {
                 foreach (DocumentViewModel doc in e.OldItems)
                 {
+                    doc.PropertyChanged -= OnDocumentPropertyChanged;
                     if (_tabContents.Remove(doc, out UIElement? content)) EditorHostGrid.Children.Remove(content);
                 }
             }
@@ -147,12 +170,16 @@ public partial class MainWindow : Window
                         // 预览 Tab 是纯 WPF 内容，不受空域限制，直接放常驻 Grid
                         content = new MarkdownPreviewView { DataContext = preview };
                     }
+                    else if (doc.IsBinaryPending)
+                    {
+                        // 二进制占位页同样是纯 WPF 内容；确认后由 OnDocumentPropertyChanged 换成编辑器
+                        content = new BinaryPlaceholderView { DataContext = doc };
+                    }
                     else
                     {
-                        content = doc.Editor;
-                        doc.Editor.EditorKeyDown += OnEditorKeyDown;
-                        doc.Editor.EditorRightClick += OnEditorRightClick;
+                        content = CreateEditorContent(doc);
                     }
+                    doc.PropertyChanged += OnDocumentPropertyChanged;
                     content.Visibility = Visibility.Collapsed;
                     _tabContents[doc] = content;
                     EditorHostGrid.Children.Add(content);
@@ -213,7 +240,7 @@ public partial class MainWindow : Window
         DocumentViewModel? active = _viewModel.ActiveDocument;
         if (active is null || !_tabContents.TryGetValue(active, out UIElement? content)) return;
         content.Visibility = Visibility.Visible;
-        if (active is not MarkdownPreviewViewModel)
+        if (active is not MarkdownPreviewViewModel && !active.IsBinaryPending)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Input, () => active.Editor.FocusEditor());
         }

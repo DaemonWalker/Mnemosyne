@@ -1,0 +1,34 @@
+<UserControl x:Class="Mnemosyne.Views.BinaryPlaceholderView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Brush.Window.Background}">
+    <StackPanel HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+        <TextBlock Text="{DynamicResource Loc.Binary.Placeholder.Message}"
+                   AutomationProperties.AutomationId="BinaryPlaceholderMessage"
+                   Foreground="{DynamicResource Brush.Secondary.Foreground}"
+                   FontSize="14"
+                   TextAlignment="Center" />
+        <TextBlock Text="{Binding BinaryFileSizeText}"
+                   Foreground="{DynamicResource Brush.Secondary.Foreground}"
+                   FontSize="12"
+                   Margin="0,8,0,0"
+                   TextAlignment="Center" />
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Margin="0,16,0,0">
+            <Button Content="{DynamicResource Loc.Binary.Placeholder.Open}"
+                    AutomationProperties.AutomationId="BinaryPlaceholderOpen"
+                    MinWidth="96"
+                    Margin="0,0,8,0"
+                    Padding="8,4"
+                    Command="{Binding DataContext.ConfirmOpenBinaryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}" />
+            <Button Content="{DynamicResource Loc.Binary.Placeholder.Close}"
+                    MinWidth="96"
+                    Padding="8,4"
+                    Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

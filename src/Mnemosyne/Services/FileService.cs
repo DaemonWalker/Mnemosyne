@@ -14,6 +14,47 @@ public class FileService
 {
     private static readonly Encoding StrictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
+    // 常见二进制扩展名：命中直接判二进制，不读文件（对超大文件零开销）
+    private static readonly HashSet<string> BinaryExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".exe", ".dll", ".com", ".sys", ".bin", ".dat", ".o", ".obj", ".so", ".dylib",
+        ".class", ".jar", ".pyc", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp",
+        ".zip", ".7z", ".rar", ".gz", ".tar", ".pdf", ".mp3", ".mp4", ".avi", ".mkv",
+        ".wav", ".flac", ".db", ".sqlite", ".ttf", ".otf", ".woff", ".woff2",
+    };
+
+    /// <summary>打开前的二进制判定：扩展名名单命中直接判是，否则读头部 8KB 做 NUL 字节嗅探（空文件判否）</summary>
+    public async Task<bool> IsBinaryFileAsync(string path, CancellationToken cancellationToken = default)
+    {
+        if (BinaryExtensions.Contains(Path.GetExtension(path))) return true;
+        const int SniffSize = 8000;
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, useAsync: true);
+        byte[] sample = new byte[SniffSize];
+        int read = 0;
+        while (read < SniffSize)
+        {
+            int n = await stream.ReadAsync(sample.AsMemory(read, SniffSize - read), cancellationToken);
+            if (n == 0) break;
+            read += n;
+        }
+        return LooksBinary(sample.AsSpan(0, read));
+    }
+
+    /// <summary>二进制嗅探：头部含 NUL 字节判二进制；带 BOM 的 UTF-16/32 文本天然含 NUL，先按 BOM 豁免（搜索与打开保护共用）</summary>
+    internal static bool LooksBinary(ReadOnlySpan<byte> bytes)
+    {
+        bool hasBom = bytes.Length >= 2
+            && ((bytes[0] == 0xFF && bytes[1] == 0xFE) || (bytes[0] == 0xFE && bytes[1] == 0xFF)
+                || (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF));
+        if (hasBom) return false;
+        int head = Math.Min(bytes.Length, 8000);
+        for (int i = 0; i < head; i++)
+        {
+            if (bytes[i] == 0) return true;
+        }
+        return false;
+    }
+
     public async Task<FileReadResult> ReadAsync(string path, Encoding? forcedEncoding = null, CancellationToken cancellationToken = default)
     {
         byte[] bytes = await File.ReadAllBytesAsync(path, cancellationToken);

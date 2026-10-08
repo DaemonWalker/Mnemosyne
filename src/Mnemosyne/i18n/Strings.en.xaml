@@ -49,6 +49,8 @@
     <sys:String x:Key="Loc.SideBar.Files.Title">EXPLORER</sys:String>
     <sys:String x:Key="Loc.SideBar.Files.Empty">No folder opened</sys:String>
     <sys:String x:Key="Loc.SideBar.Files.CloseFolder">Close Folder</sys:String>
+    <sys:String x:Key="Loc.SideBar.Files.CollapseAll">Collapse All</sys:String>
+    <sys:String x:Key="Loc.SideBar.Files.RevealActiveFile">Reveal Active File</sys:String>
     <sys:String x:Key="Loc.Tree.NewFile">New File</sys:String>
     <sys:String x:Key="Loc.Tree.NewFolder">New Folder</sys:String>
     <sys:String x:Key="Loc.Tree.Rename">Rename</sys:String>
@@ -68,6 +70,9 @@
     <sys:String x:Key="Loc.Error.SearchFolder.Message">Error searching folder "{0}". {1}</sys:String>
 
     <sys:String x:Key="Loc.Editor.Empty">Drop files here, or press Ctrl+O to open a file</sys:String>
+    <sys:String x:Key="Loc.Binary.Placeholder.Message">This file appears to be binary. Content was not loaded to avoid freezing.</sys:String>
+    <sys:String x:Key="Loc.Binary.Placeholder.Open">Open Anyway</sys:String>
+    <sys:String x:Key="Loc.Binary.Placeholder.Close">Close Tab</sys:String>
     <sys:String x:Key="Loc.Editor.Undo">Undo</sys:String>
     <sys:String x:Key="Loc.Editor.Redo">Redo</sys:String>
     <sys:String x:Key="Loc.Editor.Cut">Cut</sys:String>

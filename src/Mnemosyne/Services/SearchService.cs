@@ -213,7 +213,7 @@ public static class SearchService
         int remainingBudget, CancellationToken cancellationToken)
     {
         byte[] bytes = await File.ReadAllBytesAsync(path, cancellationToken);
-        if (LooksBinary(bytes)) return null;
+        if (FileService.LooksBinary(bytes)) return null;
         string text = fileService.Decode(bytes).Text;
 
         int cap = Math.Min(MaxFileMatches, Math.Max(remainingBudget, 0));
@@ -256,21 +256,6 @@ public static class SearchService
             Matches = matches,
             Truncated = fileTruncated,
         };
-    }
-
-    /// <summary>二进制嗅探：头部含 NUL 字节判二进制；带 BOM 的 UTF-16/32 文本天然含 NUL，先按 BOM 豁免</summary>
-    private static bool LooksBinary(byte[] bytes)
-    {
-        bool hasBom = bytes.Length >= 2
-            && ((bytes[0] == 0xFF && bytes[1] == 0xFE) || (bytes[0] == 0xFE && bytes[1] == 0xFF)
-                || (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF));
-        if (hasBom) return false;
-        int head = Math.Min(bytes.Length, 8000);
-        for (int i = 0; i < head; i++)
-        {
-            if (bytes[i] == 0) return true;
-        }
-        return false;
     }
 
     private static string ToRelative(string rootPath, string path) =>

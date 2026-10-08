@@ -49,7 +49,7 @@ src/Mnemosyne/
   Services/
     Terminal/                # ConPTY 后端（ConPtyNative P/Invoke、ConPtySession）与终端会话（TerminalSession 接 XtermSharp）
     ConfigService.cs         # settings.json 读写（便携模式：exe 同目录）
-    FileService.cs           # 打开/保存/编码检测/分块读取
+    FileService.cs           # 打开/保存/编码检测/分块读取/二进制检测（打开占位保护与搜索跳过重判共用）
     SearchService.cs         # 页内搜索 + 文件夹扫描（后台 Task）
     PluginService.cs         # 插件发现与加载，按能力登记（格式化/语言/词法器/主题），单个插件异常不影响主程序
     CustomLexerRegistry.cs   # 插件自定义词法器注册表 + 语义→主题色映射

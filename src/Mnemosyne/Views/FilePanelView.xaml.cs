@@ -20,9 +20,36 @@ public partial class FilePanelView : UserControl
     {
         InitializeComponent();
         _localization = localization;
+        DataContextChanged += OnDataContextChanged;
     }
 
     private FileTreeViewModel? ViewModel => DataContext as FileTreeViewModel;
+
+    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.OldValue is FileTreeViewModel oldVm) oldVm.NodeRevealRequested -= OnNodeRevealRequested;
+        if (e.NewValue is FileTreeViewModel newVm) newVm.NodeRevealRequested += OnNodeRevealRequested;
+    }
+
+    private void OnNodeRevealRequested(FileTreeNodeViewModel node)
+    {
+        // 祖先刚展开，子容器要等布局/容器生成后才能拿到，延迟到 Loaded 优先级再滚动
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (FindTreeViewItem(FileTree, node) is { } item) item.BringIntoView();
+        }, DispatcherPriority.Loaded);
+    }
+
+    private static TreeViewItem? FindTreeViewItem(ItemsControl parent, FileTreeNodeViewModel node)
+    {
+        foreach (object child in parent.Items)
+        {
+            if (parent.ItemContainerGenerator.ContainerFromItem(child) is not TreeViewItem container) continue;
+            if (ReferenceEquals(child, node)) return container;
+            if (FindTreeViewItem(container, node) is { } found) return found;
+        }
+        return null;
+    }
 
     private void FileTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {

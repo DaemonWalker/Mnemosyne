@@ -71,6 +71,13 @@ public partial class DocumentViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPartialLoad;
 
+    /// <summary>二进制占位：检测到疑似二进制文件时不加载内容，Tab 内容显示占位页，确认后才真正加载</summary>
+    [ObservableProperty]
+    private bool _isBinaryPending;
+
+    [ObservableProperty]
+    private string _binaryFileSizeText = "";
+
     private CancellationTokenSource? _loadCts;
 
     private DispatcherTimer? _stashDebounce;
@@ -144,6 +151,17 @@ public partial class DocumentViewModel : ObservableObject
     {
         FileReadResult result = await _fileService.ReadAsync(path, cancellationToken: cancellationToken);
         ApplyReadResult(path, result);
+    }
+
+    /// <summary>标记为二进制占位文档：只设置路径与标题，不读取内容；确认打开后由上层驱动正常加载</summary>
+    public void MarkAsBinaryPlaceholder(string path, long fileSize)
+    {
+        FilePath = path;
+        Title = Path.GetFileName(path);
+        BinaryFileSizeText = fileSize >= 1024 * 1024
+            ? $"{fileSize / 1024.0 / 1024.0:F1} MB"
+            : $"{fileSize / 1024.0:F1} KB";
+        IsBinaryPending = true;
     }
 
     /// <summary>
