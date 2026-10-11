@@ -135,7 +135,13 @@ public partial class FileTreeViewModel : ObservableObject, IDisposable
     private void CollapseAll()
     {
         if (RootNode is not { } root) return;
-        CollapseRecursive(root);
+        // 根节点保持展开：折叠到第二级，即展示打开文件夹下的全部文件/文件夹
+        EnsureChildrenLoaded(root);
+        foreach (FileTreeNodeViewModel child in root.Children)
+        {
+            if (child.IsDirectory && !child.HasDummyChild) CollapseRecursive(child);
+        }
+        root.IsExpanded = true;
     }
 
     // 未加载的哨兵目录天然收起，只处理已加载子树

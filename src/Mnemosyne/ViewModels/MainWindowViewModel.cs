@@ -276,13 +276,20 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void UpdateWindowTitle()
     {
+        // 有打开文件夹时标题里带上文件夹名（指通过菜单打开的工作区文件夹，而非文档所在目录）
+        string? folderName = FileTree.RootNode is { } root
+            ? Path.GetFileName(root.FullPath.TrimEnd(Path.DirectorySeparatorChar))
+            : null;
+
         if (ActiveDocument is not null)
         {
-            WindowTitle = "Mnemosyne - " + ActiveDocument.DisplayTitle;
+            WindowTitle = folderName is not null
+                ? "Mnemosyne - " + folderName + " - " + ActiveDocument.DisplayTitle
+                : "Mnemosyne - " + ActiveDocument.DisplayTitle;
         }
-        else if (FileTree.RootNode is { } root)
+        else if (folderName is not null)
         {
-            WindowTitle = "Mnemosyne - " + Path.GetFileName(root.FullPath.TrimEnd(Path.DirectorySeparatorChar));
+            WindowTitle = "Mnemosyne - " + folderName;
         }
         else
         {
