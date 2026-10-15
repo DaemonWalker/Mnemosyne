@@ -6,7 +6,8 @@
         <HierarchicalDataTemplate x:Key="FileTreeNodeTemplate"
                                   DataType="{x:Type vm:FileTreeNodeViewModel}"
                                   ItemsSource="{Binding Children}">
-            <StackPanel Orientation="Horizontal" Height="22">
+            <StackPanel Orientation="Horizontal" Height="22"
+                        ToolTip="{Binding Name}">
                 <StackPanel.Style>
                     <Style TargetType="StackPanel">
                         <Style.Triggers>
