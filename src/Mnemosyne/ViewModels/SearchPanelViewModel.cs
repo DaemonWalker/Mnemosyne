@@ -210,6 +210,12 @@ public partial class SearchPanelViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(IsSearching))]
     private void CancelSearch() => _cancellation?.Cancel();
 
+    [RelayCommand]
+    private void CollapseAll()
+    {
+        foreach (SearchResultFileViewModel file in ResultFiles) file.IsExpanded = false;
+    }
+
     private void OnResultFilesChanged(object? sender, NotifyCollectionChangedEventArgs e) => UpdateStateFlags();
 
     private void RunSearchSoon(bool immediate)

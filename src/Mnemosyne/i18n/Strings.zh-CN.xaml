@@ -58,6 +58,7 @@
     <sys:String x:Key="Loc.Tree.OpenInExplorer">在资源管理器中打开</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Title">搜索</sys:String>
     <sys:String x:Key="Loc.SideBar.Search.Empty">输入关键字以在文件夹中搜索</sys:String>
+    <sys:String x:Key="Loc.SideBar.Search.CollapseAll">全部折叠</sys:String>
     <sys:String x:Key="Loc.Search.NoFolder">打开文件夹后可在其中搜索</sys:String>
     <sys:String x:Key="Loc.Search.Include.Label">包含的文件</sys:String>
     <sys:String x:Key="Loc.Search.Include.Placeholder">*.cs, src/**</sys:String>
