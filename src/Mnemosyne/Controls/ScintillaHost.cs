@@ -40,6 +40,7 @@ public class ScintillaHost : WindowsFormsHost
     private Color? _caretLineColor;
     private bool _selectionHighlightMatchCase = true;
     private bool _selectionHighlightWholeWord = true;
+    private LineEnding _currentLineEnding = LineEnding.CrLf;
 
     /// <summary>内容或保存点变化（读取 IsDirty 获得最新状态）</summary>
     public event EventHandler? DirtyChanged;
@@ -187,12 +188,7 @@ public class ScintillaHost : WindowsFormsHost
 
     public int CurrentColumn => _scintilla.GetColumn(_scintilla.CurrentPosition) + 1;
 
-    public LineEnding CurrentLineEnding => _scintilla.EolMode switch
-    {
-        Eol.Lf => LineEnding.Lf,
-        Eol.Cr => LineEnding.Cr,
-        _ => LineEnding.CrLf,
-    };
+    public LineEnding CurrentLineEnding => _currentLineEnding;
 
     public void FocusEditor() => _scintilla.Focus();
 
@@ -502,9 +498,10 @@ public class ScintillaHost : WindowsFormsHost
         _scintilla.ScrollCaret();
     }
 
-    /// <summary>设置文档行尾模式并按需转换全文行尾符</summary>
+    /// <summary>设置文档行尾模式并按需转换全文行尾符；混合模式保留原文，仅指定后续输入的默认行尾符</summary>
     public void SetLineEnding(LineEnding ending, bool convert)
     {
+        _currentLineEnding = ending;
         Eol mode = ending switch
         {
             LineEnding.Lf => Eol.Lf,

@@ -198,15 +198,15 @@ public partial class MainWindow : Window
     }
 
     /// <summary>启动时恢复上次会话（由 App 在窗口显示后调用，异步进行不拖慢冷启动）</summary>
-    public Task RestoreSessionAsync() => _viewModel.RestoreSessionAsync();
+    public Task RestoreSessionAsync(bool restoreOpenFolder = true) => _viewModel.RestoreSessionAsync(restoreOpenFolder);
 
     /// <summary>消费 App.PendingOpenPaths（命令行与次实例转发来的路径）</summary>
-    public void OpenPendingPaths()
+    public Task OpenPendingPathsAsync()
     {
-        if (Application.Current is not App app || app.PendingOpenPaths.Count == 0) return;
+        if (Application.Current is not App app || app.PendingOpenPaths.Count == 0) return Task.CompletedTask;
         string[] paths = app.PendingOpenPaths.ToArray();
         app.PendingOpenPaths.Clear();
-        _ = _viewModel.OpenPathsAsync(paths);
+        return _viewModel.OpenPathsAsync(paths);
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);

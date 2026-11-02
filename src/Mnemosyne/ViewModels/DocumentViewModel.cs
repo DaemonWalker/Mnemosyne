@@ -181,16 +181,18 @@ public partial class DocumentViewModel : ObservableObject
             Encoding encoding = await _fileService.DetectEncodingAsync(path, forcedEncoding, cancellationToken);
 
             Editor.BeginChunkedLoad();
+            var lineEndingDetector = new FileService.LineEndingDetector();
             bool firstChunk = true;
             try
             {
                 await foreach (ReadChunk chunk in _fileService.ReadChunksAsync(path, encoding, _loadCts.Token))
                 {
                     Editor.AppendChunk(chunk.Text);
+                    lineEndingDetector.Append(chunk.Text);
                     if (firstChunk)
                     {
                         firstChunk = false;
-                        ApplyContentHints(chunk.Text);
+                        ApplyIndentationHint(chunk.Text);
                     }
                     progress.Report((int)Math.Min(100, chunk.BytesRead * 100 / Math.Max(1, fileSize)));
                 }
@@ -198,6 +200,8 @@ public partial class DocumentViewModel : ObservableObject
             finally
             {
                 Editor.EndChunkedLoad();
+                Editor.SetLineEnding(lineEndingDetector.Result, convert: false);
+                LineEndingName = ToDisplayName(lineEndingDetector.Result);
                 IsDirty = false;
             }
             progress.Report(100);
@@ -227,12 +231,9 @@ public partial class DocumentViewModel : ObservableObject
         IsDirty = false;
     }
 
-    /// <summary>按首块内容检测行尾符与缩进风格（样本不足时保留设置项默认）</summary>
-    private void ApplyContentHints(string sample)
+    /// <summary>按首块内容检测缩进风格（样本不足时保留设置项默认）</summary>
+    private void ApplyIndentationHint(string sample)
     {
-        LineEnding ending = FileService.DetectLineEnding(sample);
-        Editor.SetLineEnding(ending, convert: false);
-        LineEndingName = ToDisplayName(ending);
         if (IndentDetector.Detect(sample, IndentWidth) is { } detected)
         {
             SetIndentation(detected.UseTabs, detected.Width);
@@ -488,6 +489,7 @@ public partial class DocumentViewModel : ObservableObject
     {
         LineEnding.Lf => "LF",
         LineEnding.Cr => "CR",
+        LineEnding.Mixed => "LF+CRLF",
         _ => "CRLF",
     };
 }

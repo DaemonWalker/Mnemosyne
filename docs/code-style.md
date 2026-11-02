@@ -50,5 +50,4 @@
 
 - `dotnet build` 整个解决方案通过，**0 警告**（含 nullable 警告）；可用根目录 `build.ps1 -warnaserror` 强制基线
 - 改动涉及的功能按 `docs/requirements.md` 对应条目实际验证通过（不只编译，要跑起来验证真实行为）
-- 涉及发布包或核心链路时，跑 `scripts/regression-smoke.ps1` 冒烟回归
 - 发现新的内核坑、环境坑或非直觉实现决策时，补记到 `docs/notes.md`

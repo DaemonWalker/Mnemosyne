@@ -13,6 +13,6 @@
 ## 工作方式（给新对话的 AI）
 
 1. 改动前先读上述四篇文档；未经用户明确要求，不要偏离 requirements.md，不要做"明确不做"清单里的功能
-2. 每处改动按 code-style.md §8 验收：构建 0 警告 + 相关功能实际验证通过；核心链路改动跑 `scripts/regression-smoke.ps1` 冒烟
+2. 每处改动按 code-style.md §8 验收：构建 0 警告 + 相关功能实际验证通过
 3. 常用命令：根目录 `build.ps1`（开发构建，`-Run` 启动）、`build.ps1 -Publish`（发布到 `artifacts/publish/`）
 4. 发现新的内核坑或关键决策，补记到 `docs/notes.md`

@@ -46,8 +46,7 @@ public partial class MainWindowViewModel : ObservableObject
         _pluginService = pluginService;
         _markdownRenderer = markdownRenderer;
         _sessionService = sessionService;
-        // 各文件夹的搜索条件随会话持久化；构造时即载入内存字典——命令行打开文件夹先于 RestoreSessionAsync
-        // 触发 SaveSession，若届时字典为空会把磁盘上其他文件夹的条目整体覆盖丢失
+        // 构造时即载入各文件夹的搜索条件，避免首次保存会话时覆盖磁盘上其他文件夹的条目
         if (_sessionService.LoadSession()?.FolderSearches is { } savedSearches)
         {
             foreach (KeyValuePair<string, FolderSearchOptions> pair in savedSearches)
@@ -1105,10 +1104,10 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>启动时恢复上次会话（窗口显示后异步执行，不拖慢冷启动）</summary>
-    public async Task RestoreSessionAsync()
+    public async Task RestoreSessionAsync(bool restoreOpenFolder = true)
     {
         SessionState? state = _sessionService.LoadSession();
-        if (state is null || (state.Tabs.Count == 0 && state.OpenFolder is null)) return;
+        if (state is null || (state.Tabs.Count == 0 && (!restoreOpenFolder || state.OpenFolder is null))) return;
 
         _restoringSession = true;
         var restoredKeys = new HashSet<string>(StringComparer.Ordinal);
@@ -1127,7 +1126,7 @@ public partial class MainWindowViewModel : ObservableObject
                     // 单个 Tab 恢复失败不影响其余 Tab
                 }
             }
-            if (state.OpenFolder is not null && Directory.Exists(state.OpenFolder))
+            if (restoreOpenFolder && state.OpenFolder is not null && Directory.Exists(state.OpenFolder))
             {
                 await OpenFolderAsync(state.OpenFolder);
             }

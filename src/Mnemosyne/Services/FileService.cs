@@ -173,31 +173,71 @@ public class FileService
 
     public static LineEnding DetectLineEnding(string text)
     {
-        int crlf = 0;
-        int lf = 0;
-        int cr = 0;
-        for (int i = 0; i < text.Length; i++)
+        var detector = new LineEndingDetector();
+        detector.Append(text);
+        return detector.Result;
+    }
+
+    internal sealed class LineEndingDetector
+    {
+        private bool _hasCrLf;
+        private bool _hasLf;
+        private bool _hasCr;
+        private bool _pendingCr;
+
+        public LineEnding Result
         {
-            if (text[i] == '\r')
+            get
             {
-                if (i + 1 < text.Length && text[i + 1] == '\n')
+                if (_hasCrLf && _hasLf) return LineEnding.Mixed;
+                if (_hasCrLf) return LineEnding.CrLf;
+                if (_hasLf) return LineEnding.Lf;
+                if (_hasCr || _pendingCr) return LineEnding.Cr;
+                return LineEnding.CrLf;
+            }
+        }
+
+        public void Append(string text)
+        {
+            if (text.Length == 0) return;
+            int i = 0;
+            if (_pendingCr)
+            {
+                _pendingCr = false;
+                if (text[0] == '\n')
                 {
-                    crlf++;
-                    i++;
+                    _hasCrLf = true;
+                    i = 1;
                 }
                 else
                 {
-                    cr++;
+                    _hasCr = true;
                 }
             }
-            else if (text[i] == '\n')
+            for (; i < text.Length; i++)
             {
-                lf++;
+                if (text[i] == '\r')
+                {
+                    if (i + 1 == text.Length)
+                    {
+                        _pendingCr = true;
+                    }
+                    else if (text[i + 1] == '\n')
+                    {
+                        _hasCrLf = true;
+                        i++;
+                    }
+                    else
+                    {
+                        _hasCr = true;
+                    }
+                }
+                else if (text[i] == '\n')
+                {
+                    _hasLf = true;
+                }
             }
         }
-        if (crlf == 0 && lf == 0 && cr == 0) return LineEnding.CrLf;
-        if (crlf >= lf && crlf >= cr) return LineEnding.CrLf;
-        return lf >= cr ? LineEnding.Lf : LineEnding.Cr;
     }
 
     private static bool TryDetectBom(byte[] bytes, out Encoding encoding)

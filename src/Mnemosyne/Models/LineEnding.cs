@@ -5,4 +5,5 @@ public enum LineEnding
     CrLf,
     Lf,
     Cr,
+    Mixed,
 }

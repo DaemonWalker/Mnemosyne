@@ -74,7 +74,7 @@ public partial class App : Application
             {
                 AddPendingPaths(args);
                 ActivateMainWindow();
-                (MainWindow as MainWindow)?.OpenPendingPaths();
+                if (MainWindow is MainWindow window) _ = window.OpenPendingPathsAsync();
             });
             _singleInstance.StartListening();
         }
@@ -94,9 +94,9 @@ public partial class App : Application
         // 扫描后回到 UI 线程：登记插件主题并重放一次主题设置，命中插件主题时触发 ThemeChanged 重刷
         ThemeService.RegisterPluginThemes(PluginService.Themes);
         ThemeService.ApplyTheme(ConfigService.Settings.Theme);
-        // 语言注册表就绪后再消费命令行路径、再恢复会话，否则这些文件会按纯文本打开
-        window.OpenPendingPaths();
-        await window.RestoreSessionAsync();
+        // 外部启动参数优先于上次会话：不恢复旧文件夹，最后打开参数路径以保持其 Tab 选中
+        await window.RestoreSessionAsync(restoreOpenFolder: PendingOpenPaths.Count == 0);
+        await window.OpenPendingPathsAsync();
     }
 
     protected override void OnExit(ExitEventArgs e)
