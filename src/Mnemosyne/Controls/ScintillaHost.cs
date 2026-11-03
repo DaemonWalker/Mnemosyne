@@ -402,8 +402,11 @@ public class ScintillaHost : WindowsFormsHost
 
     public void SetWordWrap(bool wrap) => _scintilla.WrapMode = wrap ? WrapMode.Word : WrapMode.None;
 
-    public void SetViewWhitespace(bool visible) =>
+    public void SetViewWhitespace(bool visible)
+    {
         _scintilla.ViewWhitespace = visible ? WhitespaceMode.VisibleAlways : WhitespaceMode.Invisible;
+        _scintilla.ViewEol = visible;
+    }
 
     // ===== 右键菜单用的编辑与折叠操作 =====
     public bool CanUndo => _scintilla.CanUndo;
